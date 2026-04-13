@@ -3,7 +3,6 @@ import terser from "@rollup/plugin-terser";
 
 export default {
   input: "./src/index.ts",
-  external: (id) => id.includes("native-loader.cjs"),
   output: [
     {
       file: "./dist/index.mjs",
@@ -16,6 +15,14 @@ export default {
       sourcemap: true,
     },
     {
+      file: "./dist/index.umd.js",
+      format: "umd",
+      name: "jsTemplate",
+      globals: {},
+      sourcemap: true,
+    },
+    ,
+    {
       file: "./dist/index.min.mjs",
       format: "es",
       sourcemap: true,
@@ -24,6 +31,14 @@ export default {
     {
       file: "./dist/index.min.cjs",
       format: "cjs",
+      sourcemap: true,
+      plugins: [terser()],
+    },
+    {
+      file: "./dist/index.min.umd.js",
+      format: "umd",
+      name: "jsTemplate",
+      globals: {},
       sourcemap: true,
       plugins: [terser()],
     },

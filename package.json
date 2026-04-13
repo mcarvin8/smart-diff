@@ -1,13 +1,12 @@
 {
   "name": "@mcarvin/smart-diff",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Summarizes a git diff using OpenAI models.",
   "author": "Matt Carvin",
   "license": "MIT",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "types": "dist/typings/index.d.ts",
-  
   "engines": {
     "node": ">=20"
   },

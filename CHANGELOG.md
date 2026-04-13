@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/mcarvin8/smart-diff/compare/v1.0.2...v1.0.3) (2026-04-13)
+
+
+### Bug Fixes
+
+* packing  steps ([356f2e0](https://github.com/mcarvin8/smart-diff/commit/356f2e0920e48406a72befd4da3b0146074a419b))
+
 ## [1.0.2](https://github.com/mcarvin8/smart-diff/compare/v1.0.1...v1.0.2) (2026-04-13)
 
 

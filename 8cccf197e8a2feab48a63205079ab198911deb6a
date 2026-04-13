@@ -1,0 +1,23 @@
+test/gitDiff.async.spec.ts
+  01100fad296c76d0 182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "8cccf197e8a2feab48a63205079ab198911deb6a",
+  "prompts": {
+    "01100fad296c76d0": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d66e73bb-27fb-4252-8a6e-aa285db6c750",
+        "model": "composer-2-fast"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 149,
+      "total_deletions": 150,
+      "accepted_lines": 136,
+      "overriden_lines": 0
+    }
+  }
+}

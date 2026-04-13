@@ -3,7 +3,6 @@ import type { SimpleGit } from 'simple-git';
 import { generateSummary, type SummarizeFlags } from './ai/aiSummary.js';
 import type { OpenAiLikeClient } from './ai/openAIConfig.js';
 import {
-  buildDiffPathspecs,
   createGitClient,
   filterCommitsByMessageRegexes,
   getChangedFiles,

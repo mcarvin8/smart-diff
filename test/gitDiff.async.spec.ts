@@ -179,7 +179,7 @@ describe('getChangedFiles', () => {
   });
 
   it('dedupes files from per-commit show output', async () => {
-    const { git, diff } = makeGitWithDiff();
+    const { git } = makeGitWithDiff();
     const show = jest.fn().mockResolvedValueOnce('dup.ts\n').mockResolvedValueOnce('dup.ts\nother.ts\n');
     (git as unknown as { show: typeof show }).show = show;
 

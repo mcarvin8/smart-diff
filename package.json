@@ -1,6 +1,6 @@
 {
   "name": "smart-diff",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Summarizes a git diff using OpenAI models.",
   "author": "Matt Carvin",
   "license": "MIT",

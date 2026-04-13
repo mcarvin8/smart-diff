@@ -59,10 +59,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mcarvin8/git-diff-ai.git"
+    "url": "git+https://github.com/mcarvin8/smart-diff.git"
   },
   "bugs": {
-    "url": "https://github.com/mcarvin8/git-diff-ai/issues"
+    "url": "https://github.com/mcarvin8/smart-diff/issues"
   },
   "keywords": [
     "openai",

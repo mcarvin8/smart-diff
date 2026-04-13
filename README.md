@@ -16,7 +16,7 @@ There is **no local fallback**: you must either configure an LLM gateway via env
 ## Installation
 
 ```bash
-npm install smart-diff
+npm install @mcarvin/smart-diff
 ```
 
 Build the package from source with `npm run build` (Rollup outputs CommonJS and ESM under `dist/`).
@@ -40,7 +40,7 @@ The client is created with the official [`openai`](https://www.npmjs.com/package
 ### `summarizeGitDiff`
 
 ```ts
-import { summarizeGitDiff } from 'smart-diff';
+import { summarizeGitDiff } from '@mcarvin/smart-diff';
 
 const markdown = await summarizeGitDiff({
   from: 'origin/main',

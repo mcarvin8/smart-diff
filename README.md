@@ -1,8 +1,8 @@
-# git-diff-ai
+# smart-diff
 
-[![NPM](https://img.shields.io/npm/v/git-diff-ai.svg?label=git-diff-ai)](https://www.npmjs.com/package/git-diff-ai)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://raw.githubusercontent.com/mcarvin8/git-diff-ai/main/LICENSE.md)
-[![Downloads/week](https://img.shields.io/npm/dw/git-diff-ai.svg)](https://npmjs.org/package/git-diff-ai)
+[![NPM](https://img.shields.io/npm/v/smart-diff.svg?label=smart-diff)](https://www.npmjs.com/package/smart-diff)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://raw.githubusercontent.com/mcarvin8/smart-diff/main/LICENSE.md)
+[![Downloads/week](https://img.shields.io/npm/dw/smart-diff.svg)](https://npmjs.org/package/smart-diff)
 
 TypeScript library that turns a **git revision range** into a **Markdown summary** using an OpenAI-compatible Chat Completions API. It uses [`simple-git`](https://github.com/steveukx/git-js) to read the repo, respects **path includes/excludes** and **commit message include/exclude regexes**, and sends commits, paths, structured diff stats, and unified diff text to the model.
 
@@ -15,7 +15,7 @@ There is **no local fallback**: you must either configure an LLM gateway via env
 ## Installation
 
 ```bash
-npm install git-diff-ai
+npm install smart-diff
 ```
 
 Build the package from source with `npm run build` (Rollup outputs CommonJS and ESM under `dist/`).
@@ -39,7 +39,7 @@ The client is created with the official [`openai`](https://www.npmjs.com/package
 ### `summarizeGitDiff`
 
 ```ts
-import { summarizeGitDiff } from 'git-diff-ai';
+import { summarizeGitDiff } from 'smart-diff';
 
 const markdown = await summarizeGitDiff({
   from: 'origin/main',

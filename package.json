@@ -1,5 +1,5 @@
 {
-  "name": "git-diff-ai",
+  "name": "smart-diff",
   "version": "0.0.1",
   "description": "Summarizes a git diff using OpenAI models.",
   "author": "Matt Carvin",

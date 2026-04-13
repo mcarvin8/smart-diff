@@ -11,6 +11,7 @@ There is **no local fallback**: you must either configure an LLM gateway via env
 ## Requirements
 
 - **Node.js** 20+
+- Git Bash
 
 ## Installation
 

@@ -1,0 +1,9 @@
+node_modules
+.vscode
+dist
+coverage
+src/**/*.js
+test/**/*.js
+.env
+*.log
+**/*.log

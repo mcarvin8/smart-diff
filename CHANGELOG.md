@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/mcarvin8/smart-diff/compare/v1.0.1...v1.0.2) (2026-04-13)
+
+
+### Bug Fixes
+
+* recreate lock file and fix links in readme ([4e762c6](https://github.com/mcarvin8/smart-diff/commit/4e762c680ee152bc8ef997926730e9a50a44541e))
+
 ## [1.0.1](https://github.com/mcarvin8/smart-diff/compare/v1.0.0...v1.0.1) (2026-04-13)
 
 

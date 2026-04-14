@@ -50,6 +50,14 @@ function compileRegex(pattern: string, label: string): RegExp {
   }
 }
 
+function commitMessagePassesFilters(message: string, includeRes: RegExp[], excludeRes: RegExp[]): boolean {
+  for (const ex of excludeRes) {
+    if (ex.test(message)) return false;
+  }
+  if (includeRes.length > 0 && !includeRes.some((r) => r.test(message))) return false;
+  return true;
+}
+
 /**
  * Filter commits by message. Excludes are applied first; then if `includePatterns` is non-empty,
  * the message must match at least one include pattern.
@@ -65,13 +73,7 @@ export function filterCommitsByMessageRegexes(
   const includeRes = includes.map((p, i) => compileRegex(p, `commit message include pattern[${i}]`));
   const excludeRes = excludes.map((p, i) => compileRegex(p, `commit message exclude pattern[${i}]`));
 
-  return commits.filter((c) => {
-    for (const ex of excludeRes) {
-      if (ex.test(c.message)) return false;
-    }
-    if (includeRes.length > 0 && !includeRes.some((r) => r.test(c.message))) return false;
-    return true;
-  });
+  return commits.filter((c) => commitMessagePassesFilters(c.message, includeRes, excludeRes));
 }
 
 export async function getRepoRoot(git: SimpleGit): Promise<string> {
@@ -239,14 +241,18 @@ export async function getChangedFiles(
   return Array.from(fileSet);
 }
 
+/** First character of git name-status / synthetic tokens (e.g. R100 → R). */
+const GIT_STATUS_BY_FIRST_CHAR: Record<string, DiffStatus> = {
+  A: 'added',
+  D: 'deleted',
+  R: 'renamed',
+  C: 'copied',
+  T: 'type-changed',
+  M: 'modified',
+};
+
 function mapGitStatus(statusCode: string): DiffStatus {
-  if (statusCode.startsWith('A')) return 'added';
-  if (statusCode.startsWith('D')) return 'deleted';
-  if (statusCode.startsWith('R')) return 'renamed';
-  if (statusCode.startsWith('C')) return 'copied';
-  if (statusCode.startsWith('T')) return 'type-changed';
-  if (statusCode.startsWith('M')) return 'modified';
-  return 'unknown';
+  return GIT_STATUS_BY_FIRST_CHAR[statusCode.charAt(0)] ?? 'unknown';
 }
 
 function mergeStatus(existing: DiffStatus, next: DiffStatus): DiffStatus {
@@ -261,26 +267,30 @@ type ParsedNameEntry = {
   oldPath?: string;
 };
 
+function parseNameStatusLine(line: string): ParsedNameEntry | null {
+  const parts = line.split('\t');
+  if (parts.length < 2) return null;
+  const statusToken = parts[0] ?? '';
+  const status = mapGitStatus(statusToken);
+  if (statusToken.startsWith('R') || statusToken.startsWith('C')) {
+    if (parts.length < 3) return null;
+    const oldPath = parts[1];
+    const newPath = parts[2];
+    if (oldPath === undefined || newPath === undefined) return null;
+    return { path: newPath, status, oldPath };
+  }
+  const pathOnly = parts[1];
+  if (pathOnly === undefined) return null;
+  return { path: pathOnly, status };
+}
+
 function parseNameStatusLines(nameStatusOutput: string): ParsedNameEntry[] {
   const entries: ParsedNameEntry[] = [];
   for (const rawLine of nameStatusOutput.split(/\r?\n/)) {
     const line = rawLine.trim();
     if (!line) continue;
-    const parts = line.split('\t');
-    if (parts.length < 2) continue;
-    const statusToken = parts[0] ?? '';
-    const status = mapGitStatus(statusToken);
-    if (statusToken.startsWith('R') || statusToken.startsWith('C')) {
-      if (parts.length < 3) continue;
-      const oldPath = parts[1];
-      const newPath = parts[2];
-      if (oldPath === undefined || newPath === undefined) continue;
-      entries.push({ path: newPath, status, oldPath });
-    } else {
-      const pathOnly = parts[1];
-      if (pathOnly === undefined) continue;
-      entries.push({ path: pathOnly, status });
-    }
+    const entry = parseNameStatusLine(line);
+    if (entry) entries.push(entry);
   }
   return entries;
 }
@@ -312,43 +322,52 @@ function numStatPathToLookupKey(pathField: string): string {
   return `${dirRaw}${toSeg}`;
 }
 
+function parseNumStatLine(line: string): { key: string; additions: number; deletions: number } | null {
+  const parts = line.split('\t');
+  if (parts.length < 3) return null;
+
+  const addStr = parts[0] ?? '';
+  const delStr = parts[1] ?? '';
+  const pathField = parts.slice(2).join('\t');
+
+  const additions = addStr !== '-' ? Number.parseInt(addStr, 10) || 0 : 0;
+  const deletions = delStr !== '-' ? Number.parseInt(delStr, 10) || 0 : 0;
+
+  const key = numStatPathToLookupKey(pathField);
+  return { key, additions, deletions };
+}
+
 function accumulateNumStat(numStatOutput: string, into: Map<string, { additions: number; deletions: number }>): void {
   for (const rawLine of numStatOutput.split(/\r?\n/)) {
     const line = rawLine.trim();
     if (!line) continue;
-    const parts = line.split('\t');
-    if (parts.length < 3) continue;
-
-    const addStr = parts[0] ?? '';
-    const delStr = parts[1] ?? '';
-    const pathField = parts.slice(2).join('\t');
-
-    const additions = addStr !== '-' ? Number.parseInt(addStr, 10) || 0 : 0;
-    const deletions = delStr !== '-' ? Number.parseInt(delStr, 10) || 0 : 0;
-
-    const key = numStatPathToLookupKey(pathField);
-    const prev = into.get(key) ?? { additions: 0, deletions: 0 };
-    into.set(key, { additions: prev.additions + additions, deletions: prev.deletions + deletions });
+    const parsed = parseNumStatLine(line);
+    if (!parsed) continue;
+    const prev = into.get(parsed.key) ?? { additions: 0, deletions: 0 };
+    into.set(parsed.key, { additions: prev.additions + parsed.additions, deletions: prev.deletions + parsed.deletions });
   }
 }
 
+const STATUS_TO_SYNTHETIC_PREFIX: Record<DiffStatus, string> = {
+  added: 'A',
+  deleted: 'D',
+  renamed: 'R100',
+  copied: 'C100',
+  'type-changed': 'T',
+  modified: 'M',
+  unknown: 'X',
+};
+
 function diffStatusToSyntheticPrefix(status: DiffStatus): string {
-  switch (status) {
-    case 'added':
-      return 'A';
-    case 'deleted':
-      return 'D';
-    case 'renamed':
-      return 'R100';
-    case 'copied':
-      return 'C100';
-    case 'type-changed':
-      return 'T';
-    case 'modified':
-      return 'M';
-    default:
-      return 'X';
+  return STATUS_TO_SYNTHETIC_PREFIX[status];
+}
+
+function buildSyntheticDiffLine(meta: ParsedNameEntry, counts: { additions: number; deletions: number }): string {
+  const prefix = diffStatusToSyntheticPrefix(meta.status);
+  if (meta.oldPath) {
+    return `${prefix}\t${counts.additions}\t${counts.deletions}\t${meta.oldPath}\t${meta.path}`;
   }
+  return `${prefix}\t${counts.additions}\t${counts.deletions}\t${meta.path}`;
 }
 
 /**
@@ -364,15 +383,59 @@ function buildDiffSummaryFromGitOutputs(nameStatusOutput: string, numStatOutput:
 
   for (const [path, meta] of mergedName) {
     const counts = numMap.get(path) ?? { additions: 0, deletions: 0 };
-    const prefix = diffStatusToSyntheticPrefix(meta.status);
-    if (meta.oldPath) {
-      syntheticLines.push(`${prefix}\t${counts.additions}\t${counts.deletions}\t${meta.oldPath}\t${path}`);
-    } else {
-      syntheticLines.push(`${prefix}\t${counts.additions}\t${counts.deletions}\t${path}`);
-    }
+    syntheticLines.push(buildSyntheticDiffLine(meta, counts));
   }
 
   return parseDiffSummary(syntheticLines.join('\n'));
+}
+
+type ParsedDiffSummaryLine = {
+  status: DiffStatus;
+  additions: number;
+  deletions: number;
+  oldPath?: string;
+  newPath: string;
+};
+
+function parseTabDiffSummaryLine(line: string): ParsedDiffSummaryLine | null {
+  const parts = line.split('\t');
+  if (parts.length < 3) return null;
+
+  const statusToken = parts.shift() ?? '';
+  const status = mapGitStatus(statusToken);
+  const add0 = parts[0];
+  const del0 = parts[1];
+  const additions = add0 && add0 !== '-' ? Number.parseInt(add0, 10) || 0 : 0;
+  const deletions = del0 && del0 !== '-' ? Number.parseInt(del0, 10) || 0 : 0;
+
+  if (parts.length === 3) {
+    return { status, additions, deletions, newPath: parts[2]! };
+  }
+  if (parts.length === 4) {
+    return { status, additions, deletions, oldPath: parts[2], newPath: parts[3]! };
+  }
+  return null;
+}
+
+function mergeParsedDiffSummaryLine(fileMap: Map<string, DiffFileSummary>, p: ParsedDiffSummaryLine): void {
+  const { newPath, status, additions, deletions, oldPath } = p;
+  const existing = fileMap.get(newPath);
+  if (existing) {
+    existing.additions += additions;
+    existing.deletions += deletions;
+    existing.status = mergeStatus(existing.status, status);
+    if (oldPath) existing.oldPath = existing.oldPath ?? oldPath;
+    existing.newPath = existing.newPath ?? newPath;
+  } else {
+    fileMap.set(newPath, {
+      path: newPath,
+      status,
+      additions,
+      deletions,
+      oldPath,
+      newPath: oldPath ? newPath : undefined,
+    });
+  }
 }
 
 /** Exported for tests; also used to merge synthetic lines when the same path appears more than once. */
@@ -383,43 +446,8 @@ export function parseDiffSummary(diffOutput: string): DiffSummary {
     const line = rawLine.trim();
     if (!line) continue;
 
-    const parts = line.split('\t');
-    if (parts.length < 3) continue;
-
-    const statusToken = parts.shift() ?? '';
-    const status = mapGitStatus(statusToken);
-    const additions = parts[0] && parts[0] !== '-' ? Number.parseInt(parts[0], 10) || 0 : 0;
-    const deletions = parts[1] && parts[1] !== '-' ? Number.parseInt(parts[1], 10) || 0 : 0;
-
-    let oldPath: string | undefined;
-    let newPath: string;
-    if (parts.length === 3) {
-      newPath = parts[2];
-    } else if (parts.length === 4) {
-      oldPath = parts[2];
-      newPath = parts[3];
-    } else {
-      continue;
-    }
-
-    const path = newPath;
-    const existing = fileMap.get(path);
-    if (existing) {
-      existing.additions += additions;
-      existing.deletions += deletions;
-      existing.status = mergeStatus(existing.status, status);
-      if (oldPath) existing.oldPath = existing.oldPath ?? oldPath;
-      existing.newPath = existing.newPath ?? newPath;
-    } else {
-      fileMap.set(path, {
-        path,
-        status,
-        additions,
-        deletions,
-        oldPath,
-        newPath: oldPath ? newPath : undefined,
-      });
-    }
+    const parsed = parseTabDiffSummaryLine(line);
+    if (parsed) mergeParsedDiffSummaryLine(fileMap, parsed);
   }
 
   const files = Array.from(fileMap.values());

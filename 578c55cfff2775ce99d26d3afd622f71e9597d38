@@ -1,0 +1,41 @@
+src/git/gitDiffOps.ts
+  bea871473b4df01f 1-149
+src/git/diffSummaryParse.ts
+  bea871473b4df01f 1
+src/git/gitDiff.ts
+  bea871473b4df01f 1-19
+src/git/commitMessageFilter.ts
+  bea871473b4df01f 1-52
+src/git/diffNameStatusParse.ts
+  bea871473b4df01f 1-64
+src/git/diffTypes.ts
+  bea871473b4df01f 1-37
+src/git/diffNumstatParse.ts
+  bea871473b4df01f 1-44
+src/git/diffSummaryBuild.ts
+  bea871473b4df01f 1-57
+src/git/diffGitStatus.ts
+  bea871473b4df01f 1-31
+src/git/diffPathspecs.ts
+  bea871473b4df01f 1-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "578c55cfff2775ce99d26d3afd622f71e9597d38",
+  "prompts": {
+    "bea871473b4df01f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5a1ac84d-ee97-4d5f-a253-e341a832fc2a",
+        "model": "composer-2-fast"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 525,
+      "total_deletions": 571,
+      "accepted_lines": 522,
+      "overriden_lines": 0
+    }
+  }
+}

@@ -1,0 +1,23 @@
+src/git/gitDiff.ts
+  bea871473b4df01f 272,274-277,279-290,293
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "f8a8402db0333146673b0cb141aab711c1ab93ec",
+  "prompts": {
+    "bea871473b4df01f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5a1ac84d-ee97-4d5f-a253-e341a832fc2a",
+        "model": "composer-2-fast"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 469,
+      "total_deletions": 460,
+      "accepted_lines": 402,
+      "overriden_lines": 0
+    }
+  }
+}

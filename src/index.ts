@@ -1,7 +1,7 @@
-import type { SimpleGit } from 'simple-git';
+import type { SimpleGit } from "simple-git";
 
-import { generateSummary, type SummarizeFlags } from './ai/aiSummary.js';
-import type { OpenAiLikeClient } from './ai/openAIConfig.js';
+import { generateSummary, type SummarizeFlags } from "./ai/aiSummary.js";
+import type { OpenAiLikeClient } from "./ai/openAIConfig.js";
 import {
   createGitClient,
   filterCommitsByMessageRegexes,
@@ -11,7 +11,7 @@ import {
   getDiffSummary,
   type CommitInfo,
   type DiffPathFilter,
-} from './git/gitDiff.js';
+} from "./git/gitDiff.js";
 
 export type GitDiffAiSummaryOptions = {
   /** Start ref (older side of the range). */
@@ -56,9 +56,15 @@ function hasNonEmptyTrimmed(arr?: string[]): boolean {
 function shouldFilterByCommits(
   allCommits: CommitInfo[],
   filtered: CommitInfo[],
-  opts: Pick<GitDiffAiSummaryOptions, 'commitMessageIncludeRegexes' | 'commitMessageExcludeRegexes'>
+  opts: Pick<
+    GitDiffAiSummaryOptions,
+    "commitMessageIncludeRegexes" | "commitMessageExcludeRegexes"
+  >,
 ): boolean {
-  if (hasNonEmptyTrimmed(opts.commitMessageIncludeRegexes) || hasNonEmptyTrimmed(opts.commitMessageExcludeRegexes)) {
+  if (
+    hasNonEmptyTrimmed(opts.commitMessageIncludeRegexes) ||
+    hasNonEmptyTrimmed(opts.commitMessageExcludeRegexes)
+  ) {
     return true;
   }
   return filtered.length !== allCommits.length;
@@ -68,13 +74,16 @@ function shouldFilterByCommits(
  * Produce an AI-assisted Markdown summary of the git changes between `from` and `to`,
  * honoring path filters, commit message include/exclude regexes, optional team label, and optional system prompt.
  */
-export async function summarizeGitDiff(options: GitDiffAiSummaryOptions): Promise<string> {
+export async function summarizeGitDiff(
+  options: GitDiffAiSummaryOptions,
+): Promise<string> {
   const git = options.git ?? createGitClient(options.cwd);
   const from = options.from;
-  const to = options.to ?? 'HEAD';
+  const to = options.to ?? "HEAD";
 
   const pathFilter: DiffPathFilter | undefined =
-    hasNonEmptyTrimmed(options.includeFolders) || hasNonEmptyTrimmed(options.excludeFolders)
+    hasNonEmptyTrimmed(options.includeFolders) ||
+    hasNonEmptyTrimmed(options.excludeFolders)
       ? {
           includeFolders: options.includeFolders,
           excludeFolders: options.excludeFolders,
@@ -85,14 +94,26 @@ export async function summarizeGitDiff(options: GitDiffAiSummaryOptions): Promis
   const filteredCommits = filterCommitsByMessageRegexes(
     allCommits,
     options.commitMessageIncludeRegexes,
-    options.commitMessageExcludeRegexes
+    options.commitMessageExcludeRegexes,
   );
-  const filterByCommits = shouldFilterByCommits(allCommits, filteredCommits, options);
+  const filterByCommits = shouldFilterByCommits(
+    allCommits,
+    filteredCommits,
+    options,
+  );
+
+  const rangeQuery = {
+    from,
+    to,
+    commits: filteredCommits,
+    filterByCommits,
+    pathFilter,
+  };
 
   const [diffText, fileNames, diffSummary] = await Promise.all([
-    getDiff(git, from, to, filteredCommits, filterByCommits, pathFilter),
-    getChangedFiles(git, from, to, filteredCommits, filterByCommits, pathFilter),
-    getDiffSummary(git, from, to, filteredCommits, filterByCommits, pathFilter),
+    getDiff(git, rangeQuery),
+    getChangedFiles(git, rangeQuery),
+    getDiffSummary(git, rangeQuery),
   ]);
 
   const summarizeFlags: SummarizeFlags = {
@@ -112,11 +133,17 @@ export async function summarizeGitDiff(options: GitDiffAiSummaryOptions): Promis
     filteredCommits,
     summarizeFlags,
     options.openAiClientProvider,
-    diffSummary
+    diffSummary,
   );
 }
 
-export type { CommitInfo, DiffFileSummary, DiffPathFilter, DiffSummary } from './git/gitDiff.js';
+export type {
+  CommitInfo,
+  DiffFileSummary,
+  DiffPathFilter,
+  DiffSummary,
+  GitDiffRangeQuery,
+} from "./git/gitDiff.js";
 export {
   buildDiffPathspecs,
   createGitClient,
@@ -126,18 +153,21 @@ export {
   getDiff,
   getDiffSummary,
   getRepoRoot,
-} from './git/gitDiff.js';
+} from "./git/gitDiff.js";
 
-export type { SummarizeFlags } from './ai/aiSummary.js';
+export type { SummarizeFlags } from "./ai/aiSummary.js";
 export {
   DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
   generateSummary,
   LLM_GATEWAY_REQUIRED_MESSAGE,
   resolveLlmMaxDiffChars,
   truncateUnifiedDiffForLlm,
-} from './ai/aiSummary.js';
+} from "./ai/aiSummary.js";
 
-export type { OpenAiLikeClient, OpenAiLikeClientInit } from './ai/openAIConfig.js';
+export type {
+  OpenAiLikeClient,
+  OpenAiLikeClientInit,
+} from "./ai/openAIConfig.js";
 export {
   createOpenAiLikeClient,
   parseLlmDefaultHeadersFromEnv,
@@ -145,4 +175,4 @@ export {
   resolveOpenAiLikeClientInit,
   shouldUseLlmGateway,
   splitPromotableAuthorizationFromHeaders,
-} from './ai/openAIConfig.js';
+} from "./ai/openAIConfig.js";

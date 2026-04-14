@@ -5,20 +5,28 @@
 
 /** `LLM_BASE_URL` overrides `OPENAI_BASE_URL` when set. */
 export function resolveLlmBaseUrl(): string | undefined {
-  return process.env.LLM_BASE_URL?.trim() ?? process.env.OPENAI_BASE_URL?.trim();
+  return (
+    process.env.LLM_BASE_URL?.trim() ?? process.env.OPENAI_BASE_URL?.trim()
+  );
 }
 
-function parseHeaderJsonObject(raw: string | undefined): Record<string, string> {
+function parseHeaderJsonObject(
+  raw: string | undefined,
+): Record<string, string> {
   const trimmed = raw?.trim();
   if (!trimmed) return {};
   try {
     const parsed = JSON.parse(trimmed) as unknown;
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
       return {};
     }
     const out: Record<string, string> = {};
     for (const [key, value] of Object.entries(parsed)) {
-      if (typeof value === 'string' && value.length > 0) {
+      if (typeof value === "string" && value.length > 0) {
         out[key] = value;
       }
     }
@@ -31,15 +39,19 @@ function parseHeaderJsonObject(raw: string | undefined): Record<string, string> 
 /**
  * Merged default headers: `OPENAI_DEFAULT_HEADERS` first, then `LLM_DEFAULT_HEADERS` overrides.
  */
-export function parseLlmDefaultHeadersFromEnv(): Record<string, string> | undefined {
+export function parseLlmDefaultHeadersFromEnv():
+  | Record<string, string>
+  | undefined {
   const base = parseHeaderJsonObject(process.env.OPENAI_DEFAULT_HEADERS);
   const override = parseHeaderJsonObject(process.env.LLM_DEFAULT_HEADERS);
   const merged = { ...base, ...override };
   return Object.keys(merged).length > 0 ? merged : undefined;
 }
 
-function findAuthorizationHeaderName(headers: Record<string, string>): string | undefined {
-  return Object.keys(headers).find((k) => k.toLowerCase() === 'authorization');
+function findAuthorizationHeaderName(
+  headers: Record<string, string>,
+): string | undefined {
+  return Object.keys(headers).find((k) => k.toLowerCase() === "authorization");
 }
 
 /** Strip a single `Bearer <token>` prefix; otherwise return the trimmed value. */
@@ -56,7 +68,9 @@ function stripBearerPrefix(value: string): string {
  * (`param: api_key`). When no `LLM_API_KEY` / `OPENAI_API_KEY` is set, promote recognizable
  * tokens from `Authorization` into `apiKey` and drop that header from `defaultHeaders`.
  */
-export function splitPromotableAuthorizationFromHeaders(headers: Record<string, string>): {
+export function splitPromotableAuthorizationFromHeaders(
+  headers: Record<string, string>,
+): {
   defaultHeaders: Record<string, string>;
   apiKeyFromAuthHeader?: string;
 } {
@@ -80,7 +94,8 @@ export function splitPromotableAuthorizationFromHeaders(headers: Record<string, 
 }
 
 export function shouldUseLlmGateway(): boolean {
-  const apiKey = process.env.LLM_API_KEY?.trim() ?? process.env.OPENAI_API_KEY?.trim();
+  const apiKey =
+    process.env.LLM_API_KEY?.trim() ?? process.env.OPENAI_API_KEY?.trim();
   if (apiKey) return true;
   if (resolveLlmBaseUrl()) return true;
   const jsonHeaders = parseLlmDefaultHeadersFromEnv();
@@ -106,7 +121,8 @@ export type OpenAiLikeClientInit = {
 export function resolveOpenAiLikeClientInit(): OpenAiLikeClientInit {
   const baseURL = resolveLlmBaseUrl();
   const mergedHeaders = parseLlmDefaultHeadersFromEnv() ?? {};
-  const envApiKey = process.env.LLM_API_KEY?.trim() ?? process.env.OPENAI_API_KEY?.trim() ?? '';
+  const envApiKey =
+    process.env.LLM_API_KEY?.trim() ?? process.env.OPENAI_API_KEY?.trim() ?? "";
 
   let defaultHeaders: Record<string, string> | undefined;
   let apiKey = envApiKey;
@@ -116,13 +132,17 @@ export function resolveOpenAiLikeClientInit(): OpenAiLikeClientInit {
     if (split.apiKeyFromAuthHeader) {
       apiKey = split.apiKeyFromAuthHeader;
     }
-    defaultHeaders = Object.keys(split.defaultHeaders).length > 0 ? split.defaultHeaders : undefined;
+    defaultHeaders =
+      Object.keys(split.defaultHeaders).length > 0
+        ? split.defaultHeaders
+        : undefined;
   } else {
-    defaultHeaders = Object.keys(mergedHeaders).length > 0 ? mergedHeaders : undefined;
+    defaultHeaders =
+      Object.keys(mergedHeaders).length > 0 ? mergedHeaders : undefined;
   }
 
   return {
-    apiKey: apiKey.length > 0 ? apiKey : 'unused',
+    apiKey: apiKey.length > 0 ? apiKey : "unused",
     ...(baseURL ? { baseURL } : {}),
     ...(defaultHeaders ? { defaultHeaders } : {}),
   };
@@ -130,6 +150,6 @@ export function resolveOpenAiLikeClientInit(): OpenAiLikeClientInit {
 
 /** Build options for `new OpenAI(...)` (official OpenAI Node SDK). */
 export async function createOpenAiLikeClient(): Promise<OpenAiLikeClient> {
-  const { default: OpenAI } = await import('openai');
+  const { default: OpenAI } = await import("openai");
   return new OpenAI(resolveOpenAiLikeClientInit()) as OpenAiLikeClient;
 }

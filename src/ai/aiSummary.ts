@@ -1,5 +1,9 @@
-import type { CommitInfo, DiffSummary } from '../git/gitDiff.js';
-import { createOpenAiLikeClient, shouldUseLlmGateway, type OpenAiLikeClient } from './openAIConfig.js';
+import type { CommitInfo, DiffSummary } from "../git/gitDiff.js";
+import {
+  createOpenAiLikeClient,
+  shouldUseLlmGateway,
+  type OpenAiLikeClient,
+} from "./openAIConfig.js";
 
 /**
  * Cap on unified-diff characters sent to the LLM (only the diff body; preamble is extra).
@@ -9,7 +13,11 @@ const DEFAULT_LLM_MAX_DIFF_CHARS = 120_000;
 
 /** Resolve max unified-diff characters for the LLM path. CLI wins, then env, then default. */
 export function resolveLlmMaxDiffChars(cliOverride?: number): number {
-  if (cliOverride !== undefined && Number.isFinite(cliOverride) && cliOverride > 0) {
+  if (
+    cliOverride !== undefined &&
+    Number.isFinite(cliOverride) &&
+    cliOverride > 0
+  ) {
     return Math.trunc(cliOverride);
   }
   const raw = process.env.LLM_MAX_DIFF_CHARS?.trim();
@@ -22,7 +30,10 @@ export function resolveLlmMaxDiffChars(cliOverride?: number): number {
   return DEFAULT_LLM_MAX_DIFF_CHARS;
 }
 
-export function truncateUnifiedDiffForLlm(diffText: string, maxChars: number): string {
+export function truncateUnifiedDiffForLlm(
+  diffText: string,
+  maxChars: number,
+): string {
   if (diffText.length <= maxChars) {
     return diffText;
   }
@@ -41,9 +52,9 @@ If the user message includes a Team line, use that exact team name in the summar
 
 /** Thrown when no LLM gateway is configured and no `openAiClientProvider` was passed. */
 export const LLM_GATEWAY_REQUIRED_MESSAGE =
-  'No LLM gateway configured. Set OPENAI_API_KEY or LLM_API_KEY, and/or LLM_BASE_URL or OPENAI_BASE_URL, ' +
-  'and/or JSON in OPENAI_DEFAULT_HEADERS or LLM_DEFAULT_HEADERS. ' +
-  'Alternatively pass openAiClientProvider to generateSummary or summarizeGitDiff.';
+  "No LLM gateway configured. Set OPENAI_API_KEY or LLM_API_KEY, and/or LLM_BASE_URL or OPENAI_BASE_URL, " +
+  "and/or JSON in OPENAI_DEFAULT_HEADERS or LLM_DEFAULT_HEADERS. " +
+  "Alternatively pass openAiClientProvider to generateSummary or summarizeGitDiff.";
 
 export type SummarizeFlags = {
   /** Start ref for the diff. */
@@ -68,7 +79,7 @@ export async function generateSummary(
   commits: CommitInfo[],
   flags: SummarizeFlags,
   openAiClientProvider?: OpenAiClientProvider,
-  diffSummary?: DiffSummary
+  diffSummary?: DiffSummary,
 ): Promise<string> {
   if (!shouldUseLlmGateway() && openAiClientProvider === undefined) {
     throw new Error(LLM_GATEWAY_REQUIRED_MESSAGE);
@@ -76,36 +87,47 @@ export async function generateSummary(
 
   const maxDiffChars = resolveLlmMaxDiffChars(flags.maxDiffChars);
   const diffForLlm = truncateUnifiedDiffForLlm(diffText, maxDiffChars);
-  const userContent = buildOpenAiUserContent(flags, commits, fileNames, diffForLlm, diffSummary);
+  const userContent = buildOpenAiUserContent(
+    flags,
+    commits,
+    fileNames,
+    diffForLlm,
+    diffSummary,
+  );
   return callOpenAi(
     userContent,
-    flags.model ?? 'gpt-4o-mini',
+    flags.model ?? "gpt-4o-mini",
     flags.systemPrompt ?? DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
     openAiClientProvider ??
-      /* istanbul ignore next */ (async (): Promise<OpenAiLikeClient> => createOpenAiLikeClient())
+      /* istanbul ignore next */ (async (): Promise<OpenAiLikeClient> =>
+        createOpenAiLikeClient()),
   );
 }
 
 function formatRegexFilterLines(flags: SummarizeFlags): string {
-  const includes = (flags.commitMessageIncludeRegexes ?? []).map((s) => s.trim()).filter(Boolean);
-  const excludes = (flags.commitMessageExcludeRegexes ?? []).map((s) => s.trim()).filter(Boolean);
+  const includes = (flags.commitMessageIncludeRegexes ?? [])
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const excludes = (flags.commitMessageExcludeRegexes ?? [])
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   const incLine =
     includes.length > 0
-      ? `Commit message include regexes (OR): ${includes.map((r) => JSON.stringify(r)).join(', ')}\n`
-      : '';
+      ? `Commit message include regexes (OR): ${includes.map((r) => JSON.stringify(r)).join(", ")}\n`
+      : "";
   const excLine =
     excludes.length > 0
-      ? `Commit message exclude regexes: ${excludes.map((r) => JSON.stringify(r)).join(', ')}\n`
-      : '';
+      ? `Commit message exclude regexes: ${excludes.map((r) => JSON.stringify(r)).join(", ")}\n`
+      : "";
 
   if (!incLine && !excLine) {
-    return 'Commit message filters: none.\nGit context shape: single unified diff for the full ref range.\n';
+    return "Commit message filters: none.\nGit context shape: single unified diff for the full ref range.\n";
   }
 
   return (
     `${incLine}${excLine}` +
-    'Git context shape: concatenated per-commit unified patches for commits that pass the message filters.\n'
+    "Git context shape: concatenated per-commit unified patches for commits that pass the message filters.\n"
   );
 }
 
@@ -114,37 +136,43 @@ function buildOpenAiUserContent(
   commits: CommitInfo[],
   fileNames: string[],
   diffText: string,
-  diffSummary?: DiffSummary
+  diffSummary?: DiffSummary,
 ): string {
   const from = flags.from;
-  const to = flags.to ?? 'HEAD';
+  const to = flags.to ?? "HEAD";
   const team = flags.team?.trim();
   const ts = new Date().toISOString();
-  const teamLine = team ? `Team: ${team}\n` : '';
+  const teamLine = team ? `Team: ${team}\n` : "";
   const filterBlock = formatRegexFilterLines(flags);
 
   const commitBlock =
     commits.length > 0
-      ? commits.map((c) => `- ${c.hash.slice(0, 7)} ${c.message.replace(/\r?\n/g, ' ')}`).join('\n')
-      : '- (no commits in range after filtering)';
+      ? commits
+          .map(
+            (c) =>
+              `- ${c.hash.slice(0, 7)} ${c.message.replace(/\r?\n/g, " ")}`,
+          )
+          .join("\n")
+      : "- (no commits in range after filtering)";
 
-  const pathsBlock = fileNames.length > 0 ? fileNames.join('\n') : '(no paths in diff scope)';
+  const pathsBlock =
+    fileNames.length > 0 ? fileNames.join("\n") : "(no paths in diff scope)";
   const structuredDiffSection = diffSummary
     ? `=== Structured git context (JSON summary) ===\n${JSON.stringify(diffSummary, null, 2)}\n\n`
-    : '';
+    : "";
 
   return (
     `${teamLine}` +
     `Date: ${ts}\n\n` +
     `Git refs: ${from}..${to}\n` +
     filterBlock +
-    '\n' +
-    '=== Included commits (subject lines) ===\n' +
+    "\n" +
+    "=== Included commits (subject lines) ===\n" +
     `${commitBlock}\n\n` +
-    '=== Changed paths ===\n' +
+    "=== Changed paths ===\n" +
     `${pathsBlock}\n\n` +
     structuredDiffSection +
-    '=== Git context (unified diff(s); patches may be truncated with an explicit marker) ===\n' +
+    "=== Git context (unified diff(s); patches may be truncated with an explicit marker) ===\n" +
     diffText
   );
 }
@@ -153,22 +181,24 @@ async function callOpenAi(
   userContent: string,
   model: string,
   systemPrompt: string,
-  openAiClientProvider: OpenAiClientProvider
+  openAiClientProvider: OpenAiClientProvider,
 ): Promise<string> {
   const client = await openAiClientProvider();
-  const maxTokensRaw = process.env.LLM_MAX_TOKENS ?? process.env.OPENAI_MAX_TOKENS;
-  const parsed = maxTokensRaw !== undefined ? Number.parseInt(maxTokensRaw, 10) : 4000;
+  const maxTokensRaw =
+    process.env.LLM_MAX_TOKENS ?? process.env.OPENAI_MAX_TOKENS;
+  const parsed =
+    maxTokensRaw !== undefined ? Number.parseInt(maxTokensRaw, 10) : 4000;
   const maxTokens = Number.isFinite(parsed) && parsed > 0 ? parsed : 4000;
 
   const response = await client.chat.completions.create({
     model,
     messages: [
       {
-        role: 'system',
+        role: "system",
         content: systemPrompt,
       },
       {
-        role: 'user',
+        role: "user",
         content: userContent,
       },
     ],
@@ -182,6 +212,6 @@ async function callOpenAi(
     choices?: Array<{ message?: { content?: string } }>;
   };
 
-  const text = typedResponse.choices?.[0]?.message?.content?.trim() ?? '';
-  return text.length > 0 ? text : 'No summary generated by OpenAI.';
+  const text = typedResponse.choices?.[0]?.message?.content?.trim() ?? "";
+  return text.length > 0 ? text : "No summary generated by OpenAI.";
 }

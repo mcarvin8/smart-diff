@@ -3,7 +3,7 @@
 [![NPM](https://img.shields.io/npm/v/@mcarvin/smart-diff.svg?label=smart-diff)](https://www.npmjs.com/package/@mcarvin/smart-diff)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://raw.githubusercontent.com/mcarvin8/smart-diff/main/LICENSE.md)
 [![Downloads/week](https://img.shields.io/npm/dw/@mcarvin/smart-diff.svg)](https://npmjs.org/package/@mcarvin/smart-diff)
-[![Code Coverage](https://qlty.sh/gh/mcarvin8/projects/smart-diff/coverage.svg)](https://qlty.sh/gh/mcarvin8/projects/smart-diff)
+[![codecov](https://codecov.io/gh/mcarvin8/smart-diff/graph/badge.svg?token=H3ZWAGG7S9)](https://codecov.io/gh/mcarvin8/smart-diff)
 
 TypeScript library that turns a **git revision range** into a **Markdown summary** using an OpenAI-compatible Chat Completions API. It uses [`simple-git`](https://github.com/steveukx/git-js) to read the repo, respects **path includes/excludes** and **commit message include/exclude regexes**, and sends commits, paths, structured diff stats, and unified diff text to the model.
 

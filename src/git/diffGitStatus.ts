@@ -14,7 +14,10 @@ export function mapGitStatus(statusCode: string): DiffStatus {
   return GIT_STATUS_BY_FIRST_CHAR[statusCode.charAt(0)] ?? "unknown";
 }
 
-export function mergeStatus(existing: DiffStatus, next: DiffStatus): DiffStatus {
+export function mergeStatus(
+  existing: DiffStatus,
+  next: DiffStatus,
+): DiffStatus {
   if (existing === next) return existing;
   const precedence: DiffStatus[] = [
     "deleted",

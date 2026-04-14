@@ -34,7 +34,9 @@ function parseNameStatusLine(line: string): ParsedNameEntry | null {
   return entry;
 }
 
-export function parseNameStatusLines(nameStatusOutput: string): ParsedNameEntry[] {
+export function parseNameStatusLines(
+  nameStatusOutput: string,
+): ParsedNameEntry[] {
   const entries: ParsedNameEntry[] = [];
   for (const rawLine of nameStatusOutput.split(/\r?\n/)) {
     const line = rawLine.trim();

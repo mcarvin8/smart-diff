@@ -269,19 +269,28 @@ type ParsedNameEntry = {
 
 function parseNameStatusLine(line: string): ParsedNameEntry | null {
   const parts = line.split('\t');
-  if (parts.length < 2) return null;
-  const statusToken = parts[0] ?? '';
-  const status = mapGitStatus(statusToken);
-  if (statusToken.startsWith('R') || statusToken.startsWith('C')) {
-    if (parts.length < 3) return null;
-    const oldPath = parts[1];
-    const newPath = parts[2];
-    if (oldPath === undefined || newPath === undefined) return null;
-    return { path: newPath, status, oldPath };
+  let entry: ParsedNameEntry | null = null;
+
+  if (parts.length >= 2) {
+    const statusToken = parts[0] ?? '';
+    const status = mapGitStatus(statusToken);
+    const isRenameOrCopy = statusToken.startsWith('R') || statusToken.startsWith('C');
+
+    if (isRenameOrCopy && parts.length >= 3) {
+      const oldPath = parts[1];
+      const newPath = parts[2];
+      if (oldPath !== undefined && newPath !== undefined) {
+        entry = { path: newPath, status, oldPath };
+      }
+    } else if (!isRenameOrCopy) {
+      const pathOnly = parts[1];
+      if (pathOnly !== undefined) {
+        entry = { path: pathOnly, status };
+      }
+    }
   }
-  const pathOnly = parts[1];
-  if (pathOnly === undefined) return null;
-  return { path: pathOnly, status };
+
+  return entry;
 }
 
 function parseNameStatusLines(nameStatusOutput: string): ParsedNameEntry[] {

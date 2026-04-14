@@ -32,6 +32,13 @@ The library is considered “configured” when `shouldUseLlmGateway()` is true:
 
 The client is created with the official [`openai`](https://www.npmjs.com/package/openai) SDK via `createOpenAiLikeClient()`; use a compatible endpoint and model ID for your provider.
 
+Example using a company-managed OpenAI-compatible gateway:
+
+```powershell
+$env:LLM_DEFAULT_HEADERS = '{"x-company-rbac":"your-rbac-token-here","Authorization":"sk-your-api-key-here"}'
+$env:LLM_BASE_URL = "https://llm-gateway.example.com"
+```
+
 ## Usage
 
 ### `summarizeGitDiff`

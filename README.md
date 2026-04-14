@@ -6,8 +6,6 @@
 
 TypeScript library that turns a **git revision range** into a **Markdown summary** using an OpenAI-compatible Chat Completions API. It uses [`simple-git`](https://github.com/steveukx/git-js) to read the repo, respects **path includes/excludes** and **commit message include/exclude regexes**, and sends commits, paths, structured diff stats, and unified diff text to the model.
 
-There is **no local fallback**: you must either configure an LLM gateway via environment variables or pass `openAiClientProvider` (for tests or custom clients).
-
 ## Requirements
 
 - **Node.js** 20+
@@ -18,8 +16,6 @@ There is **no local fallback**: you must either configure an LLM gateway via env
 ```bash
 npm install @mcarvin/smart-diff
 ```
-
-Build the package from source with `npm run build` (Rollup outputs CommonJS and ESM under `dist/`).
 
 ## LLM configuration
 
@@ -80,12 +76,11 @@ const markdown = await summarizeGitDiff({
 
 The package also exports helpers such as `createGitClient`, `getCommits`, `getDiff`, `getDiffSummary`, `getChangedFiles`, `filterCommitsByMessageRegexes`, `buildDiffPathspecs`, `generateSummary`, and OpenAI config utilities (`resolveLlmBaseUrl`, `shouldUseLlmGateway`, `createOpenAiLikeClient`, …). Use these if you build a custom pipeline but still want the same git and LLM behavior.
 
-## Development
+## Used By
 
-```bash
-npm test      # Jest + coverage
-npm run build # Rollup → dist/
-```
+This package is used by:
+
+- [sf-git-ai-meta-insights](https://github.com/mcarvin8/sf-git-ai-meta-insights) = Salesforce metadata wrapper compatible with Salesforce DX projects
 
 ## License
 

@@ -1,0 +1,31 @@
+test/gitDiff.async.spec.ts
+  bea871473b4df01f 68-70,72-75,92-94,96-98,137-143,173-176,180-182,193-199,212-215,219-221
+src/git/diffTypes.ts
+  bea871473b4df01f 38-48
+src/index.ts
+  bea871473b4df01f 105-112,114-116,145
+src/git/gitDiff.ts
+  bea871473b4df01f 7
+src/git/gitDiffOps.ts
+  bea871473b4df01f 4-9,48,50-51,67,69-70,104,106-107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "607aaee64555c5a9c0df781375e15205b37cd077",
+  "prompts": {
+    "bea871473b4df01f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5a1ac84d-ee97-4d5f-a253-e341a832fc2a",
+        "model": "composer-2-fast"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 80,
+      "total_deletions": 81,
+      "accepted_lines": 80,
+      "overriden_lines": 0
+    }
+  }
+}

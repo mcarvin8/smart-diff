@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.5](https://github.com/mcarvin8/smart-diff/compare/v1.0.4...v1.0.5) (2026-04-14)
+
+
+### Bug Fixes
+
+* **quality:** fix quality checks in ai folder ([#10](https://github.com/mcarvin8/smart-diff/issues/10)) ([ee311d9](https://github.com/mcarvin8/smart-diff/commit/ee311d9b4707730cef2f0c17b6fd0a0ae6fdafeb))
+* **quality:** reduce overall complexity of git functions ([#8](https://github.com/mcarvin8/smart-diff/issues/8)) ([37814c6](https://github.com/mcarvin8/smart-diff/commit/37814c645d131ecad7c27f09efd4027037947454))
+
 ## [1.0.4](https://github.com/mcarvin8/smart-diff/compare/v1.0.3...v1.0.4) (2026-04-14)
 
 

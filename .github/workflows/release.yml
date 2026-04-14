@@ -11,6 +11,10 @@ permissions:
   id-token: write # Required for OIDC
 
 jobs:
+  test:
+    uses: ./.github/workflows/coverage.yml
+    secrets: inherit
+
   release-please:
     name: Release Please
     runs-on: ubuntu-latest
@@ -44,9 +48,6 @@ jobs:
 
       - name: Build
         run: npm run build
-
-      - name: Test
-        run: npm test
 
       - name: Publish to NPM
         run: NODE_AUTH_TOKEN="" npm publish --access public --tag latest --provenance

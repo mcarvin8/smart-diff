@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4](https://github.com/mcarvin8/smart-diff/compare/v1.0.3...v1.0.4) (2026-04-14)
+
+
+### Bug Fixes
+
+* **quality:** reduce total complexity in git diff ([#6](https://github.com/mcarvin8/smart-diff/issues/6)) ([a7d5a37](https://github.com/mcarvin8/smart-diff/commit/a7d5a3751a650bfa35cdec9f963230e495fec8be))
+
 ## [1.0.3](https://github.com/mcarvin8/smart-diff/compare/v1.0.2...v1.0.3) (2026-04-13)
 
 

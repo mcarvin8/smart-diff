@@ -1,6 +1,7 @@
 import type { SimpleGit } from "simple-git";
 
-import { generateSummary, type SummarizeFlags } from "./ai/aiSummary.js";
+import { generateSummary } from "./ai/aiSummary.js";
+import type { SummarizeFlags } from "./ai/aiTypes.js";
 import type { OpenAiLikeClient } from "./ai/openAIConfig.js";
 import {
   createGitClient,
@@ -127,14 +128,14 @@ export async function summarizeGitDiff(
     commitMessageExcludeRegexes: options.commitMessageExcludeRegexes,
   };
 
-  return generateSummary(
+  return generateSummary({
     diffText,
     fileNames,
-    filteredCommits,
-    summarizeFlags,
-    options.openAiClientProvider,
+    commits: filteredCommits,
+    flags: summarizeFlags,
+    openAiClientProvider: options.openAiClientProvider,
     diffSummary,
-  );
+  });
 }
 
 export type {
@@ -155,14 +156,17 @@ export {
   getRepoRoot,
 } from "./git/gitDiff.js";
 
-export type { SummarizeFlags } from "./ai/aiSummary.js";
+export type { GenerateSummaryInput, SummarizeFlags } from "./ai/aiTypes.js";
 export {
-  DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
   generateSummary,
-  LLM_GATEWAY_REQUIRED_MESSAGE,
   resolveLlmMaxDiffChars,
   truncateUnifiedDiffForLlm,
 } from "./ai/aiSummary.js";
+
+export {
+  DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
+  LLM_GATEWAY_REQUIRED_MESSAGE,
+} from "./ai/aiConstants.js";
 
 export type {
   OpenAiLikeClient,

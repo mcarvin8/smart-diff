@@ -1,18 +1,21 @@
-jest.mock('openai', () => ({
+jest.mock("openai", () => ({
   __esModule: true,
   default: jest.fn().mockImplementation(() => ({ constructed: true })),
 }));
 
-import OpenAI from 'openai';
+import OpenAI from "openai";
 
-import { createOpenAiLikeClient, resolveOpenAiLikeClientInit } from '../src/ai/openAIConfig';
+import {
+  createOpenAiLikeClient,
+  resolveOpenAiLikeClientInit,
+} from "../src/ai/openAIConfig";
 
 const originalEnv = process.env;
 
-describe('createOpenAiLikeClient', () => {
+describe("createOpenAiLikeClient", () => {
   beforeEach(() => {
     process.env = { ...originalEnv };
-    process.env.OPENAI_API_KEY = 'sk-test-openai-sdk-spec';
+    process.env.OPENAI_API_KEY = "sk-test-openai-sdk-spec";
     delete process.env.LLM_BASE_URL;
   });
 
@@ -20,7 +23,7 @@ describe('createOpenAiLikeClient', () => {
     process.env = originalEnv;
   });
 
-  it('loads the OpenAI SDK and constructs a client with resolved init', async () => {
+  it("loads the OpenAI SDK and constructs a client with resolved init", async () => {
     const init = resolveOpenAiLikeClientInit();
     const client = await createOpenAiLikeClient();
     expect(client).toEqual({ constructed: true });

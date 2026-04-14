@@ -35,3 +35,14 @@ export type DiffPathFilter = {
   /** Paths under the repo root excluded from the diff (git `:(exclude)` pathspecs). */
   excludeFolders?: string[];
 };
+
+/** Arguments shared by `getDiff`, `getDiffSummary`, and `getChangedFiles`. */
+export type GitDiffRangeQuery = {
+  from: string;
+  to: string;
+  commits: CommitInfo[];
+  filterByCommits: boolean;
+  pathFilter?: DiffPathFilter;
+  /** When set, skips `git rev-parse` and uses this as the repo root for pathspecs. */
+  repoRootOverride?: string;
+};

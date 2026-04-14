@@ -4,6 +4,7 @@ export type {
   DiffPathFilter,
   DiffStatus,
   DiffSummary,
+  GitDiffRangeQuery,
 } from "./diffTypes.js";
 
 export { buildDiffPathspecs } from "./diffPathspecs.js";

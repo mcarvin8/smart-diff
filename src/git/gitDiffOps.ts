@@ -1,7 +1,12 @@
 import { simpleGit } from "simple-git";
 import type { SimpleGit } from "simple-git";
 
-import type { CommitInfo, DiffPathFilter, DiffSummary } from "./diffTypes.js";
+import type {
+  CommitInfo,
+  DiffPathFilter,
+  DiffSummary,
+  GitDiffRangeQuery,
+} from "./diffTypes.js";
 import { buildDiffPathspecs } from "./diffPathspecs.js";
 import { buildDiffSummaryFromGitOutputs } from "./diffSummaryBuild.js";
 
@@ -40,13 +45,10 @@ async function getDiffPathContext(
 
 export async function getDiff(
   git: SimpleGit,
-  from: string,
-  to: string,
-  commits: CommitInfo[],
-  filterByCommits: boolean,
-  pathFilter?: DiffPathFilter,
-  repoRootOverride?: string,
+  query: GitDiffRangeQuery,
 ): Promise<string> {
+  const { from, to, commits, filterByCommits, pathFilter, repoRootOverride } =
+    query;
   const { specs } = await getDiffPathContext(git, pathFilter, repoRootOverride);
 
   if (!filterByCommits) {
@@ -62,13 +64,10 @@ export async function getDiff(
 
 export async function getDiffSummary(
   git: SimpleGit,
-  from: string,
-  to: string,
-  commits: CommitInfo[],
-  filterByCommits: boolean,
-  pathFilter?: DiffPathFilter,
-  repoRootOverride?: string,
+  query: GitDiffRangeQuery,
 ): Promise<DiffSummary> {
+  const { from, to, commits, filterByCommits, pathFilter, repoRootOverride } =
+    query;
   const { specs } = await getDiffPathContext(git, pathFilter, repoRootOverride);
 
   if (!filterByCommits) {
@@ -102,13 +101,10 @@ export async function getDiffSummary(
 
 export async function getChangedFiles(
   git: SimpleGit,
-  from: string,
-  to: string,
-  commits: CommitInfo[],
-  filterByCommits: boolean,
-  pathFilter?: DiffPathFilter,
-  repoRootOverride?: string,
+  query: GitDiffRangeQuery,
 ): Promise<string[]> {
+  const { from, to, commits, filterByCommits, pathFilter, repoRootOverride } =
+    query;
   const { specs } = await getDiffPathContext(git, pathFilter, repoRootOverride);
 
   if (!filterByCommits) {

@@ -102,17 +102,18 @@ export async function summarizeGitDiff(
     options,
   );
 
+  const rangeQuery = {
+    from,
+    to,
+    commits: filteredCommits,
+    filterByCommits,
+    pathFilter,
+  };
+
   const [diffText, fileNames, diffSummary] = await Promise.all([
-    getDiff(git, from, to, filteredCommits, filterByCommits, pathFilter),
-    getChangedFiles(
-      git,
-      from,
-      to,
-      filteredCommits,
-      filterByCommits,
-      pathFilter,
-    ),
-    getDiffSummary(git, from, to, filteredCommits, filterByCommits, pathFilter),
+    getDiff(git, rangeQuery),
+    getChangedFiles(git, rangeQuery),
+    getDiffSummary(git, rangeQuery),
   ]);
 
   const summarizeFlags: SummarizeFlags = {
@@ -141,6 +142,7 @@ export type {
   DiffFileSummary,
   DiffPathFilter,
   DiffSummary,
+  GitDiffRangeQuery,
 } from "./git/gitDiff.js";
 export {
   buildDiffPathspecs,

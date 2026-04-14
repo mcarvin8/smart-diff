@@ -65,15 +65,14 @@ describe("getDiff", () => {
     diff.mockResolvedValue("range-diff");
     const commits: CommitInfo[] = [{ hash: "x", message: "m" }];
 
-    const out = await getDiff(
-      git,
-      "a",
-      "b",
+    const out = await getDiff(git, {
+      from: "a",
+      to: "b",
       commits,
-      false,
-      { excludeFolders: ["out"] },
-      join(__dirname, "fixture-repo"),
-    );
+      filterByCommits: false,
+      pathFilter: { excludeFolders: ["out"] },
+      repoRootOverride: join(__dirname, "fixture-repo"),
+    });
 
     expect(out).toBe("range-diff");
     expect(diff).toHaveBeenCalledWith(["a..b", "--", ".", ":(exclude)out"]);
@@ -90,15 +89,13 @@ describe("getDiff", () => {
       { hash: "bbb222", message: "b" },
     ];
 
-    const out = await getDiff(
-      git,
-      "f",
-      "t",
+    const out = await getDiff(git, {
+      from: "f",
+      to: "t",
       commits,
-      true,
-      undefined,
-      join(__dirname, "fixture-repo"),
-    );
+      filterByCommits: true,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+    });
 
     expect(diff).toHaveBeenCalledWith(["aaa111^!", "--", "."]);
     expect(diff).toHaveBeenCalledWith(["bbb222^!", "--", "."]);
@@ -137,15 +134,13 @@ describe("getDiffSummary", () => {
       return "";
     });
 
-    const summary = await getDiffSummary(
-      git,
-      "x",
-      "y",
-      [{ hash: "h", message: "m" }],
-      false,
-      undefined,
-      join(__dirname, "fixture-repo"),
-    );
+    const summary = await getDiffSummary(git, {
+      from: "x",
+      to: "y",
+      commits: [{ hash: "h", message: "m" }],
+      filterByCommits: false,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+    });
 
     const paths = new Set(summary.files.map((f) => f.path));
     expect(paths.has("added.ts")).toBe(true);
@@ -175,18 +170,16 @@ describe("getDiffSummary", () => {
       return "";
     });
 
-    const summary = await getDiffSummary(
-      git,
-      "a",
-      "b",
-      [
+    const summary = await getDiffSummary(git, {
+      from: "a",
+      to: "b",
+      commits: [
         { hash: "111aaa", message: "m1" },
         { hash: "222bbb", message: "m2" },
       ],
-      true,
-      undefined,
-      join(__dirname, "fixture-repo"),
-    );
+      filterByCommits: true,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+    });
 
     expect(summary.files.some((f) => f.path === "f.ts")).toBe(true);
   });
@@ -197,15 +190,13 @@ describe("getChangedFiles", () => {
     const { git, diff } = makeGitWithDiff();
     diff.mockResolvedValue("a.ts\r\nb.ts\r\n");
 
-    const files = await getChangedFiles(
-      git,
-      "a",
-      "b",
-      [{ hash: "h", message: "m" }],
-      false,
-      undefined,
-      join(__dirname, "fixture-repo"),
-    );
+    const files = await getChangedFiles(git, {
+      from: "a",
+      to: "b",
+      commits: [{ hash: "h", message: "m" }],
+      filterByCommits: false,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+    });
 
     expect(files).toEqual(["a.ts", "b.ts"]);
   });
@@ -218,18 +209,16 @@ describe("getChangedFiles", () => {
       .mockResolvedValueOnce("dup.ts\nother.ts\n");
     (git as unknown as { show: typeof show }).show = show;
 
-    const files = await getChangedFiles(
-      git as unknown as SimpleGit,
-      "a",
-      "b",
-      [
+    const files = await getChangedFiles(git as unknown as SimpleGit, {
+      from: "a",
+      to: "b",
+      commits: [
         { hash: "c1", message: "1" },
         { hash: "c2", message: "2" },
       ],
-      true,
-      undefined,
-      join(__dirname, "fixture-repo"),
-    );
+      filterByCommits: true,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+    });
 
     expect(files.sort()).toEqual(["dup.ts", "other.ts"]);
   });

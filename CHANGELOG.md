@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/mcarvin8/smart-diff/compare/v1.0.5...v1.1.0) (2026-04-15)
+
+
+### Features
+
+* **ai:** prepend truncation notice to summary when diff is capped ([#11](https://github.com/mcarvin8/smart-diff/issues/11)) ([5710a75](https://github.com/mcarvin8/smart-diff/commit/5710a7533de4ee0da8813f07323c8006b0e7bc08))
+
 ## [1.0.5](https://github.com/mcarvin8/smart-diff/compare/v1.0.4...v1.0.5) (2026-04-14)
 
 

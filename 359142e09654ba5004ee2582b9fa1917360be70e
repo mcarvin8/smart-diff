@@ -1,0 +1,25 @@
+src/ai/aiSummary.ts
+  12d023b47806d668 48-56,74,83,91-94
+test/aiSummary.spec.ts
+  12d023b47806d668 176-204
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "359142e09654ba5004ee2582b9fa1917360be70e",
+  "prompts": {
+    "12d023b47806d668": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6a9c035e-cdaf-4cde-8b74-1aae77ae276b",
+        "model": "composer-2-fast"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 45,
+      "total_deletions": 2,
+      "accepted_lines": 44,
+      "overriden_lines": 0
+    }
+  }
+}

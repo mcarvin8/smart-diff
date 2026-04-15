@@ -1,0 +1,35 @@
+src/commands/summarize.ts
+  bea871473b4df01f 1-104
+jest.config.json
+  bea871473b4df01f 5-9
+package.json
+  bea871473b4df01f 13-22,24-26,32,44,58-59,79-81
+bin/run.cjs
+  bea871473b4df01f 1-5
+rollup.config.mjs
+  bea871473b4df01f 4-79,83-86
+README.md
+  bea871473b4df01f 45-63
+test/cli.spec.ts
+  bea871473b4df01f 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.8",
+  "base_commit_sha": "033ff8a70a5044e58fc7e92fc96c9e39a991926a",
+  "prompts": {
+    "bea871473b4df01f": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5a1ac84d-ee97-4d5f-a253-e341a832fc2a",
+        "model": "composer-2-fast"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 253,
+      "total_deletions": 60,
+      "accepted_lines": 248,
+      "overriden_lines": 0
+    }
+  }
+}

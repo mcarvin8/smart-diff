@@ -173,6 +173,35 @@ describe("generateSummary", () => {
     );
   });
 
+  it("prepends markdown truncation notice when diff exceeds maxDiffChars", async () => {
+    jest.spyOn(openAIConfig, "shouldUseLlmGateway").mockReturnValue(true);
+    jest.spyOn(openAIConfig, "createOpenAiLikeClient").mockResolvedValue({
+      chat: {
+        completions: {
+          create: jest.fn().mockResolvedValue({
+            choices: [{ message: { content: "Body only." } }],
+          }),
+        },
+      },
+    } as Awaited<ReturnType<typeof openAIConfig.createOpenAiLikeClient>>);
+
+    const md = await generateSummary({
+      diffText: "x".repeat(50),
+      fileNames: ["f.ts"],
+      commits,
+      flags: {
+        ...flagsBase,
+        maxDiffChars: 20,
+      },
+    });
+
+    expect(md.startsWith("> **Truncated diff:**")).toBe(true);
+    expect(md).toContain("50 characters");
+    expect(md).toContain("20 were sent");
+    expect(md).toContain("context window");
+    expect(md).toContain("Body only.");
+  });
+
   it("defaults model to gpt-4o-mini when omitted", async () => {
     jest.spyOn(openAIConfig, "shouldUseLlmGateway").mockReturnValue(true);
     const completionCreate = jest.fn().mockResolvedValue({

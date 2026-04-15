@@ -49,9 +49,7 @@ function markdownDiffTruncationNotice(
   originalChars: number,
   maxChars: number,
 ): string {
-  return (
-    `> **Truncated diff:** The unified diff was ${originalChars} characters; only the first ${maxChars} were sent to the model. The summary may not reflect the full change set. Narrow the ref range, adjust path filters, or raise \`maxDiffChars\` / \`LLM_MAX_DIFF_CHARS\`—often together with switching to a model whose context window can fit a larger prompt.\n\n`
-  );
+  return `> **Truncated diff:** The unified diff was ${originalChars} characters; only the first ${maxChars} were sent to the model. The summary may not reflect the full change set. Narrow the ref range, adjust path filters, or raise \`maxDiffChars\` / \`LLM_MAX_DIFF_CHARS\`—often together with switching to a model whose context window can fit a larger prompt.\n\n`;
 }
 
 export async function generateSummary(

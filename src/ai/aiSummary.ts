@@ -45,6 +45,13 @@ export function truncateUnifiedDiffForLlm(
   return diffText.slice(0, maxChars) + marker;
 }
 
+function markdownDiffTruncationNotice(
+  originalChars: number,
+  maxChars: number,
+): string {
+  return `> **Truncated diff:** The unified diff was ${originalChars} characters; only the first ${maxChars} were sent to the model. The summary may not reflect the full change set. Narrow the ref range, adjust path filters, or raise \`maxDiffChars\` / \`LLM_MAX_DIFF_CHARS\`—often together with switching to a model whose context window can fit a larger prompt.\n\n`;
+}
+
 export async function generateSummary(
   input: GenerateSummaryInput,
 ): Promise<string> {
@@ -62,6 +69,7 @@ export async function generateSummary(
   }
 
   const maxDiffChars = resolveLlmMaxDiffChars(flags.maxDiffChars);
+  const diffTruncated = diffText.length > maxDiffChars;
   const diffForLlm = truncateUnifiedDiffForLlm(diffText, maxDiffChars);
   const userContent = buildOpenAiUserContent(
     flags,
@@ -70,7 +78,7 @@ export async function generateSummary(
     diffForLlm,
     diffSummary,
   );
-  return callOpenAi(
+  const summary = await callOpenAi(
     userContent,
     flags.model ?? "gpt-4o-mini",
     flags.systemPrompt ?? DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
@@ -78,6 +86,10 @@ export async function generateSummary(
       /* istanbul ignore next */ (async (): Promise<OpenAiLikeClient> =>
         createOpenAiLikeClient()),
   );
+  if (!diffTruncated) {
+    return summary;
+  }
+  return markdownDiffTruncationNotice(diffText.length, maxDiffChars) + summary;
 }
 
 function formatRegexFilterLines(flags: SummarizeFlags): string {

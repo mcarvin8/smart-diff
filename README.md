@@ -23,13 +23,15 @@ npm install @mcarvin/smart-diff
 
 The library is considered “configured” when `shouldUseLlmGateway()` is true: API key, base URL, and/or JSON default headers are set. Otherwise `summarizeGitDiff` / `generateSummary` throw with `LLM_GATEWAY_REQUIRED_MESSAGE` unless you pass **`openAiClientProvider`**.
 
+> `LLM_*` wins over `OPENAI_*` where both exist.
+
 | Variable | Purpose |
 |----------|---------|
-| `OPENAI_API_KEY` or `LLM_API_KEY` | API key (`LLM_*` wins over `OPENAI_*` where both exist). |
-| `OPENAI_BASE_URL` or `LLM_BASE_URL` | Base URL for an OpenAI-compatible gateway (`LLM_*` overrides). |
-| `OPENAI_DEFAULT_HEADERS` / `LLM_DEFAULT_HEADERS` | JSON object of extra headers; `LLM_*` merges on top of `OPENAI_*`. Can supply `Authorization` (e.g. raw `sk-…`) when no env key is set. |
-| `LLM_MAX_DIFF_CHARS` | Max size of unified diff text sent to the model (default ~120k characters). |
-| `LLM_MAX_TOKENS` or `OPENAI_MAX_TOKENS` | Max completion tokens (default 4000). |
+| `OPENAI_API_KEY` or `LLM_API_KEY` | API key. Required by OpenAI client but can be null if gateway is set. |
+| `OPENAI_BASE_URL` or `LLM_BASE_URL` | Base URL for an OpenAI-compatible gateway. |
+| `OPENAI_DEFAULT_HEADERS` or `LLM_DEFAULT_HEADERS` | JSON object of extra headers; Can supply `Authorization` (e.g. raw `sk-…`) when no API key is set. |
+| `OPENAI_MAX_DIFF_CHARS` or `LLM_MAX_DIFF_CHARS`   | Max size of unified diff text sent to the model (default ~120k characters). |
+| `OPENAI_MAX_TOKENS` or `LLM_MAX_TOKENS` | Max completion tokens (default 4000). |
 
 The client is created with the official [`openai`](https://www.npmjs.com/package/openai) SDK via `createOpenAiLikeClient()`; use a compatible endpoint and model ID for your provider.
 

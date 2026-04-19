@@ -11,6 +11,7 @@ TypeScript library that turns a **git revision range** into a **Markdown summary
 ## Requirements
 
 - **Node.js** 20+
+- OpenAI Configuration
 - [Git Bash](https://git-scm.com/install/)
 
 ## Installation
@@ -19,7 +20,7 @@ TypeScript library that turns a **git revision range** into a **Markdown summary
 npm install @mcarvin/smart-diff
 ```
 
-## LLM configuration
+## OpenAI Configuration
 
 The library is considered “configured” when `shouldUseLlmGateway()` is true: API key, base URL, and/or JSON default headers are set. Otherwise `summarizeGitDiff` / `generateSummary` throw with `LLM_GATEWAY_REQUIRED_MESSAGE` unless you pass **`openAiClientProvider`**.
 
@@ -38,8 +39,8 @@ The client is created with the official [`openai`](https://www.npmjs.com/package
 Example using a company-managed OpenAI-compatible gateway:
 
 ```powershell
-$env:LLM_DEFAULT_HEADERS = '{"x-company-rbac":"your-rbac-token-here","Authorization":"sk-your-api-key-here"}'
-$env:LLM_BASE_URL = "https://llm-gateway.example.com"
+$env:OPENAI_DEFAULT_HEADERS = '{"x-company-rbac":"your-rbac-token-here","Authorization":"sk-your-api-key-here"}'
+$env:OPENAI_BASE_URL = "https://llm-gateway.example.com"
 ```
 
 ## Usage

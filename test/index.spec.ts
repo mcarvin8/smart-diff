@@ -1,6 +1,12 @@
+import type { LanguageModel } from "ai";
+
 import * as gitDiff from "../src/git/gitDiff";
-import type { OpenAiLikeClient } from "../src/ai/openAIConfig";
 import { summarizeGitDiff } from "../src/index";
+import { makeMockModel } from "./helpers/mockLlm";
+
+function mockLlmProvider(text: string): () => Promise<LanguageModel> {
+  return async () => makeMockModel(text).model;
+}
 
 describe("summarizeGitDiff integration", () => {
   const originalEnv = process.env;
@@ -22,22 +28,11 @@ describe("summarizeGitDiff integration", () => {
       .spyOn(gitDiff, "createGitClient")
       .mockReturnValue(mockGit as never);
 
-    const openAiClientProvider = async (): Promise<OpenAiLikeClient> =>
-      ({
-        chat: {
-          completions: {
-            create: jest.fn().mockResolvedValue({
-              choices: [{ message: { content: "summary" } }],
-            }),
-          },
-        },
-      }) as OpenAiLikeClient;
-
     await summarizeGitDiff({
       from: "a",
       to: "b",
       cwd: "C:\\some\\cwd",
-      openAiClientProvider,
+      llmModelProvider: mockLlmProvider("summary"),
     });
 
     expect(createSpy).toHaveBeenCalledWith("C:\\some\\cwd");
@@ -69,22 +64,11 @@ describe("summarizeGitDiff integration", () => {
 
     jest.spyOn(gitDiff, "createGitClient").mockReturnValue(mockGit);
 
-    const openAiClientProvider = async (): Promise<OpenAiLikeClient> =>
-      ({
-        chat: {
-          completions: {
-            create: jest.fn().mockResolvedValue({
-              choices: [{ message: { content: "ok" } }],
-            }),
-          },
-        },
-      }) as OpenAiLikeClient;
-
     await summarizeGitDiff({
       from: "x",
       to: "y",
       cwd: ".",
-      openAiClientProvider,
+      llmModelProvider: mockLlmProvider("ok"),
     });
 
     expect(diff).toHaveBeenCalledWith(expect.arrayContaining(["1^!"]));

@@ -1,7 +1,7 @@
 {
   "name": "@mcarvin/smart-diff",
-  "version": "1.1.0",
-  "description": "Summarizes a git diff using OpenAI models.",
+  "version": "2.0.0",
+  "description": "Summarizes a git diff using any LLM provider supported by the Vercel AI SDK (OpenAI, Anthropic, Google, Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, or any OpenAI-compatible gateway).",
   "author": "Matt Carvin",
   "license": "MIT",
   "main": "dist/index.cjs",
@@ -45,10 +45,22 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.53",
+    "@ai-sdk/openai-compatible": "^2.0.41",
+    "ai": "^6.0.168",
     "fs-extra": "^11.3.4",
-    "tslib": "^2.6.2",
-    "openai": "^6.34.0",
-    "simple-git": "^3.20.0"
+    "simple-git": "^3.20.0",
+    "tslib": "^2.6.2"
+  },
+  "optionalDependencies": {
+    "@ai-sdk/amazon-bedrock": "^4.0.96",
+    "@ai-sdk/anthropic": "^3.0.71",
+    "@ai-sdk/cohere": "^3.0.30",
+    "@ai-sdk/deepseek": "^2.0.29",
+    "@ai-sdk/google": "^3.0.64",
+    "@ai-sdk/groq": "^3.0.35",
+    "@ai-sdk/mistral": "^3.0.30",
+    "@ai-sdk/xai": "^3.0.83"
   },
   "repository": {
     "type": "git",
@@ -58,8 +70,22 @@
     "url": "https://github.com/mcarvin8/smart-diff/issues"
   },
   "keywords": [
-    "openai",
+    "ai",
+    "ai-sdk",
+    "anthropic",
+    "bedrock",
+    "cohere",
+    "deepseek",
+    "diff",
+    "gemini",
     "git",
-    "diff"
+    "google",
+    "groq",
+    "llm",
+    "mistral",
+    "openai",
+    "openai-compatible",
+    "vercel-ai-sdk",
+    "xai"
   ]
 }

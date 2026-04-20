@@ -13,8 +13,10 @@ Use sections that fit the change (for example: Highlights, Breaking or risky cha
 Group related changes; do not list every individual file. When multiple commits appear in the context, briefly separate notable themes by commit when helpful.
 If the user message includes a Team line, use that exact team name in the summary title (for example: "## <Team> – Change summary" or similar).`;
 
-/** Thrown when no LLM gateway is configured and no `openAiClientProvider` was passed. */
+/** Thrown when no LLM provider is configured and no injection point was passed. */
 export const LLM_GATEWAY_REQUIRED_MESSAGE =
-  "No LLM gateway configured. Set OPENAI_API_KEY or LLM_API_KEY, and/or LLM_BASE_URL or OPENAI_BASE_URL, " +
-  "and/or JSON in OPENAI_DEFAULT_HEADERS or LLM_DEFAULT_HEADERS. " +
-  "Alternatively pass openAiClientProvider to generateSummary or summarizeGitDiff.";
+  "No LLM provider configured. Set LLM_PROVIDER (openai | openai-compatible | anthropic | google | bedrock | mistral | cohere | groq | xai | deepseek), " +
+  "or a provider API key (OPENAI_API_KEY, LLM_API_KEY, ANTHROPIC_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY, MISTRAL_API_KEY, COHERE_API_KEY, GROQ_API_KEY, XAI_API_KEY, DEEPSEEK_API_KEY), " +
+  "or LLM_BASE_URL / OPENAI_BASE_URL for an OpenAI-compatible gateway, " +
+  "or JSON in OPENAI_DEFAULT_HEADERS / LLM_DEFAULT_HEADERS. " +
+  "Alternatively pass llmModelProvider or openAiClientProvider to generateSummary or summarizeGitDiff.";

@@ -1,8 +1,9 @@
 import { join } from "node:path";
+import type { LanguageModel } from "ai";
 import type { SimpleGit } from "simple-git";
 
-import type { OpenAiLikeClient } from "../src/ai/openAIConfig";
 import { summarizeGitDiff } from "../src/index";
+import { makeMockModel } from "./helpers/mockLlm";
 
 function createMockGit(repoRoot: string): SimpleGit {
   const diff = jest.fn().mockImplementation(async (args: string[]) => {
@@ -25,25 +26,14 @@ function createMockGit(repoRoot: string): SimpleGit {
   } as unknown as SimpleGit;
 }
 
-function mockOpenAiClient(
-  summaryMarkdown: string,
-): () => Promise<OpenAiLikeClient> {
-  return async () =>
-    ({
-      chat: {
-        completions: {
-          create: jest.fn().mockResolvedValue({
-            choices: [{ message: { content: summaryMarkdown } }],
-          }),
-        },
-      },
-    }) as OpenAiLikeClient;
+function mockLlmProvider(text: string): () => Promise<LanguageModel> {
+  return async () => makeMockModel(text).model;
 }
 
 describe("summarizeGitDiff", () => {
   const repoRoot = join(__dirname, "fixture-repo-root");
 
-  it("aggregates git calls and returns LLM summary via openAiClientProvider", async () => {
+  it("aggregates git calls and returns LLM summary via llmModelProvider", async () => {
     const git = createMockGit(repoRoot);
 
     const md = await summarizeGitDiff({
@@ -53,9 +43,7 @@ describe("summarizeGitDiff", () => {
       teamName: "Infra",
       excludeFolders: ["node_modules"],
       commitMessageExcludeRegexes: ["^chore:"],
-      openAiClientProvider: mockOpenAiClient(
-        "# Infra Summary\nBody from model",
-      ),
+      llmModelProvider: mockLlmProvider("# Infra Summary\nBody from model"),
     });
 
     expect(git.log).toHaveBeenCalledWith({ from: "main", to: "topic" });
@@ -71,7 +59,7 @@ describe("summarizeGitDiff", () => {
       to: "b",
       git,
       commitMessageIncludeRegexes: ["."],
-      openAiClientProvider: mockOpenAiClient("ok"),
+      llmModelProvider: mockLlmProvider("ok"),
     });
 
     const diffCalls = (git.diff as jest.Mock).mock.calls.map(

@@ -1,5 +1,4 @@
 import type { CommitInfo } from "../src/git/gitDiff";
-import * as openAIConfig from "../src/ai/openAIConfig";
 import {
   generateSummary,
   resolveLlmMaxDiffChars,
@@ -9,21 +8,13 @@ import {
   DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
   LLM_GATEWAY_REQUIRED_MESSAGE,
 } from "../src/ai/aiConstants";
-
-function mockLlmClient(
-  content: string,
-): () => Promise<import("../src/ai/openAIConfig").OpenAiLikeClient> {
-  return async () =>
-    ({
-      chat: {
-        completions: {
-          create: jest.fn().mockResolvedValue({
-            choices: [{ message: { content: content } }],
-          }),
-        },
-      },
-    }) as import("../src/ai/openAIConfig").OpenAiLikeClient;
-}
+import * as llmProviders from "../src/ai/llmProviders";
+import {
+  extractSystemText,
+  extractUserText,
+  makeMockModel as mockModel,
+  makeMockProvider as provideMock,
+} from "./helpers/mockLlm";
 
 describe("resolveLlmMaxDiffChars", () => {
   const original = process.env.LLM_MAX_DIFF_CHARS;
@@ -81,8 +72,8 @@ describe("DEFAULT_GIT_DIFF_SYSTEM_PROMPT", () => {
 
 describe("LLM_GATEWAY_REQUIRED_MESSAGE", () => {
   it("is a stable exported string for callers", () => {
-    expect(LLM_GATEWAY_REQUIRED_MESSAGE).toContain("OPENAI_API_KEY");
-    expect(LLM_GATEWAY_REQUIRED_MESSAGE).toContain("openAiClientProvider");
+    expect(LLM_GATEWAY_REQUIRED_MESSAGE).toContain("LLM_PROVIDER");
+    expect(LLM_GATEWAY_REQUIRED_MESSAGE).toContain("llmModelProvider");
   });
 });
 
@@ -96,8 +87,10 @@ describe("generateSummary", () => {
     jest.restoreAllMocks();
   });
 
-  it("throws when LLM gateway is off and no client provider", async () => {
-    jest.spyOn(openAIConfig, "shouldUseLlmGateway").mockReturnValue(false);
+  it("throws when no provider is configured and no injection", async () => {
+    jest
+      .spyOn(llmProviders, "isLlmProviderConfigured")
+      .mockReturnValue(false);
 
     await expect(
       generateSummary({
@@ -109,8 +102,14 @@ describe("generateSummary", () => {
     ).rejects.toThrow(LLM_GATEWAY_REQUIRED_MESSAGE);
   });
 
-  it("uses openAiClientProvider when gateway env is off", async () => {
-    jest.spyOn(openAIConfig, "shouldUseLlmGateway").mockReturnValue(false);
+  it("uses llmModelProvider when passed", async () => {
+    jest
+      .spyOn(llmProviders, "isLlmProviderConfigured")
+      .mockReturnValue(false);
+
+    const { llmModelProvider, calls } = provideMock(
+      "  **Summary** from inject  ",
+    );
 
     const md = await generateSummary({
       diffText: "diff...",
@@ -120,27 +119,26 @@ describe("generateSummary", () => {
         ...flagsBase,
         team: "QA",
         systemPrompt: "You are a test bot.",
-        model: "gpt-test",
+        model: "ignored-when-provider-injected",
         maxDiffChars: 1000,
       },
-      openAiClientProvider: mockLlmClient("  **Summary** from inject  "),
+      llmModelProvider,
     });
 
     expect(md).toBe("**Summary** from inject");
+    const call = calls()[0]!;
+    expect(extractSystemText(call)).toBe("You are a test bot.");
+    expect(extractUserText(call)).toContain("Team: QA");
   });
 
-  it("calls OpenAI-compatible client when gateway is on", async () => {
-    jest.spyOn(openAIConfig, "shouldUseLlmGateway").mockReturnValue(true);
-    const completionCreate = jest.fn().mockResolvedValue({
-      choices: [{ message: { content: "  **Summary** from model  " } }],
-    });
-    jest.spyOn(openAIConfig, "createOpenAiLikeClient").mockResolvedValue({
-      chat: {
-        completions: {
-          create: completionCreate,
-        },
-      },
-    } as Awaited<ReturnType<typeof openAIConfig.createOpenAiLikeClient>>);
+  it("resolves from env when no injection is passed", async () => {
+    jest
+      .spyOn(llmProviders, "isLlmProviderConfigured")
+      .mockReturnValue(true);
+    const { model, calls } = mockModel("  **Summary** from env  ");
+    jest
+      .spyOn(llmProviders, "resolveLanguageModel")
+      .mockResolvedValue(model);
 
     const md = await generateSummary({
       diffText: "diff...",
@@ -149,50 +147,32 @@ describe("generateSummary", () => {
       flags: {
         ...flagsBase,
         team: "QA",
-        systemPrompt: "You are a test bot.",
+        systemPrompt: "Test prompt.",
         model: "gpt-test",
+        provider: "openai",
         maxDiffChars: 1000,
       },
     });
 
-    expect(md).toBe("**Summary** from model");
-    expect(completionCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        model: "gpt-test",
-        messages: expect.arrayContaining([
-          expect.objectContaining({
-            role: "system",
-            content: "You are a test bot.",
-          }),
-          expect.objectContaining({
-            role: "user",
-            content: expect.stringContaining("Team: QA"),
-          }),
-        ]),
-      }),
-    );
+    expect(md).toBe("**Summary** from env");
+    expect(llmProviders.resolveLanguageModel).toHaveBeenCalledWith({
+      provider: "openai",
+      model: "gpt-test",
+    });
+    const call = calls()[0]!;
+    expect(extractSystemText(call)).toBe("Test prompt.");
+    expect(extractUserText(call)).toContain("Team: QA");
   });
 
   it("prepends markdown truncation notice when diff exceeds maxDiffChars", async () => {
-    jest.spyOn(openAIConfig, "shouldUseLlmGateway").mockReturnValue(true);
-    jest.spyOn(openAIConfig, "createOpenAiLikeClient").mockResolvedValue({
-      chat: {
-        completions: {
-          create: jest.fn().mockResolvedValue({
-            choices: [{ message: { content: "Body only." } }],
-          }),
-        },
-      },
-    } as Awaited<ReturnType<typeof openAIConfig.createOpenAiLikeClient>>);
+    const { llmModelProvider } = provideMock("Body only.");
 
     const md = await generateSummary({
       diffText: "x".repeat(50),
       fileNames: ["f.ts"],
       commits,
-      flags: {
-        ...flagsBase,
-        maxDiffChars: 20,
-      },
+      flags: { ...flagsBase, maxDiffChars: 20 },
+      llmModelProvider,
     });
 
     expect(md.startsWith("> **Truncated diff:**")).toBe(true);
@@ -202,14 +182,14 @@ describe("generateSummary", () => {
     expect(md).toContain("Body only.");
   });
 
-  it("defaults model to gpt-4o-mini when omitted", async () => {
-    jest.spyOn(openAIConfig, "shouldUseLlmGateway").mockReturnValue(true);
-    const completionCreate = jest.fn().mockResolvedValue({
-      choices: [{ message: { content: "ok" } }],
-    });
-    jest.spyOn(openAIConfig, "createOpenAiLikeClient").mockResolvedValue({
-      chat: { completions: { create: completionCreate } },
-    } as Awaited<ReturnType<typeof openAIConfig.createOpenAiLikeClient>>);
+  it("passes model/provider options through to resolveLanguageModel with defaults", async () => {
+    jest
+      .spyOn(llmProviders, "isLlmProviderConfigured")
+      .mockReturnValue(true);
+    const { model } = mockModel("ok");
+    const spy = jest
+      .spyOn(llmProviders, "resolveLanguageModel")
+      .mockResolvedValue(model);
 
     await generateSummary({
       diffText: "d",
@@ -217,19 +197,12 @@ describe("generateSummary", () => {
       commits: [],
       flags: flagsBase,
     });
-    expect(completionCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ model: "gpt-4o-mini" }),
-    );
+
+    expect(spy).toHaveBeenCalledWith({});
   });
 
   it("includes exclude-only commit filter copy in user message", async () => {
-    jest.spyOn(openAIConfig, "shouldUseLlmGateway").mockReturnValue(true);
-    const completionCreate = jest.fn().mockResolvedValue({
-      choices: [{ message: { content: "x" } }],
-    });
-    jest.spyOn(openAIConfig, "createOpenAiLikeClient").mockResolvedValue({
-      chat: { completions: { create: completionCreate } },
-    } as Awaited<ReturnType<typeof openAIConfig.createOpenAiLikeClient>>);
+    const { llmModelProvider, calls } = provideMock("x");
 
     await generateSummary({
       diffText: "d",
@@ -239,43 +212,29 @@ describe("generateSummary", () => {
         ...flagsBase,
         commitMessageExcludeRegexes: ["^WIP"],
       },
+      llmModelProvider,
     });
-    const userMsg = completionCreate.mock.calls[0]![0].messages.find(
-      (m: { role: string }) => m.role === "user",
-    )?.content as string;
+    const userMsg = extractUserText(calls()[0]!);
     expect(userMsg).toContain("Commit message exclude regexes");
     expect(userMsg).not.toContain("include regexes");
   });
 
   it("omits team line when team is blank", async () => {
-    jest.spyOn(openAIConfig, "shouldUseLlmGateway").mockReturnValue(true);
-    const completionCreate = jest.fn().mockResolvedValue({
-      choices: [{ message: { content: "x" } }],
-    });
-    jest.spyOn(openAIConfig, "createOpenAiLikeClient").mockResolvedValue({
-      chat: { completions: { create: completionCreate } },
-    } as Awaited<ReturnType<typeof openAIConfig.createOpenAiLikeClient>>);
+    const { llmModelProvider, calls } = provideMock("x");
 
     await generateSummary({
       diffText: "d",
       fileNames: [],
       commits: [],
       flags: { ...flagsBase, team: "   " },
+      llmModelProvider,
     });
-    const userMsg = completionCreate.mock.calls[0]![0].messages.find(
-      (m: { role: string }) => m.role === "user",
-    )?.content as string;
+    const userMsg = extractUserText(calls()[0]!);
     expect(userMsg).not.toMatch(/^Team:/m);
   });
 
   it("embeds diffSummary JSON when provided", async () => {
-    jest.spyOn(openAIConfig, "shouldUseLlmGateway").mockReturnValue(true);
-    const completionCreate = jest.fn().mockResolvedValue({
-      choices: [{ message: { content: "x" } }],
-    });
-    jest.spyOn(openAIConfig, "createOpenAiLikeClient").mockResolvedValue({
-      chat: { completions: { create: completionCreate } },
-    } as Awaited<ReturnType<typeof openAIConfig.createOpenAiLikeClient>>);
+    const { llmModelProvider, calls } = provideMock("x");
 
     const diffSummary = {
       files: [],
@@ -289,56 +248,91 @@ describe("generateSummary", () => {
       commits: [],
       flags: flagsBase,
       diffSummary,
+      llmModelProvider,
     });
-    const userMsg = completionCreate.mock.calls[0]![0].messages.find(
-      (m: { role: string }) => m.role === "user",
-    )?.content as string;
+    const userMsg = extractUserText(calls()[0]!);
     expect(userMsg).toContain("Structured git context");
     expect(userMsg).toContain('"totalFiles": 0');
   });
 
   it("returns placeholder when model returns empty content", async () => {
-    jest.spyOn(openAIConfig, "shouldUseLlmGateway").mockReturnValue(true);
-    jest.spyOn(openAIConfig, "createOpenAiLikeClient").mockResolvedValue({
-      chat: {
-        completions: {
-          create: jest
-            .fn()
-            .mockResolvedValue({ choices: [{ message: { content: "   " } }] }),
-        },
-      },
-    } as Awaited<ReturnType<typeof openAIConfig.createOpenAiLikeClient>>);
+    const { llmModelProvider } = provideMock("   ");
 
     const md = await generateSummary({
       diffText: "d",
       fileNames: [],
       commits: [],
       flags: flagsBase,
+      llmModelProvider,
     });
-    expect(md).toBe("No summary generated by OpenAI.");
+    expect(md).toBe("No summary generated by the model.");
   });
 
-  it("uses 4000 max_tokens when OPENAI_MAX_TOKENS is invalid", async () => {
-    const prev = process.env.OPENAI_MAX_TOKENS;
-    process.env.OPENAI_MAX_TOKENS = "not-int";
-    jest.spyOn(openAIConfig, "shouldUseLlmGateway").mockReturnValue(true);
-    const completionCreate = jest.fn().mockResolvedValue({
-      choices: [{ message: { content: "ok" } }],
-    });
-    jest.spyOn(openAIConfig, "createOpenAiLikeClient").mockResolvedValue({
-      chat: { completions: { create: completionCreate } },
-    } as Awaited<ReturnType<typeof openAIConfig.createOpenAiLikeClient>>);
+  it("includes 'Filters: none' copy when no commit regexes are set", async () => {
+    const { llmModelProvider, calls } = provideMock("x");
 
     await generateSummary({
       diffText: "d",
       fileNames: [],
       commits: [],
       flags: flagsBase,
+      llmModelProvider,
     });
-    expect(completionCreate).toHaveBeenCalledWith(
-      expect.objectContaining({ max_tokens: 4000 }),
-    );
-    if (prev === undefined) delete process.env.OPENAI_MAX_TOKENS;
-    else process.env.OPENAI_MAX_TOKENS = prev;
+    const userMsg = extractUserText(calls()[0]!);
+    expect(userMsg).toContain("Commit message filters: none");
+    expect(userMsg).toContain("single unified diff");
+  });
+
+  it("shows '(no commits)' block when commits array is empty", async () => {
+    const { llmModelProvider, calls } = provideMock("x");
+
+    await generateSummary({
+      diffText: "d",
+      fileNames: [],
+      commits: [],
+      flags: flagsBase,
+      llmModelProvider,
+    });
+    const userMsg = extractUserText(calls()[0]!);
+    expect(userMsg).toContain("(no commits in range after filtering)");
+    expect(userMsg).toContain("(no paths in diff scope)");
+  });
+
+  it("falls back to provider default when LLM_MAX_TOKENS is invalid", async () => {
+    const prev = process.env.OPENAI_MAX_TOKENS;
+    process.env.OPENAI_MAX_TOKENS = "not-int";
+    try {
+      const { llmModelProvider, calls } = provideMock("ok");
+      await generateSummary({
+        diffText: "d",
+        fileNames: [],
+        commits: [],
+        flags: flagsBase,
+        llmModelProvider,
+      });
+      expect(calls()[0]!.maxOutputTokens).toBe(4000);
+    } finally {
+      if (prev === undefined) delete process.env.OPENAI_MAX_TOKENS;
+      else process.env.OPENAI_MAX_TOKENS = prev;
+    }
+  });
+
+  it("honors LLM_MAX_TOKENS when valid", async () => {
+    const prev = process.env.LLM_MAX_TOKENS;
+    process.env.LLM_MAX_TOKENS = "1234";
+    try {
+      const { llmModelProvider, calls } = provideMock("ok");
+      await generateSummary({
+        diffText: "d",
+        fileNames: [],
+        commits: [],
+        flags: flagsBase,
+        llmModelProvider,
+      });
+      expect(calls()[0]!.maxOutputTokens).toBe(1234);
+    } finally {
+      if (prev === undefined) delete process.env.LLM_MAX_TOKENS;
+      else process.env.LLM_MAX_TOKENS = prev;
+    }
   });
 });

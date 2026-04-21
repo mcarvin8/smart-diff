@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/mcarvin8/smart-diff/compare/v1.1.0...v2.0.0) (2026-04-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ai:** removes `openAiClientProvider` and `OpenAiLikeClient` from the public API; use `llmModelProvider` with a Vercel AI SDK `LanguageModel` instead.
+
+### Features
+
+* **ai:** migrate core to Vercel AI SDK ([#13](https://github.com/mcarvin8/smart-diff/issues/13)) ([90fb408](https://github.com/mcarvin8/smart-diff/commit/90fb40870f537ad9ea2d9d41001c8c7871cea580))
+
 ## [1.1.0](https://github.com/mcarvin8/smart-diff/compare/v1.0.5...v1.1.0) (2026-04-15)
 
 

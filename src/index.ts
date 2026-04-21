@@ -1,8 +1,8 @@
 import type { SimpleGit } from "simple-git";
 
 import { generateSummary } from "./ai/aiSummary.js";
-import type { SummarizeFlags } from "./ai/aiTypes.js";
-import type { OpenAiLikeClient } from "./ai/openAIConfig.js";
+import type { LlmModelProvider, SummarizeFlags } from "./ai/aiTypes.js";
+import type { LlmProviderId } from "./ai/llmProviders.js";
 import {
   createGitClient,
   filterCommitsByMessageRegexes,
@@ -45,9 +45,17 @@ export type GitDiffAiSummaryOptions = {
   /** Shown in the LLM user prompt (Team line) when set. */
   teamName?: string;
   model?: string;
+  /**
+   * Explicit LLM provider id. When omitted, falls back to `LLM_PROVIDER` env var
+   * or auto-detection based on which provider credentials are present.
+   */
+  provider?: LlmProviderId;
   maxDiffChars?: number;
-  /** Optional OpenAI-compatible client factory (for tests or custom SDK wiring). */
-  openAiClientProvider?: () => Promise<OpenAiLikeClient>;
+  /**
+   * Optional factory returning a Vercel AI SDK `LanguageModel` — bypass env-based
+   * provider resolution (useful in tests and bespoke setups).
+   */
+  llmModelProvider?: LlmModelProvider;
 };
 
 function hasNonEmptyTrimmed(arr?: string[]): boolean {
@@ -122,6 +130,7 @@ export async function summarizeGitDiff(
     to,
     team: options.teamName,
     model: options.model,
+    provider: options.provider,
     maxDiffChars: options.maxDiffChars,
     systemPrompt: options.systemPrompt,
     commitMessageIncludeRegexes: options.commitMessageIncludeRegexes,
@@ -133,7 +142,7 @@ export async function summarizeGitDiff(
     fileNames,
     commits: filteredCommits,
     flags: summarizeFlags,
-    openAiClientProvider: options.openAiClientProvider,
+    llmModelProvider: options.llmModelProvider,
     diffSummary,
   });
 }
@@ -156,27 +165,31 @@ export {
   getRepoRoot,
 } from "./git/gitDiff.js";
 
-export type { GenerateSummaryInput, SummarizeFlags } from "./ai/aiTypes.js";
+export type {
+  GenerateSummaryInput,
+  LlmModelProvider,
+  SummarizeFlags,
+} from "./ai/aiTypes.js";
 export {
   generateSummary,
   resolveLlmMaxDiffChars,
   truncateUnifiedDiffForLlm,
 } from "./ai/aiSummary.js";
 
+export type {
+  LlmProviderId,
+  ResolveLanguageModelOptions,
+} from "./ai/llmProviders.js";
+export {
+  defaultModelForProvider,
+  detectLlmProvider,
+  isLlmProviderConfigured,
+  parseLlmDefaultHeadersFromEnv,
+  resolveLanguageModel,
+  resolveLlmBaseUrl,
+} from "./ai/llmProviders.js";
+
 export {
   DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
   LLM_GATEWAY_REQUIRED_MESSAGE,
 } from "./ai/aiConstants.js";
-
-export type {
-  OpenAiLikeClient,
-  OpenAiLikeClientInit,
-} from "./ai/openAIConfig.js";
-export {
-  createOpenAiLikeClient,
-  parseLlmDefaultHeadersFromEnv,
-  resolveLlmBaseUrl,
-  resolveOpenAiLikeClientInit,
-  shouldUseLlmGateway,
-  splitPromotableAuthorizationFromHeaders,
-} from "./ai/openAIConfig.js";

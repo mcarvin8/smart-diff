@@ -29,6 +29,7 @@
     "**/*": "prettier --write \"**/*.{js,ts}\" --ignore-unknown"
   },
   "devDependencies": {
+    "@commitlint/config-conventional": "^20.5.0",
     "@rollup/plugin-terser": "^1.0.0",
     "@rollup/plugin-typescript": "^12.1.4",
     "@types/fs-extra": "^11.0.4",

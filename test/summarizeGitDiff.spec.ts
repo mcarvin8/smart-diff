@@ -70,4 +70,130 @@ describe("summarizeGitDiff", () => {
     );
     expect(hasPerCommitPatch).toBe(true);
   });
+
+  const SUMMARY_MODE_FLAGS = ["--numstat", "--name-status", "--name-only"];
+
+  function findPatchCall(diffCalls: string[][]): string[] | undefined {
+    return diffCalls.find(
+      (args) =>
+        args.includes("a..b") &&
+        !SUMMARY_MODE_FLAGS.some((f) => args.includes(f)),
+    );
+  }
+
+  it("forwards flat shaping options to git diff", async () => {
+    const git = createMockGit(repoRoot);
+
+    await summarizeGitDiff({
+      from: "a",
+      to: "b",
+      git,
+      contextLines: 0,
+      ignoreWhitespace: true,
+      stripDiffPreamble: true,
+      maxHunkLines: 200,
+      llmModelProvider: mockLlmProvider("ok"),
+    });
+
+    const diffCalls = (git.diff as jest.Mock).mock.calls.map(
+      (c) => c[0] as string[],
+    );
+    const patchCall = findPatchCall(diffCalls);
+    expect(patchCall).toEqual(["-U0", "-w", "a..b", "--", "."]);
+    const numstatCall = diffCalls.find(
+      (args) => args.includes("--numstat") && args.includes("a..b"),
+    );
+    expect(numstatCall?.[0]).toBe("-w");
+  });
+
+  it("merges excludeDefaultNoise into excludeFolders and deduplicates user entries", async () => {
+    const git = createMockGit(repoRoot);
+
+    await summarizeGitDiff({
+      from: "a",
+      to: "b",
+      git,
+      excludeFolders: ["node_modules", "custom-out"],
+      excludeDefaultNoise: true,
+      llmModelProvider: mockLlmProvider("ok"),
+    });
+
+    const diffCalls = (git.diff as jest.Mock).mock.calls.map(
+      (c) => c[0] as string[],
+    );
+    const patchCall = findPatchCall(diffCalls);
+    expect(patchCall).toBeDefined();
+    const excludes = (patchCall ?? []).filter((a) =>
+      a.startsWith(":(exclude)"),
+    );
+    expect(excludes).toContain(":(exclude)package-lock.json");
+    expect(excludes).toContain(":(exclude)custom-out");
+    const nodeModulesCount = excludes.filter(
+      (e) => e === ":(exclude)node_modules",
+    ).length;
+    expect(nodeModulesCount).toBe(1);
+  });
+
+  it("ignores blank/duplicate entries when merging default noise excludes", async () => {
+    const git = createMockGit(repoRoot);
+
+    await summarizeGitDiff({
+      from: "a",
+      to: "b",
+      git,
+      excludeFolders: ["  ", "custom-out", "custom-out"],
+      excludeDefaultNoise: true,
+      llmModelProvider: mockLlmProvider("ok"),
+    });
+
+    const diffCalls = (git.diff as jest.Mock).mock.calls.map(
+      (c) => c[0] as string[],
+    );
+    const patchCall = findPatchCall(diffCalls);
+    const customCount = (patchCall ?? []).filter(
+      (e) => e === ":(exclude)custom-out",
+    ).length;
+    expect(customCount).toBe(1);
+  });
+
+  it("merges default noise excludes even when no user excludes are supplied", async () => {
+    const git = createMockGit(repoRoot);
+
+    await summarizeGitDiff({
+      from: "a",
+      to: "b",
+      git,
+      excludeDefaultNoise: true,
+      llmModelProvider: mockLlmProvider("ok"),
+    });
+
+    const diffCalls = (git.diff as jest.Mock).mock.calls.map(
+      (c) => c[0] as string[],
+    );
+    const patchCall = findPatchCall(diffCalls);
+    const excludes = (patchCall ?? []).filter((a) =>
+      a.startsWith(":(exclude)"),
+    );
+    expect(excludes).toContain(":(exclude)package-lock.json");
+  });
+
+  it("leaves path filter untouched when excludeDefaultNoise is not set", async () => {
+    const git = createMockGit(repoRoot);
+
+    await summarizeGitDiff({
+      from: "a",
+      to: "b",
+      git,
+      llmModelProvider: mockLlmProvider("ok"),
+    });
+
+    const diffCalls = (git.diff as jest.Mock).mock.calls.map(
+      (c) => c[0] as string[],
+    );
+    const patchCall = findPatchCall(diffCalls);
+    expect(patchCall).toBeDefined();
+    expect(
+      (patchCall ?? []).some((a) => a.startsWith(":(exclude)")),
+    ).toBe(false);
+  });
 });

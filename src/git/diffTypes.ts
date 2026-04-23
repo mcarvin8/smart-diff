@@ -1,3 +1,5 @@
+import type { DiffShapingOptions } from "./diffShaping.js";
+
 export type CommitInfo = {
   hash: string;
   message: string;
@@ -45,4 +47,6 @@ export type GitDiffRangeQuery = {
   pathFilter?: DiffPathFilter;
   /** When set, skips `git rev-parse` and uses this as the repo root for pathspecs. */
   repoRootOverride?: string;
+  /** Token-reduction controls applied to the unified diff produced by `getDiff`. */
+  shaping?: DiffShapingOptions;
 };

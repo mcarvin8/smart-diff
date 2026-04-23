@@ -8,6 +8,10 @@ import type {
   GitDiffRangeQuery,
 } from "./diffTypes.js";
 import { buildDiffPathspecs } from "./diffPathspecs.js";
+import {
+  buildDiffShapingGitArgs,
+  shapeUnifiedDiff,
+} from "./diffShaping.js";
 import { buildDiffSummaryFromGitOutputs } from "./diffSummaryBuild.js";
 
 export function createGitClient(cwd = process.cwd()): SimpleGit {
@@ -47,33 +51,66 @@ export async function getDiff(
   git: SimpleGit,
   query: GitDiffRangeQuery,
 ): Promise<string> {
-  const { from, to, commits, filterByCommits, pathFilter, repoRootOverride } =
-    query;
+  const {
+    from,
+    to,
+    commits,
+    filterByCommits,
+    pathFilter,
+    repoRootOverride,
+    shaping,
+  } = query;
   const { specs } = await getDiffPathContext(git, pathFilter, repoRootOverride);
+  const shapingArgs = buildDiffShapingGitArgs(shaping);
 
   if (!filterByCommits) {
-    return git.diff([`${from}..${to}`, "--", ...specs]);
+    const raw = await git.diff([
+      ...shapingArgs,
+      `${from}..${to}`,
+      "--",
+      ...specs,
+    ]);
+    return shapeUnifiedDiff(raw, shaping);
   }
 
   const patches = await Promise.all(
-    commits.map((c) => git.diff([`${c.hash}^!`, "--", ...specs])),
+    commits.map((c) =>
+      git.diff([...shapingArgs, `${c.hash}^!`, "--", ...specs]),
+    ),
   );
 
-  return patches.filter(Boolean).join("\n");
+  return patches
+    .map((p) => shapeUnifiedDiff(p, shaping))
+    .filter(Boolean)
+    .join("\n");
 }
 
 export async function getDiffSummary(
   git: SimpleGit,
   query: GitDiffRangeQuery,
 ): Promise<DiffSummary> {
-  const { from, to, commits, filterByCommits, pathFilter, repoRootOverride } =
-    query;
+  const {
+    from,
+    to,
+    commits,
+    filterByCommits,
+    pathFilter,
+    repoRootOverride,
+    shaping,
+  } = query;
   const { specs } = await getDiffPathContext(git, pathFilter, repoRootOverride);
+  const whitespaceArgs = shaping?.ignoreWhitespace ? ["-w"] : [];
 
   if (!filterByCommits) {
     const [numOutput, nameOutput] = await Promise.all([
-      git.diff(["--numstat", `${from}..${to}`, "--", ...specs]),
-      git.diff(["--name-status", `${from}..${to}`, "--", ...specs]),
+      git.diff([...whitespaceArgs, "--numstat", `${from}..${to}`, "--", ...specs]),
+      git.diff([
+        ...whitespaceArgs,
+        "--name-status",
+        `${from}..${to}`,
+        "--",
+        ...specs,
+      ]),
     ]);
     return buildDiffSummaryFromGitOutputs(nameOutput, numOutput);
   }
@@ -82,8 +119,8 @@ export async function getDiffSummary(
     commits.map(async (c) => {
       const range = `${c.hash}^!`;
       const [numOutput, nameOutput] = await Promise.all([
-        git.diff(["--numstat", range, "--", ...specs]),
-        git.diff(["--name-status", range, "--", ...specs]),
+        git.diff([...whitespaceArgs, "--numstat", range, "--", ...specs]),
+        git.diff([...whitespaceArgs, "--name-status", range, "--", ...specs]),
       ]);
       return { numOutput, nameOutput };
     }),

@@ -1,0 +1,37 @@
+src/git/diffSummaryParse.ts
+  a3e9a31fa13dd9f2 16
+test/llmProviders.spec.ts
+  a3e9a31fa13dd9f2 408-454
+test/aiSummary.spec.ts
+  a3e9a31fa13dd9f2 320-331
+src/git/diffNameStatusParse.ts
+  a3e9a31fa13dd9f2 15,21,23
+test/gitDiff.async.spec.ts
+  a3e9a31fa13dd9f2 158-244
+test/gitDiff.spec.ts
+  a3e9a31fa13dd9f2 52-63,202-256
+src/git/diffNumstatParse.ts
+  a3e9a31fa13dd9f2 18-19
+src/ai/aiSummary.ts
+  a3e9a31fa13dd9f2 200
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "79ef8f811a9bd4e9e3b92e61eabb6325b18a6e6e",
+  "prompts": {
+    "a3e9a31fa13dd9f2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d1670507-cb76-4d1e-ac31-30b2f61bd468",
+        "model": "auto-high"
+      },
+      "human_author": "Matt Carvin",
+      "messages": [],
+      "total_additions": 220,
+      "total_deletions": 14,
+      "accepted_lines": 220,
+      "overriden_lines": 0
+    }
+  }
+}

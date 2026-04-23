@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.0](https://github.com/mcarvin8/smart-diff/compare/v2.0.0...v2.1.0) (2026-04-23)
+
+
+### Features
+
+* **git:** add unified-diff token-reduction controls ([#16](https://github.com/mcarvin8/smart-diff/issues/16)) ([cf90d99](https://github.com/mcarvin8/smart-diff/commit/cf90d99bf01ebc55095cf2c35fd62057233956f9))
+
+
+### Bug Fixes
+
+* **quality:** remove dead code and hit test coverage ([79ef8f8](https://github.com/mcarvin8/smart-diff/commit/79ef8f811a9bd4e9e3b92e61eabb6325b18a6e6e))
+
 ## [2.0.0](https://github.com/mcarvin8/smart-diff/compare/v1.1.0...v2.0.0) (2026-04-21)
 
 

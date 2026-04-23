@@ -1,0 +1,16 @@
+commitlint.config.cjs
+  h_b104b674256482 1
+.husky/commit-msg
+  h_b104b674256482 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "091c9b63774505ff59675b8aa164a17ab62a822a",
+  "prompts": {},
+  "humans": {
+    "h_b104b674256482": {
+      "author": "Matt Carvin"
+    }
+  }
+}

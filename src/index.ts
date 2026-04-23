@@ -5,6 +5,7 @@ import type { LlmModelProvider, SummarizeFlags } from "./ai/aiTypes.js";
 import type { LlmProviderId } from "./ai/llmProviders.js";
 import {
   createGitClient,
+  DEFAULT_NOISE_EXCLUDES,
   filterCommitsByMessageRegexes,
   getChangedFiles,
   getCommits,
@@ -12,6 +13,7 @@ import {
   getDiffSummary,
   type CommitInfo,
   type DiffPathFilter,
+  type DiffShapingOptions,
 } from "./git/gitDiff.js";
 
 export type GitDiffAiSummaryOptions = {
@@ -52,11 +54,67 @@ export type GitDiffAiSummaryOptions = {
   provider?: LlmProviderId;
   maxDiffChars?: number;
   /**
+   * Number of context lines around each change (git `-U<n>`). Default git behavior is 3;
+   * dropping to 0 or 1 is the single biggest token saver on modification-heavy diffs.
+   */
+  contextLines?: number;
+  /** Pass `-w` / `--ignore-all-space` so pure-whitespace hunks don't consume tokens. */
+  ignoreWhitespace?: boolean;
+  /**
+   * Strip low-value preamble lines (`diff --git`, `index`, mode changes, rename/copy metadata)
+   * from the unified diff. `--- a/...`, `+++ b/...`, and `@@` hunk headers are kept.
+   */
+  stripDiffPreamble?: boolean;
+  /**
+   * Replace any hunk body longer than this many lines with an elision marker after
+   * the truncation point. The `@@` header is preserved and the structured diff
+   * summary still reflects the true counts.
+   */
+  maxHunkLines?: number;
+  /**
+   * Merge the built-in high-noise path list ({@link DEFAULT_NOISE_EXCLUDES}) into
+   * `excludeFolders` — lockfiles, `dist`, `build`, `node_modules`, `coverage`, etc.
+   */
+  excludeDefaultNoise?: boolean;
+  /**
    * Optional factory returning a Vercel AI SDK `LanguageModel` — bypass env-based
    * provider resolution (useful in tests and bespoke setups).
    */
   llmModelProvider?: LlmModelProvider;
 };
+
+function buildShapingFromOptions(
+  options: GitDiffAiSummaryOptions,
+): DiffShapingOptions | undefined {
+  const shaping: DiffShapingOptions = {};
+  if (options.contextLines !== undefined) {
+    shaping.contextLines = options.contextLines;
+  }
+  if (options.ignoreWhitespace) shaping.ignoreWhitespace = true;
+  if (options.stripDiffPreamble) shaping.stripDiffPreamble = true;
+  if (options.maxHunkLines !== undefined) {
+    shaping.maxHunkLines = options.maxHunkLines;
+  }
+  return Object.keys(shaping).length > 0 ? shaping : undefined;
+}
+
+function buildEffectiveExcludeFolders(
+  options: GitDiffAiSummaryOptions,
+): string[] | undefined {
+  const userExcludes = options.excludeFolders ?? [];
+  if (!options.excludeDefaultNoise) {
+    return userExcludes.length > 0 ? userExcludes : undefined;
+  }
+  const seen = new Set<string>();
+  const merged: string[] = [];
+  for (const p of [...DEFAULT_NOISE_EXCLUDES, ...userExcludes]) {
+    const key = p.trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    merged.push(p);
+  }
+  return merged;
+}
 
 function hasNonEmptyTrimmed(arr?: string[]): boolean {
   return (arr ?? []).some((s) => s.trim().length > 0);
@@ -90,12 +148,13 @@ export async function summarizeGitDiff(
   const from = options.from;
   const to = options.to ?? "HEAD";
 
+  const effectiveExcludeFolders = buildEffectiveExcludeFolders(options);
   const pathFilter: DiffPathFilter | undefined =
     hasNonEmptyTrimmed(options.includeFolders) ||
-    hasNonEmptyTrimmed(options.excludeFolders)
+    hasNonEmptyTrimmed(effectiveExcludeFolders)
       ? {
           includeFolders: options.includeFolders,
-          excludeFolders: options.excludeFolders,
+          excludeFolders: effectiveExcludeFolders,
         }
       : undefined;
 
@@ -111,12 +170,14 @@ export async function summarizeGitDiff(
     options,
   );
 
+  const shaping = buildShapingFromOptions(options);
   const rangeQuery = {
     from,
     to,
     commits: filteredCommits,
     filterByCommits,
     pathFilter,
+    shaping,
   };
 
   const [diffText, fileNames, diffSummary] = await Promise.all([
@@ -151,11 +212,14 @@ export type {
   CommitInfo,
   DiffFileSummary,
   DiffPathFilter,
+  DiffShapingOptions,
   DiffSummary,
   GitDiffRangeQuery,
 } from "./git/gitDiff.js";
 export {
+  DEFAULT_NOISE_EXCLUDES,
   buildDiffPathspecs,
+  buildDiffShapingGitArgs,
   createGitClient,
   filterCommitsByMessageRegexes,
   getChangedFiles,
@@ -163,6 +227,7 @@ export {
   getDiff,
   getDiffSummary,
   getRepoRoot,
+  shapeUnifiedDiff,
 } from "./git/gitDiff.js";
 
 export type {

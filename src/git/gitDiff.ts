@@ -18,3 +18,9 @@ export {
   getRepoRoot,
 } from "./gitDiffOps.js";
 export { parseDiffSummary } from "./diffSummaryParse.js";
+export type { DiffShapingOptions } from "./diffShaping.js";
+export {
+  DEFAULT_NOISE_EXCLUDES,
+  buildDiffShapingGitArgs,
+  shapeUnifiedDiff,
+} from "./diffShaping.js";

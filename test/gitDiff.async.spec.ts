@@ -81,6 +81,80 @@ describe("getDiff", () => {
     ).not.toHaveBeenCalled();
   });
 
+  it("forwards shaping args and post-processes the range diff", async () => {
+    const { git, diff } = makeGitWithDiff();
+    diff.mockResolvedValue(
+      [
+        "diff --git a/a.ts b/a.ts",
+        "index 111..222 100644",
+        "--- a/a.ts",
+        "+++ b/a.ts",
+        "@@ -1,1 +1,1 @@",
+        "-old",
+        "+new",
+      ].join("\n"),
+    );
+
+    const out = await getDiff(git, {
+      from: "a",
+      to: "b",
+      commits: [{ hash: "x", message: "m" }],
+      filterByCommits: false,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+      shaping: {
+        contextLines: 1,
+        ignoreWhitespace: true,
+        stripDiffPreamble: true,
+      },
+    });
+
+    expect(diff).toHaveBeenCalledWith([
+      "-U1",
+      "-w",
+      "a..b",
+      "--",
+      ".",
+    ]);
+    expect(out).not.toContain("diff --git");
+    expect(out).not.toContain("index 111..222");
+    expect(out).toContain("--- a/a.ts");
+    expect(out).toContain("@@ -1,1 +1,1 @@");
+  });
+
+  it("shapes each per-commit patch independently", async () => {
+    const { git, diff } = makeGitWithDiff();
+    diff
+      .mockResolvedValueOnce(
+        [
+          "diff --git a/a.ts b/a.ts",
+          "index 111..222 100644",
+          "--- a/a.ts",
+          "+++ b/a.ts",
+          "@@ -1,1 +1,1 @@",
+          "-a",
+          "+b",
+        ].join("\n"),
+      )
+      .mockResolvedValueOnce("");
+
+    const out = await getDiff(git, {
+      from: "f",
+      to: "t",
+      commits: [
+        { hash: "aaa", message: "1" },
+        { hash: "bbb", message: "2" },
+      ],
+      filterByCommits: true,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+      shaping: { stripDiffPreamble: true, contextLines: 0 },
+    });
+
+    expect(diff).toHaveBeenCalledWith(["-U0", "aaa^!", "--", "."]);
+    expect(diff).toHaveBeenCalledWith(["-U0", "bbb^!", "--", "."]);
+    expect(out).not.toContain("diff --git");
+    expect(out).toContain("--- a/a.ts");
+  });
+
   it("joins per-commit patches and drops empty", async () => {
     const { git, diff } = makeGitWithDiff();
     diff.mockResolvedValueOnce("").mockResolvedValueOnce("patch-b");
@@ -240,6 +314,57 @@ describe("getDiffSummary", () => {
 
     const shared = summary.files.find((f) => f.path === "shared.ts");
     expect(shared?.oldPath).toBe("old/name.ts");
+  });
+
+  it("passes -w to numstat and name-status when ignoreWhitespace is set", async () => {
+    const { git, diff } = makeGitWithDiff();
+    diff.mockResolvedValue("");
+
+    await getDiffSummary(git, {
+      from: "a",
+      to: "b",
+      commits: [{ hash: "h", message: "m" }],
+      filterByCommits: false,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+      shaping: { ignoreWhitespace: true },
+    });
+
+    expect(diff).toHaveBeenCalledWith([
+      "-w",
+      "--numstat",
+      "a..b",
+      "--",
+      ".",
+    ]);
+    expect(diff).toHaveBeenCalledWith([
+      "-w",
+      "--name-status",
+      "a..b",
+      "--",
+      ".",
+    ]);
+  });
+
+  it("passes -w per-commit when ignoreWhitespace is set with filterByCommits", async () => {
+    const { git, diff } = makeGitWithDiff();
+    diff.mockResolvedValue("");
+
+    await getDiffSummary(git, {
+      from: "a",
+      to: "b",
+      commits: [{ hash: "c1", message: "m" }],
+      filterByCommits: true,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+      shaping: { ignoreWhitespace: true },
+    });
+
+    expect(diff).toHaveBeenCalledWith([
+      "-w",
+      "--numstat",
+      "c1^!",
+      "--",
+      ".",
+    ]);
   });
 
   it("aggregates per-commit summaries", async () => {

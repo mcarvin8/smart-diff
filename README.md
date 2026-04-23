@@ -122,7 +122,29 @@ const markdown = await summarizeGitDiff({
 | `provider` | `LlmProviderId` — wins over `LLM_PROVIDER` env and auto-detection. |
 | `model` | Chat model id; overrides `LLM_MODEL` and the provider default. |
 | `maxDiffChars` | Caps unified diff size for the request. |
+| `contextLines` | Number of context lines around each change (`git diff -U<n>`). Lower values (1 or 0) are the single biggest token saver on modification-heavy diffs. |
+| `ignoreWhitespace` | Passes `-w` / `--ignore-all-space` to `git diff` so pure-whitespace hunks don't consume tokens. Also applies to `--numstat` / `--name-status` so counts stay consistent. |
+| `stripDiffPreamble` | Removes low-value lines from the unified diff (`diff --git`, `index`, mode changes, `similarity/rename/copy` metadata). `--- a/…`, `+++ b/…`, and `@@` hunk headers are kept. |
+| `maxHunkLines` | Caps the body of each hunk; anything past the limit is replaced with a single elision marker. The `@@` header and `DiffSummary` totals are preserved. |
+| `excludeDefaultNoise` | Merges the built-in `DEFAULT_NOISE_EXCLUDES` list (lockfiles, `dist`, `build`, `out`, `coverage`, `node_modules`, `__snapshots__`) into `excludeFolders`. |
 | `llmModelProvider` | `() => Promise<LanguageModel>` — bypass env-based resolution entirely; hand-wire a Vercel AI SDK `LanguageModel` (required in tests or custom setups). |
+
+#### Reducing tokens
+
+For most repos, the cheapest wins are:
+
+```ts
+await summarizeGitDiff({
+  from: 'origin/main',
+  contextLines: 1,          // -U1 cuts 30-60% of tokens on typical diffs
+  ignoreWhitespace: true,   // drop pure-whitespace hunks entirely
+  stripDiffPreamble: true,  // kill `index`/`mode`/`similarity` lines
+  maxHunkLines: 400,        // truncate monster hunks but keep the @@ header
+  excludeDefaultNoise: true // skip lockfiles, dist/, coverage/, node_modules/
+});
+```
+
+These options only reshape the *unified diff text* — the structured `DiffSummary` still reports true file counts and line totals, so the model always sees the full change inventory.
 
 ### Injecting your own `LanguageModel`
 
@@ -150,7 +172,7 @@ const md = await summarizeGitDiff({
 
 The package also exports helpers for building a custom pipeline on top of the same git and LLM behavior:
 
-- **Git**: `createGitClient`, `getRepoRoot`, `getCommits`, `getDiff`, `getDiffSummary`, `getChangedFiles`, `filterCommitsByMessageRegexes`, `buildDiffPathspecs`
+- **Git**: `createGitClient`, `getRepoRoot`, `getCommits`, `getDiff`, `getDiffSummary`, `getChangedFiles`, `filterCommitsByMessageRegexes`, `buildDiffPathspecs`, `buildDiffShapingGitArgs`, `shapeUnifiedDiff`, `DEFAULT_NOISE_EXCLUDES`
 - **AI**: `generateSummary`, `resolveLlmMaxDiffChars`, `truncateUnifiedDiffForLlm`
 - **Provider resolution**: `resolveLanguageModel`, `detectLlmProvider`, `isLlmProviderConfigured`, `defaultModelForProvider`, `resolveLlmBaseUrl`, `parseLlmDefaultHeadersFromEnv`
 - **Constants / types**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`, `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`

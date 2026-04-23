@@ -49,6 +49,18 @@ describe("buildDiffPathspecs", () => {
     ).toThrow(/escapes repository root/);
   });
 
+  it("throws when include path resolves exactly to the parent directory", () => {
+    expect(() =>
+      buildDiffPathspecs(repoRoot, { includeFolders: [".."] }),
+    ).toThrow(/escapes repository root/);
+  });
+
+  it("throws when exclude path escapes the repository", () => {
+    expect(() =>
+      buildDiffPathspecs(repoRoot, { excludeFolders: ["../somewhere-else"] }),
+    ).toThrow(/escapes repository root/);
+  });
+
   it("treats root-like include as empty and still applies excludes", () => {
     expect(
       buildDiffPathspecs(repoRoot, {
@@ -186,5 +198,60 @@ describe("parseDiffSummary", () => {
       ["M\t1\t1\tshared.ts", "D\t0\t1\tshared.ts"].join("\n"),
     );
     expect(s.files[0]?.status).toBe("deleted");
+  });
+
+  it("keeps higher-precedence existing status when next has lower precedence", () => {
+    const s = parseDiffSummary(
+      ["D\t0\t5\tshared.ts", "M\t1\t1\tshared.ts"].join("\n"),
+    );
+    expect(s.files[0]?.status).toBe("deleted");
+  });
+
+  it("treats '-' deletions column as zero", () => {
+    const s = parseDiffSummary("M\t3\t-\tnodash.ts");
+    expect(s.files[0]).toMatchObject({
+      path: "nodash.ts",
+      additions: 3,
+      deletions: 0,
+    });
+  });
+
+  it("treats empty additions/deletions columns as zero", () => {
+    const s = parseDiffSummary("M\t\t\tempty-counts.ts");
+    expect(s.files[0]).toMatchObject({
+      additions: 0,
+      deletions: 0,
+    });
+  });
+
+  it("merges two renames to the same new path, preserving first oldPath", () => {
+    const s = parseDiffSummary(
+      [
+        "R100\t1\t1\told/a.ts\tnew/shared.ts",
+        "R100\t2\t2\told/b.ts\tnew/shared.ts",
+      ].join("\n"),
+    );
+    expect(s.totalFiles).toBe(1);
+    expect(s.files[0]).toMatchObject({
+      path: "new/shared.ts",
+      status: "renamed",
+      additions: 3,
+      deletions: 3,
+      oldPath: "old/a.ts",
+    });
+  });
+
+  it("fills in oldPath from later rename when earlier entry had none", () => {
+    const s = parseDiffSummary(
+      [
+        "M\t1\t1\tshared.ts",
+        "R100\t2\t2\told/name.ts\tshared.ts",
+      ].join("\n"),
+    );
+    expect(s.totalFiles).toBe(1);
+    expect(s.files[0]).toMatchObject({
+      path: "shared.ts",
+      oldPath: "old/name.ts",
+    });
   });
 });

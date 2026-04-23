@@ -12,22 +12,15 @@ function parseNameStatusLine(line: string): ParsedNameEntry | null {
   let entry: ParsedNameEntry | null = null;
 
   if (parts.length >= 2) {
-    const statusToken = parts[0] ?? "";
+    const statusToken = parts[0]!;
     const status = mapGitStatus(statusToken);
     const isRenameOrCopy =
       statusToken.startsWith("R") || statusToken.startsWith("C");
 
     if (isRenameOrCopy && parts.length >= 3) {
-      const oldPath = parts[1];
-      const newPath = parts[2];
-      if (oldPath !== undefined && newPath !== undefined) {
-        entry = { path: newPath, status, oldPath };
-      }
+      entry = { path: parts[2]!, status, oldPath: parts[1]! };
     } else if (!isRenameOrCopy) {
-      const pathOnly = parts[1];
-      if (pathOnly !== undefined) {
-        entry = { path: pathOnly, status };
-      }
+      entry = { path: parts[1]!, status };
     }
   }
 

@@ -317,6 +317,18 @@ describe("generateSummary", () => {
     }
   });
 
+  it("defaults 'to' ref to HEAD when flags.to is omitted", async () => {
+    const { llmModelProvider, calls } = provideMock("ok");
+    await generateSummary({
+      diffText: "d",
+      fileNames: [],
+      commits: [],
+      flags: { from: "main" },
+      llmModelProvider,
+    });
+    expect(extractUserText(calls()[0]!)).toContain("Git refs: main..HEAD");
+  });
+
   it("honors LLM_MAX_TOKENS when valid", async () => {
     const prev = process.env.LLM_MAX_TOKENS;
     process.env.LLM_MAX_TOKENS = "1234";

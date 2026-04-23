@@ -15,8 +15,8 @@ function parseNumStatLine(
   const parts = line.split("\t");
   if (parts.length < 3) return null;
 
-  const addStr = parts[0] ?? "";
-  const delStr = parts[1] ?? "";
+  const addStr = parts[0]!;
+  const delStr = parts[1]!;
   const pathField = parts.slice(2).join("\t");
 
   const additions = addStr !== "-" ? Number.parseInt(addStr, 10) || 0 : 0;

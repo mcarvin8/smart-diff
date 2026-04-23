@@ -13,7 +13,7 @@ function parseTabDiffSummaryLine(line: string): ParsedDiffSummaryLine | null {
   const parts = line.split("\t");
   if (parts.length < 3) return null;
 
-  const statusToken = parts.shift() ?? "";
+  const statusToken = parts.shift()!;
   const status = mapGitStatus(statusToken);
   const add0 = parts[0];
   const del0 = parts[1];

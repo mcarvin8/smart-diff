@@ -405,6 +405,53 @@ describe("resolveLanguageModel", () => {
     expect(model.modelId).toBe(defaultModelForProvider("bedrock"));
   });
 
+  it("uses openai-compatible with baseURL only and no name/apiKey/headers", async () => {
+    process.env.LLM_BASE_URL = "https://plain-gateway.example/v1";
+    const model = (await resolveLanguageModel({
+      model: "router/plain",
+    })) as unknown as { providerName: string; modelId: string };
+    expect(model.modelId).toBe("router/plain");
+    expect(createOpenAICompatible).toHaveBeenCalledWith({
+      name: "openai-compatible",
+      baseURL: "https://plain-gateway.example/v1",
+    });
+  });
+
+  it("constructs openai without apiKey or headers when unset", async () => {
+    process.env.LLM_PROVIDER = "openai";
+    await resolveLanguageModel();
+    expect(createOpenAI).toHaveBeenCalledWith({});
+  });
+
+  it("dispatches to each optional provider without an API key env var", async () => {
+    const providers: LlmProviderId[] = [
+      "anthropic",
+      "google",
+      "mistral",
+      "cohere",
+      "groq",
+      "xai",
+      "deepseek",
+    ];
+    for (const provider of providers) {
+      clearProviderEnv();
+      const model = (await resolveLanguageModel({ provider })) as unknown as {
+        providerName: string;
+        modelId: string;
+      };
+      expect(model.providerName).toBe(provider);
+      expect(model.modelId).toBe(defaultModelForProvider(provider));
+    }
+  });
+
+  it("resolves google provider using GOOGLE_API_KEY fallback", async () => {
+    process.env.GOOGLE_API_KEY = "ga-key";
+    const model = (await resolveLanguageModel({
+      provider: "google",
+    })) as unknown as { providerName: string; modelId: string };
+    expect(model.providerName).toBe("google");
+  });
+
   it("wraps missing optional provider package with helpful message", async () => {
     jest.resetModules();
     jest.doMock(

@@ -155,6 +155,93 @@ describe("getDiffSummary", () => {
     );
   });
 
+  it("tolerates malformed numstat lines and non-numeric counts", async () => {
+    const { git, diff } = makeGitWithDiff();
+    diff.mockImplementation(async (args: string[]) => {
+      if (args.includes("--numstat")) {
+        return [
+          "single_col_no_tabs",
+          "two\tcols",
+          "abc\t1\tnonnum.ts",
+          "1\tdef\tnonnum2.ts",
+        ].join("\n");
+      }
+      if (args.includes("--name-status")) {
+        return ["M\tnonnum.ts", "M\tnonnum2.ts"].join("\n");
+      }
+      return "";
+    });
+
+    const summary = await getDiffSummary(git, {
+      from: "x",
+      to: "y",
+      commits: [{ hash: "h", message: "m" }],
+      filterByCommits: false,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+    });
+
+    expect(summary.files.find((f) => f.path === "nonnum.ts")).toMatchObject({
+      additions: 0,
+      deletions: 1,
+    });
+    expect(summary.files.find((f) => f.path === "nonnum2.ts")).toMatchObject({
+      additions: 1,
+      deletions: 0,
+    });
+  });
+
+  it("merges multiple renames that target the same new path", async () => {
+    const { git, diff } = makeGitWithDiff();
+    diff.mockImplementation(async (args: string[]) => {
+      if (args.includes("--numstat")) {
+        return "1\t1\tshared.ts";
+      }
+      if (args.includes("--name-status")) {
+        return [
+          "R100\told/a.ts\tshared.ts",
+          "R100\told/b.ts\tshared.ts",
+        ].join("\n");
+      }
+      return "";
+    });
+
+    const summary = await getDiffSummary(git, {
+      from: "x",
+      to: "y",
+      commits: [{ hash: "h", message: "m" }],
+      filterByCommits: false,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+    });
+
+    const shared = summary.files.find((f) => f.path === "shared.ts");
+    expect(shared?.status).toBe("renamed");
+    expect(shared?.oldPath).toBe("old/a.ts");
+  });
+
+  it("fills in oldPath when a later rename follows a non-rename entry for the same path", async () => {
+    const { git, diff } = makeGitWithDiff();
+    diff.mockImplementation(async (args: string[]) => {
+      if (args.includes("--numstat")) {
+        return "1\t1\tshared.ts";
+      }
+      if (args.includes("--name-status")) {
+        return ["M\tshared.ts", "R100\told/name.ts\tshared.ts"].join("\n");
+      }
+      return "";
+    });
+
+    const summary = await getDiffSummary(git, {
+      from: "x",
+      to: "y",
+      commits: [{ hash: "h", message: "m" }],
+      filterByCommits: false,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+    });
+
+    const shared = summary.files.find((f) => f.path === "shared.ts");
+    expect(shared?.oldPath).toBe("old/name.ts");
+  });
+
   it("aggregates per-commit summaries", async () => {
     const { git, diff } = makeGitWithDiff();
     let call = 0;

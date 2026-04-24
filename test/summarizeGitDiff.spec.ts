@@ -1,12 +1,13 @@
 import { join } from "node:path";
 import type { LanguageModel } from "ai";
 import type { SimpleGit } from "simple-git";
+import type { Mock } from "vitest";
 
 import { summarizeGitDiff } from "../src/index";
 import { makeMockModel } from "./helpers/mockLlm";
 
 function createMockGit(repoRoot: string): SimpleGit {
-  const diff = jest.fn().mockImplementation(async (args: string[]) => {
+  const diff = vi.fn().mockImplementation(async (args: string[]) => {
     if (args.includes("--name-only")) return "src/app.ts\n";
     if (args.includes("--numstat")) return "2\t1\tsrc/app.ts\n";
     if (args.includes("--name-status")) return "M\tsrc/app.ts\n";
@@ -14,15 +15,15 @@ function createMockGit(repoRoot: string): SimpleGit {
   });
 
   return {
-    log: jest.fn().mockResolvedValue({
+    log: vi.fn().mockResolvedValue({
       all: [
         { hash: "aaa111", message: "feat: one" },
         { hash: "bbb222", message: "chore: noise" },
       ],
     }),
-    revparse: jest.fn().mockResolvedValue(`${repoRoot}\n`),
+    revparse: vi.fn().mockResolvedValue(`${repoRoot}\n`),
     diff,
-    show: jest.fn().mockResolvedValue(""),
+    show: vi.fn().mockResolvedValue(""),
   } as unknown as SimpleGit;
 }
 
@@ -62,7 +63,7 @@ describe("summarizeGitDiff", () => {
       llmModelProvider: mockLlmProvider("ok"),
     });
 
-    const diffCalls = (git.diff as jest.Mock).mock.calls.map(
+    const diffCalls = (git.diff as unknown as Mock).mock.calls.map(
       (c) => c[0] as string[],
     );
     const hasPerCommitPatch = diffCalls.some((args) =>
@@ -95,7 +96,7 @@ describe("summarizeGitDiff", () => {
       llmModelProvider: mockLlmProvider("ok"),
     });
 
-    const diffCalls = (git.diff as jest.Mock).mock.calls.map(
+    const diffCalls = (git.diff as unknown as Mock).mock.calls.map(
       (c) => c[0] as string[],
     );
     const patchCall = findPatchCall(diffCalls);
@@ -118,7 +119,7 @@ describe("summarizeGitDiff", () => {
       llmModelProvider: mockLlmProvider("ok"),
     });
 
-    const diffCalls = (git.diff as jest.Mock).mock.calls.map(
+    const diffCalls = (git.diff as unknown as Mock).mock.calls.map(
       (c) => c[0] as string[],
     );
     const patchCall = findPatchCall(diffCalls);
@@ -146,7 +147,7 @@ describe("summarizeGitDiff", () => {
       llmModelProvider: mockLlmProvider("ok"),
     });
 
-    const diffCalls = (git.diff as jest.Mock).mock.calls.map(
+    const diffCalls = (git.diff as unknown as Mock).mock.calls.map(
       (c) => c[0] as string[],
     );
     const patchCall = findPatchCall(diffCalls);
@@ -167,7 +168,7 @@ describe("summarizeGitDiff", () => {
       llmModelProvider: mockLlmProvider("ok"),
     });
 
-    const diffCalls = (git.diff as jest.Mock).mock.calls.map(
+    const diffCalls = (git.diff as unknown as Mock).mock.calls.map(
       (c) => c[0] as string[],
     );
     const patchCall = findPatchCall(diffCalls);
@@ -187,7 +188,7 @@ describe("summarizeGitDiff", () => {
       llmModelProvider: mockLlmProvider("ok"),
     });
 
-    const diffCalls = (git.diff as jest.Mock).mock.calls.map(
+    const diffCalls = (git.diff as unknown as Mock).mock.calls.map(
       (c) => c[0] as string[],
     );
     const patchCall = findPatchCall(diffCalls);

@@ -6,7 +6,7 @@ src
 node_modules
 test
 .gitignore
-jest.config.js
+vitest.config.ts
 rollup.config.mjs
 tsconfig.json
 scripts

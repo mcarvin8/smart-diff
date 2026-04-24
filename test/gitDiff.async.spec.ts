@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import type { SimpleGit } from "simple-git";
+import type { Mock } from "vitest";
 
 import {
   createGitClient,
@@ -27,7 +28,7 @@ describe("createGitClient", () => {
 describe("getRepoRoot", () => {
   it("trims revparse output", async () => {
     const git = {
-      revparse: jest.fn().mockResolvedValue("  /repo/root  \n"),
+      revparse: vi.fn().mockResolvedValue("  /repo/root  \n"),
     } as unknown as SimpleGit;
     await expect(getRepoRoot(git)).resolves.toBe("/repo/root");
   });
@@ -36,7 +37,7 @@ describe("getRepoRoot", () => {
 describe("getCommits", () => {
   it("returns log.all as CommitInfo[]", async () => {
     const git = {
-      log: jest.fn().mockResolvedValue({
+      log: vi.fn().mockResolvedValue({
         all: [{ hash: "aaa", message: "msg" }],
       }),
     } as unknown as SimpleGit;
@@ -47,14 +48,14 @@ describe("getCommits", () => {
   });
 });
 
-function makeGitWithDiff(): { git: SimpleGit; diff: jest.Mock } {
-  const diff = jest.fn();
+function makeGitWithDiff(): { git: SimpleGit; diff: Mock } {
+  const diff = vi.fn();
   const git = {
-    revparse: jest
+    revparse: vi
       .fn()
       .mockResolvedValue(`${join(__dirname, "fixture-repo")}\n`),
     diff,
-    show: jest.fn(),
+    show: vi.fn(),
   } as unknown as SimpleGit;
   return { git, diff };
 }
@@ -77,7 +78,7 @@ describe("getDiff", () => {
     expect(out).toBe("range-diff");
     expect(diff).toHaveBeenCalledWith(["a..b", "--", ".", ":(exclude)out"]);
     expect(
-      (git as unknown as { revparse: jest.Mock }).revparse,
+      (git as unknown as { revparse: Mock }).revparse,
     ).not.toHaveBeenCalled();
   });
 
@@ -415,7 +416,7 @@ describe("getChangedFiles", () => {
 
   it("dedupes files from per-commit show output", async () => {
     const { git } = makeGitWithDiff();
-    const show = jest
+    const show = vi
       .fn()
       .mockResolvedValueOnce("dup.ts\n")
       .mockResolvedValueOnce("dup.ts\nother.ts\n");

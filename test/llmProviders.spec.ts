@@ -1,14 +1,14 @@
-jest.mock("@ai-sdk/openai", () => ({
+vi.mock("@ai-sdk/openai", () => ({
   __esModule: true,
-  createOpenAI: jest.fn(() => (modelId: string) => ({
+  createOpenAI: vi.fn(() => (modelId: string) => ({
     providerName: "openai",
     modelId,
   })),
 }));
 
-jest.mock("@ai-sdk/openai-compatible", () => ({
+vi.mock("@ai-sdk/openai-compatible", () => ({
   __esModule: true,
-  createOpenAICompatible: jest.fn((settings: Record<string, unknown>) => {
+  createOpenAICompatible: vi.fn((settings: Record<string, unknown>) => {
     return (modelId: string) => ({
       providerName: "openai-compatible",
       modelId,
@@ -17,101 +17,69 @@ jest.mock("@ai-sdk/openai-compatible", () => ({
   }),
 }));
 
-jest.mock(
-  "@ai-sdk/anthropic",
-  () => ({
-    __esModule: true,
-    createAnthropic: jest.fn(() => (modelId: string) => ({
-      providerName: "anthropic",
-      modelId,
-    })),
-  }),
-  { virtual: true },
-);
+vi.mock("@ai-sdk/anthropic", () => ({
+  __esModule: true,
+  createAnthropic: vi.fn(() => (modelId: string) => ({
+    providerName: "anthropic",
+    modelId,
+  })),
+}));
 
-jest.mock(
-  "@ai-sdk/google",
-  () => ({
-    __esModule: true,
-    createGoogleGenerativeAI: jest.fn(() => (modelId: string) => ({
-      providerName: "google",
-      modelId,
-    })),
-  }),
-  { virtual: true },
-);
+vi.mock("@ai-sdk/google", () => ({
+  __esModule: true,
+  createGoogleGenerativeAI: vi.fn(() => (modelId: string) => ({
+    providerName: "google",
+    modelId,
+  })),
+}));
 
-jest.mock(
-  "@ai-sdk/amazon-bedrock",
-  () => ({
-    __esModule: true,
-    createAmazonBedrock: jest.fn(() => (modelId: string) => ({
-      providerName: "bedrock",
-      modelId,
-    })),
-  }),
-  { virtual: true },
-);
+vi.mock("@ai-sdk/amazon-bedrock", () => ({
+  __esModule: true,
+  createAmazonBedrock: vi.fn(() => (modelId: string) => ({
+    providerName: "bedrock",
+    modelId,
+  })),
+}));
 
-jest.mock(
-  "@ai-sdk/mistral",
-  () => ({
-    __esModule: true,
-    createMistral: jest.fn(() => (modelId: string) => ({
-      providerName: "mistral",
-      modelId,
-    })),
-  }),
-  { virtual: true },
-);
+vi.mock("@ai-sdk/mistral", () => ({
+  __esModule: true,
+  createMistral: vi.fn(() => (modelId: string) => ({
+    providerName: "mistral",
+    modelId,
+  })),
+}));
 
-jest.mock(
-  "@ai-sdk/cohere",
-  () => ({
-    __esModule: true,
-    createCohere: jest.fn(() => (modelId: string) => ({
-      providerName: "cohere",
-      modelId,
-    })),
-  }),
-  { virtual: true },
-);
+vi.mock("@ai-sdk/cohere", () => ({
+  __esModule: true,
+  createCohere: vi.fn(() => (modelId: string) => ({
+    providerName: "cohere",
+    modelId,
+  })),
+}));
 
-jest.mock(
-  "@ai-sdk/groq",
-  () => ({
-    __esModule: true,
-    createGroq: jest.fn(() => (modelId: string) => ({
-      providerName: "groq",
-      modelId,
-    })),
-  }),
-  { virtual: true },
-);
+vi.mock("@ai-sdk/groq", () => ({
+  __esModule: true,
+  createGroq: vi.fn(() => (modelId: string) => ({
+    providerName: "groq",
+    modelId,
+  })),
+}));
 
-jest.mock(
-  "@ai-sdk/xai",
-  () => ({
-    __esModule: true,
-    createXai: jest.fn(() => (modelId: string) => ({
-      providerName: "xai",
-      modelId,
-    })),
-  }),
-  { virtual: true },
-);
+vi.mock("@ai-sdk/xai", () => ({
+  __esModule: true,
+  createXai: vi.fn(() => (modelId: string) => ({
+    providerName: "xai",
+    modelId,
+  })),
+}));
 
-jest.mock(
-  "@ai-sdk/deepseek",
-  () => ({
-    __esModule: true,
-    createDeepSeek: jest.fn(() => (modelId: string) => ({
-      providerName: "deepseek",
-      modelId,
-    })),
-  }),
-  { virtual: true },
-);
+vi.mock("@ai-sdk/deepseek", () => ({
+  __esModule: true,
+  createDeepSeek: vi.fn(() => (modelId: string) => ({
+    providerName: "deepseek",
+    modelId,
+  })),
+}));
 
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
@@ -299,7 +267,7 @@ describe("resolveLanguageModel", () => {
   beforeEach(() => {
     process.env = { ...originalEnv };
     clearProviderEnv();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterAll(() => {
@@ -453,14 +421,10 @@ describe("resolveLanguageModel", () => {
   });
 
   it("wraps missing optional provider package with helpful message", async () => {
-    jest.resetModules();
-    jest.doMock(
-      "@ai-sdk/anthropic",
-      () => {
-        throw new Error("Cannot find module '@ai-sdk/anthropic'");
-      },
-      { virtual: true },
-    );
+    vi.resetModules();
+    vi.doMock("@ai-sdk/anthropic", () => {
+      throw new Error("Cannot find module '@ai-sdk/anthropic'");
+    });
     const { resolveLanguageModel: resolveAgain } = await import(
       "../src/ai/llmProviders"
     );

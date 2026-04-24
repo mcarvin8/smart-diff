@@ -84,13 +84,11 @@ describe("generateSummary", () => {
   const flagsBase = { from: "main", to: "HEAD" };
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("throws when no provider is configured and no injection", async () => {
-    jest
-      .spyOn(llmProviders, "isLlmProviderConfigured")
-      .mockReturnValue(false);
+    vi.spyOn(llmProviders, "isLlmProviderConfigured").mockReturnValue(false);
 
     await expect(
       generateSummary({
@@ -103,9 +101,7 @@ describe("generateSummary", () => {
   });
 
   it("uses llmModelProvider when passed", async () => {
-    jest
-      .spyOn(llmProviders, "isLlmProviderConfigured")
-      .mockReturnValue(false);
+    vi.spyOn(llmProviders, "isLlmProviderConfigured").mockReturnValue(false);
 
     const { llmModelProvider, calls } = provideMock(
       "  **Summary** from inject  ",
@@ -132,13 +128,9 @@ describe("generateSummary", () => {
   });
 
   it("resolves from env when no injection is passed", async () => {
-    jest
-      .spyOn(llmProviders, "isLlmProviderConfigured")
-      .mockReturnValue(true);
+    vi.spyOn(llmProviders, "isLlmProviderConfigured").mockReturnValue(true);
     const { model, calls } = mockModel("  **Summary** from env  ");
-    jest
-      .spyOn(llmProviders, "resolveLanguageModel")
-      .mockResolvedValue(model);
+    vi.spyOn(llmProviders, "resolveLanguageModel").mockResolvedValue(model);
 
     const md = await generateSummary({
       diffText: "diff...",
@@ -183,11 +175,9 @@ describe("generateSummary", () => {
   });
 
   it("passes model/provider options through to resolveLanguageModel with defaults", async () => {
-    jest
-      .spyOn(llmProviders, "isLlmProviderConfigured")
-      .mockReturnValue(true);
+    vi.spyOn(llmProviders, "isLlmProviderConfigured").mockReturnValue(true);
     const { model } = mockModel("ok");
-    const spy = jest
+    const spy = vi
       .spyOn(llmProviders, "resolveLanguageModel")
       .mockResolvedValue(model);
 

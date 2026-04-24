@@ -19,7 +19,7 @@
   "scripts": {
     "build": "npx rollup -c",
     "start": "node dist/index.cjs",
-    "test": "jest --coverage",
+    "test": "vitest run --coverage",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,ts}\"",
     "prepack": "npm run build",
@@ -33,17 +33,16 @@
     "@rollup/plugin-terser": "^1.0.0",
     "@rollup/plugin-typescript": "^12.1.4",
     "@types/fs-extra": "^11.0.4",
-    "@types/jest": "^30.0.0",
     "@types/node": "^25.5.0",
+    "@vitest/coverage-v8": "^4.0.0",
     "eslint": "^10.0.3",
     "eslint-config-prettier": "^10.1.2",
     "husky": "^9.1.7",
-    "jest": "^30.3.0",
     "lint-staged": "^16.3.3",
     "prettier": "3.8.1",
     "rollup": "^4.59.0",
-    "ts-jest": "^29.4.6",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.0"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.53",

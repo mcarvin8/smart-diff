@@ -12,19 +12,19 @@ describe("summarizeGitDiff integration", () => {
   const originalEnv = process.env;
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     process.env = originalEnv;
   });
 
   it("uses createGitClient when git is omitted", async () => {
     const mockGit = {
-      log: jest.fn().mockResolvedValue({ all: [{ hash: "h1", message: "m" }] }),
-      revparse: jest.fn().mockResolvedValue("C:\\repo\n"),
-      diff: jest.fn().mockResolvedValue(""),
-      show: jest.fn().mockResolvedValue(""),
+      log: vi.fn().mockResolvedValue({ all: [{ hash: "h1", message: "m" }] }),
+      revparse: vi.fn().mockResolvedValue("C:\\repo\n"),
+      diff: vi.fn().mockResolvedValue(""),
+      show: vi.fn().mockResolvedValue(""),
     };
 
-    const createSpy = jest
+    const createSpy = vi
       .spyOn(gitDiff, "createGitClient")
       .mockReturnValue(mockGit as never);
 
@@ -41,28 +41,28 @@ describe("summarizeGitDiff integration", () => {
   });
 
   it("uses per-commit diff when filtered commits differ without regex options", async () => {
-    jest.spyOn(gitDiff, "getCommits").mockResolvedValue([
+    vi.spyOn(gitDiff, "getCommits").mockResolvedValue([
       { hash: "1", message: "a" },
       { hash: "2", message: "b" },
     ]);
-    jest
-      .spyOn(gitDiff, "filterCommitsByMessageRegexes")
-      .mockReturnValue([{ hash: "1", message: "a" }]);
+    vi.spyOn(gitDiff, "filterCommitsByMessageRegexes").mockReturnValue([
+      { hash: "1", message: "a" },
+    ]);
 
-    const diff = jest.fn().mockImplementation(async (args: string[]) => {
+    const diff = vi.fn().mockImplementation(async (args: string[]) => {
       if (args.includes("--numstat")) return "1\t1\tf.ts";
       if (args.includes("--name-status")) return "M\tf.ts";
       if (args.includes("--name-only")) return "f.ts\n";
       return "";
     });
     const mockGit = {
-      log: jest.fn(),
-      revparse: jest.fn().mockResolvedValue("C:\\repo\n"),
+      log: vi.fn(),
+      revparse: vi.fn().mockResolvedValue("C:\\repo\n"),
       diff,
-      show: jest.fn().mockResolvedValue("f.ts\n"),
+      show: vi.fn().mockResolvedValue("f.ts\n"),
     } as never;
 
-    jest.spyOn(gitDiff, "createGitClient").mockReturnValue(mockGit);
+    vi.spyOn(gitDiff, "createGitClient").mockReturnValue(mockGit);
 
     await summarizeGitDiff({
       from: "x",

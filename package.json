@@ -32,7 +32,6 @@
     "@commitlint/config-conventional": "^20.5.0",
     "@rollup/plugin-terser": "^1.0.0",
     "@rollup/plugin-typescript": "^12.1.4",
-    "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.5.0",
     "@vitest/coverage-v8": "^4.0.0",
     "eslint": "^10.0.3",
@@ -48,7 +47,6 @@
     "@ai-sdk/openai": "^3.0.53",
     "@ai-sdk/openai-compatible": "^2.0.41",
     "ai": "^6.0.168",
-    "fs-extra": "^11.3.4",
     "simple-git": "^3.20.0",
     "tslib": "^2.6.2"
   },

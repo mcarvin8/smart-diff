@@ -1,6 +1,6 @@
 {
   "name": "@mcarvin/smart-diff",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Summarizes a git diff using any LLM provider supported by the Vercel AI SDK (OpenAI, Anthropic, Google, Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, or any OpenAI-compatible gateway).",
   "author": "Matt Carvin",
   "license": "MIT",

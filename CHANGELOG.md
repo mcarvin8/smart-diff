@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.1](https://github.com/mcarvin8/smart-diff/compare/v2.2.0...v2.2.1) (2026-05-26)
+
+
+### Bug Fixes
+
+* **deps:** pin direct dependencies to exact versions ([#21](https://github.com/mcarvin8/smart-diff/issues/21)) ([8242cd2](https://github.com/mcarvin8/smart-diff/commit/8242cd2cd858fb890ea46db104ad4c08a696a76d))
+
 ## [2.2.0](https://github.com/mcarvin8/smart-diff/compare/v2.1.0...v2.2.0) (2026-05-02)
 
 

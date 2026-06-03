@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/mcarvin8/smart-diff/compare/v2.2.1...v2.3.0) (2026-06-03)
+
+
+### Features
+
+* **ai:** bump the ai-sdk group with 14 updates ([#24](https://github.com/mcarvin8/smart-diff/issues/24)) ([55e4738](https://github.com/mcarvin8/smart-diff/commit/55e47384cf61f00b02cf173b252c1ee78a86c27c))
+
 ## [2.2.1](https://github.com/mcarvin8/smart-diff/compare/v2.2.0...v2.2.1) (2026-05-26)
 
 

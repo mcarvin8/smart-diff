@@ -198,6 +198,23 @@ describe("llmProviders env helpers", () => {
       expect(detectLlmProvider()).toBe("anthropic");
     });
 
+    it("honors explicit LLM_PROVIDER for each valid provider", () => {
+      const providers = [
+        "google",
+        "mistral",
+        "cohere",
+        "groq",
+        "xai",
+        "deepseek",
+        "bedrock",
+      ] as const;
+      for (const p of providers) {
+        clearProviderEnv();
+        process.env.LLM_PROVIDER = p;
+        expect(detectLlmProvider()).toBe(p);
+      }
+    });
+
     it("ignores unknown LLM_PROVIDER values and falls back", () => {
       process.env.LLM_PROVIDER = "made-up";
       process.env.OPENAI_API_KEY = "sk-x";

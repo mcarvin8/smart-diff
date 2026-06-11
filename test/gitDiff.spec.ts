@@ -69,6 +69,36 @@ describe("buildDiffPathspecs", () => {
       }),
     ).toEqual([".", ":(exclude)tmp"]);
   });
+
+  it("normalizes multiple leading slashes to no leading slash", () => {
+    expect(buildDiffPathspecs(repoRoot, { includeFolders: ["//src"] })).toEqual(
+      ["src"],
+    );
+  });
+
+  it("normalizes multiple trailing slashes", () => {
+    expect(buildDiffPathspecs(repoRoot, { includeFolders: ["src//"] })).toEqual(
+      ["src"],
+    );
+  });
+
+  it("filters out empty-string include paths", () => {
+    expect(
+      buildDiffPathspecs(repoRoot, { includeFolders: ["", "src"] }),
+    ).toEqual(["src"]);
+  });
+
+  it("filters out empty-string exclude paths", () => {
+    expect(
+      buildDiffPathspecs(repoRoot, { excludeFolders: ["", "dist"] }),
+    ).toEqual([".", ":(exclude)dist"]);
+  });
+
+  it("filters out whitespace-only include paths", () => {
+    expect(
+      buildDiffPathspecs(repoRoot, { includeFolders: ["  ", "src"] }),
+    ).toEqual(["src"]);
+  });
 });
 
 describe("filterCommitsByMessageRegexes", () => {
@@ -122,6 +152,44 @@ describe("filterCommitsByMessageRegexes", () => {
     expect(() => filterCommitsByMessageRegexes(commits, [], ["("])).toThrow(
       /exclude pattern\[0\]/,
     );
+  });
+
+  it("ignores empty string include patterns", () => {
+    const out = filterCommitsByMessageRegexes(commits, ["", "feat:"]);
+    expect(out.map((c) => c.hash)).toEqual(["a1"]);
+  });
+
+  it("ignores empty string exclude patterns", () => {
+    const out = filterCommitsByMessageRegexes(commits, undefined, [
+      "",
+      "chore:",
+    ]);
+    expect(out.map((c) => c.hash)).toEqual(["a1", "c3"]);
+  });
+
+  it("ignores whitespace-only include patterns", () => {
+    const out = filterCommitsByMessageRegexes(commits, ["  ", "chore:"]);
+    expect(out.map((c) => c.hash)).toEqual(["b2"]);
+  });
+
+  it("ignores whitespace-only exclude patterns", () => {
+    const out = filterCommitsByMessageRegexes(commits, undefined, [
+      "  ",
+      "chore:",
+    ]);
+    expect(out.map((c) => c.hash)).toEqual(["a1", "c3"]);
+  });
+
+  it("trims whitespace from include patterns before matching", () => {
+    const out = filterCommitsByMessageRegexes(commits, ["  feat:  "]);
+    expect(out.map((c) => c.hash)).toEqual(["a1"]);
+  });
+
+  it("trims whitespace from exclude patterns before matching", () => {
+    const out = filterCommitsByMessageRegexes(commits, undefined, [
+      "  chore:  ",
+    ]);
+    expect(out.map((c) => c.hash)).toEqual(["a1", "c3"]);
   });
 });
 

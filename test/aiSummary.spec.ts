@@ -61,11 +61,31 @@ describe("resolveLlmMaxDiffChars", () => {
     process.env.LLM_MAX_DIFF_CHARS = "500";
     expect(resolveLlmMaxDiffChars(Number.NaN)).toBe(500);
   });
+
+  it("ignores Infinity cli override and reads env", () => {
+    process.env.LLM_MAX_DIFF_CHARS = "500";
+    expect(resolveLlmMaxDiffChars(Infinity)).toBe(500);
+  });
+
+  it("ignores zero from env and uses default", () => {
+    process.env.LLM_MAX_DIFF_CHARS = "0";
+    expect(resolveLlmMaxDiffChars()).toBe(120_000);
+  });
+
+  it("ignores negative from env and uses default", () => {
+    process.env.LLM_MAX_DIFF_CHARS = "-5";
+    expect(resolveLlmMaxDiffChars()).toBe(120_000);
+  });
 });
 
 describe("truncateUnifiedDiffForLlm", () => {
   it("returns input unchanged when under limit", () => {
     expect(truncateUnifiedDiffForLlm("abc", 10)).toBe("abc");
+  });
+
+  it("returns input unchanged when exactly at limit", () => {
+    const s = "x".repeat(10);
+    expect(truncateUnifiedDiffForLlm(s, 10)).toBe(s);
   });
 
   it("truncates and appends marker when over limit", () => {
@@ -74,6 +94,13 @@ describe("truncateUnifiedDiffForLlm", () => {
     expect(out.startsWith("x".repeat(20))).toBe(true);
     expect(out).toContain("TRUNCATED");
     expect(out.length).toBeGreaterThan(20);
+  });
+
+  it("slices at maxChars boundary in truncated output", () => {
+    const long = "a".repeat(5) + "b".repeat(5);
+    const out = truncateUnifiedDiffForLlm(long, 5);
+    expect(out.startsWith("aaaaa")).toBe(true);
+    expect(out).not.toContain("b");
   });
 });
 

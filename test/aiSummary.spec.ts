@@ -17,11 +17,14 @@ import {
 } from "./helpers/mockLlm";
 
 describe("resolveLlmMaxDiffChars", () => {
-  const original = process.env.LLM_MAX_DIFF_CHARS;
+  const originalLlm = process.env.LLM_MAX_DIFF_CHARS;
+  const originalOpenAi = process.env.OPENAI_MAX_DIFF_CHARS;
 
   afterEach(() => {
-    if (original === undefined) delete process.env.LLM_MAX_DIFF_CHARS;
-    else process.env.LLM_MAX_DIFF_CHARS = original;
+    if (originalLlm === undefined) delete process.env.LLM_MAX_DIFF_CHARS;
+    else process.env.LLM_MAX_DIFF_CHARS = originalLlm;
+    if (originalOpenAi === undefined) delete process.env.OPENAI_MAX_DIFF_CHARS;
+    else process.env.OPENAI_MAX_DIFF_CHARS = originalOpenAi;
   });
 
   it("uses positive cli override", () => {
@@ -36,6 +39,17 @@ describe("resolveLlmMaxDiffChars", () => {
     process.env.LLM_MAX_DIFF_CHARS = "8000";
     expect(resolveLlmMaxDiffChars(0)).toBe(8000);
     expect(resolveLlmMaxDiffChars(-1)).toBe(8000);
+  });
+
+  it("falls back to legacy OPENAI_MAX_DIFF_CHARS env", () => {
+    process.env.OPENAI_MAX_DIFF_CHARS = "7000";
+    expect(resolveLlmMaxDiffChars()).toBe(7000);
+  });
+
+  it("prefers LLM_MAX_DIFF_CHARS over OPENAI_MAX_DIFF_CHARS", () => {
+    process.env.LLM_MAX_DIFF_CHARS = "8000";
+    process.env.OPENAI_MAX_DIFF_CHARS = "7000";
+    expect(resolveLlmMaxDiffChars()).toBe(8000);
   });
 
   it("falls back to default when env invalid", () => {

@@ -26,7 +26,7 @@
     "prepare": "husky install"
   },
   "lint-staged": {
-    "**/*": "prettier --write \"**/*.{js,ts}\" --ignore-unknown"
+    "**/*.{js,ts}": "prettier --write"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "20.5.0",

@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.1](https://github.com/mcarvin8/smart-diff/compare/v2.3.0...v2.3.1) (2026-06-11)
+
+
+### Bug Fixes
+
+* honor OPENAI_MAX_DIFF_CHARS fallback ([#26](https://github.com/mcarvin8/smart-diff/issues/26)) ([ceac835](https://github.com/mcarvin8/smart-diff/commit/ceac83517e8157634f831918eb55a86c45738c0d))
+
 ## [2.3.0](https://github.com/mcarvin8/smart-diff/compare/v2.2.1...v2.3.0) (2026-06-03)
 
 

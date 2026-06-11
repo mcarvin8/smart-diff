@@ -25,7 +25,9 @@ export function resolveLlmMaxDiffChars(cliOverride?: number): number {
   ) {
     return Math.trunc(cliOverride);
   }
-  const raw = process.env.LLM_MAX_DIFF_CHARS?.trim();
+  const raw =
+    process.env.LLM_MAX_DIFF_CHARS?.trim() ||
+    process.env.OPENAI_MAX_DIFF_CHARS?.trim();
   if (raw) {
     const parsed = Number.parseInt(raw, 10);
     if (Number.isFinite(parsed) && parsed > 0) {

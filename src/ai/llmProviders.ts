@@ -216,9 +216,9 @@ async function createAnthropicModel(modelId: string): Promise<LanguageModel> {
     "@ai-sdk/anthropic",
     () =>
       import("@ai-sdk/anthropic") as unknown as Promise<{
-        createAnthropic: (options?: { apiKey?: string }) => (
-          modelId: string,
-        ) => LanguageModel;
+        createAnthropic: (options?: {
+          apiKey?: string;
+        }) => (modelId: string) => LanguageModel;
       }>,
   );
   const apiKey = readEnv("ANTHROPIC_API_KEY");
@@ -232,9 +232,9 @@ async function createGoogleModel(modelId: string): Promise<LanguageModel> {
     "@ai-sdk/google",
     () =>
       import("@ai-sdk/google") as unknown as Promise<{
-        createGoogleGenerativeAI: (options?: { apiKey?: string }) => (
-          modelId: string,
-        ) => LanguageModel;
+        createGoogleGenerativeAI: (options?: {
+          apiKey?: string;
+        }) => (modelId: string) => LanguageModel;
       }>,
   );
   const apiKey =
@@ -251,9 +251,9 @@ async function createBedrockModel(modelId: string): Promise<LanguageModel> {
     "@ai-sdk/amazon-bedrock",
     () =>
       import("@ai-sdk/amazon-bedrock") as unknown as Promise<{
-        createAmazonBedrock: (options?: Record<string, unknown>) => (
-          modelId: string,
-        ) => LanguageModel;
+        createAmazonBedrock: (
+          options?: Record<string, unknown>,
+        ) => (modelId: string) => LanguageModel;
       }>,
   );
   const provider = mod.createAmazonBedrock();
@@ -266,9 +266,9 @@ async function createMistralModel(modelId: string): Promise<LanguageModel> {
     "@ai-sdk/mistral",
     () =>
       import("@ai-sdk/mistral") as unknown as Promise<{
-        createMistral: (options?: { apiKey?: string }) => (
-          modelId: string,
-        ) => LanguageModel;
+        createMistral: (options?: {
+          apiKey?: string;
+        }) => (modelId: string) => LanguageModel;
       }>,
   );
   const apiKey = readEnv("MISTRAL_API_KEY");
@@ -282,9 +282,9 @@ async function createCohereModel(modelId: string): Promise<LanguageModel> {
     "@ai-sdk/cohere",
     () =>
       import("@ai-sdk/cohere") as unknown as Promise<{
-        createCohere: (options?: { apiKey?: string }) => (
-          modelId: string,
-        ) => LanguageModel;
+        createCohere: (options?: {
+          apiKey?: string;
+        }) => (modelId: string) => LanguageModel;
       }>,
   );
   const apiKey = readEnv("COHERE_API_KEY");
@@ -298,9 +298,9 @@ async function createGroqModel(modelId: string): Promise<LanguageModel> {
     "@ai-sdk/groq",
     () =>
       import("@ai-sdk/groq") as unknown as Promise<{
-        createGroq: (options?: { apiKey?: string }) => (
-          modelId: string,
-        ) => LanguageModel;
+        createGroq: (options?: {
+          apiKey?: string;
+        }) => (modelId: string) => LanguageModel;
       }>,
   );
   const apiKey = readEnv("GROQ_API_KEY");
@@ -314,9 +314,9 @@ async function createXaiModel(modelId: string): Promise<LanguageModel> {
     "@ai-sdk/xai",
     () =>
       import("@ai-sdk/xai") as unknown as Promise<{
-        createXai: (options?: { apiKey?: string }) => (
-          modelId: string,
-        ) => LanguageModel;
+        createXai: (options?: {
+          apiKey?: string;
+        }) => (modelId: string) => LanguageModel;
       }>,
   );
   const apiKey = readEnv("XAI_API_KEY");
@@ -330,9 +330,9 @@ async function createDeepseekModel(modelId: string): Promise<LanguageModel> {
     "@ai-sdk/deepseek",
     () =>
       import("@ai-sdk/deepseek") as unknown as Promise<{
-        createDeepSeek: (options?: { apiKey?: string }) => (
-          modelId: string,
-        ) => LanguageModel;
+        createDeepSeek: (options?: {
+          apiKey?: string;
+        }) => (modelId: string) => LanguageModel;
       }>,
   );
   const apiKey = readEnv("DEEPSEEK_API_KEY");

@@ -64,14 +64,8 @@ function resolveMaxOutputTokens(): number {
 export async function generateSummary(
   input: GenerateSummaryInput,
 ): Promise<string> {
-  const {
-    diffText,
-    fileNames,
-    commits,
-    flags,
-    llmModelProvider,
-    diffSummary,
-  } = input;
+  const { diffText, fileNames, commits, flags, llmModelProvider, diffSummary } =
+    input;
 
   if (!llmModelProvider && !isLlmProviderConfigured()) {
     throw new Error(LLM_GATEWAY_REQUIRED_MESSAGE);

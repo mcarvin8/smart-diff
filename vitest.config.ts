@@ -7,7 +7,10 @@ export default defineConfig({
       // can find the corresponding .ts source files (replaces ts-jest
       // moduleNameMapper behavior).
       { find: /^(\.{1,2}\/.+)\.js$/, replacement: "$1" },
-      { find: /^@src\/(.*)$/, replacement: `${new URL("./src/", import.meta.url).pathname}$1` },
+      {
+        find: /^@src\/(.*)$/,
+        replacement: `${new URL("./src/", import.meta.url).pathname}$1`,
+      },
     ],
   },
   test: {

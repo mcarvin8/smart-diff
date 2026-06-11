@@ -193,8 +193,8 @@ describe("summarizeGitDiff", () => {
     );
     const patchCall = findPatchCall(diffCalls);
     expect(patchCall).toBeDefined();
-    expect(
-      (patchCall ?? []).some((a) => a.startsWith(":(exclude)")),
-    ).toBe(false);
+    expect((patchCall ?? []).some((a) => a.startsWith(":(exclude)"))).toBe(
+      false,
+    );
   });
 });

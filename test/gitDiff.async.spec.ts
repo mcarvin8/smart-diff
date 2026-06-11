@@ -51,9 +51,7 @@ describe("getCommits", () => {
 function makeGitWithDiff(): { git: SimpleGit; diff: Mock } {
   const diff = vi.fn();
   const git = {
-    revparse: vi
-      .fn()
-      .mockResolvedValue(`${join(__dirname, "fixture-repo")}\n`),
+    revparse: vi.fn().mockResolvedValue(`${join(__dirname, "fixture-repo")}\n`),
     diff,
     show: vi.fn(),
   } as unknown as SimpleGit;
@@ -109,13 +107,7 @@ describe("getDiff", () => {
       },
     });
 
-    expect(diff).toHaveBeenCalledWith([
-      "-U1",
-      "-w",
-      "a..b",
-      "--",
-      ".",
-    ]);
+    expect(diff).toHaveBeenCalledWith(["-U1", "-w", "a..b", "--", "."]);
     expect(out).not.toContain("diff --git");
     expect(out).not.toContain("index 111..222");
     expect(out).toContain("--- a/a.ts");
@@ -272,10 +264,9 @@ describe("getDiffSummary", () => {
         return "1\t1\tshared.ts";
       }
       if (args.includes("--name-status")) {
-        return [
-          "R100\told/a.ts\tshared.ts",
-          "R100\told/b.ts\tshared.ts",
-        ].join("\n");
+        return ["R100\told/a.ts\tshared.ts", "R100\told/b.ts\tshared.ts"].join(
+          "\n",
+        );
       }
       return "";
     });
@@ -330,13 +321,7 @@ describe("getDiffSummary", () => {
       shaping: { ignoreWhitespace: true },
     });
 
-    expect(diff).toHaveBeenCalledWith([
-      "-w",
-      "--numstat",
-      "a..b",
-      "--",
-      ".",
-    ]);
+    expect(diff).toHaveBeenCalledWith(["-w", "--numstat", "a..b", "--", "."]);
     expect(diff).toHaveBeenCalledWith([
       "-w",
       "--name-status",
@@ -359,13 +344,7 @@ describe("getDiffSummary", () => {
       shaping: { ignoreWhitespace: true },
     });
 
-    expect(diff).toHaveBeenCalledWith([
-      "-w",
-      "--numstat",
-      "c1^!",
-      "--",
-      ".",
-    ]);
+    expect(diff).toHaveBeenCalledWith(["-w", "--numstat", "c1^!", "--", "."]);
   });
 
   it("aggregates per-commit summaries", async () => {

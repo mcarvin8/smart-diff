@@ -8,10 +8,7 @@ import type {
   GitDiffRangeQuery,
 } from "./diffTypes.js";
 import { buildDiffPathspecs } from "./diffPathspecs.js";
-import {
-  buildDiffShapingGitArgs,
-  shapeUnifiedDiff,
-} from "./diffShaping.js";
+import { buildDiffShapingGitArgs, shapeUnifiedDiff } from "./diffShaping.js";
 import { buildDiffSummaryFromGitOutputs } from "./diffSummaryBuild.js";
 
 export function createGitClient(cwd = process.cwd()): SimpleGit {
@@ -103,7 +100,13 @@ export async function getDiffSummary(
 
   if (!filterByCommits) {
     const [numOutput, nameOutput] = await Promise.all([
-      git.diff([...whitespaceArgs, "--numstat", `${from}..${to}`, "--", ...specs]),
+      git.diff([
+        ...whitespaceArgs,
+        "--numstat",
+        `${from}..${to}`,
+        "--",
+        ...specs,
+      ]),
       git.diff([
         ...whitespaceArgs,
         "--name-status",

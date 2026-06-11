@@ -1,12 +1,10 @@
 /** Map numstat path field (including `{old => new}` rename form) to the post-change path used as lookup key. */
 function numStatPathToLookupKey(pathField: string): string {
-  const brace = /^(.*)\{(.+) => (.+)\}$/.exec(pathField);
+  const brace = /^(.*?)\{(.+?) => (.+?)\}(.*)$/.exec(pathField);
   if (!brace) {
     return pathField;
   }
-  const dirRaw = brace[1];
-  const toSeg = brace[3].trim();
-  return `${dirRaw}${toSeg}`;
+  return `${brace[1]}${brace[3].trim()}${brace[4]}`;
 }
 
 function parseNumStatLine(

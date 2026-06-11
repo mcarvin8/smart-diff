@@ -21,7 +21,6 @@ export default {
       globals: {},
       sourcemap: true,
     },
-    ,
     {
       file: "./dist/index.min.mjs",
       format: "es",

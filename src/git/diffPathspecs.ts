@@ -12,11 +12,6 @@ function normalizeRepoRelativePath(p: string): string {
 function assertPathUnderRepo(repoRoot: string, userPath: string): void {
   const abs = resolve(repoRoot, userPath);
   const rel = relative(repoRoot, abs);
-  if (rel === "..") {
-    throw new Error(
-      `Path escapes repository root: ${JSON.stringify(userPath)}`,
-    );
-  }
   const segments = rel.split(/[/\\]/);
   if (segments.includes("..")) {
     throw new Error(

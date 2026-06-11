@@ -19,4 +19,4 @@ export const LLM_GATEWAY_REQUIRED_MESSAGE =
   "or a provider API key (OPENAI_API_KEY, LLM_API_KEY, ANTHROPIC_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY, MISTRAL_API_KEY, COHERE_API_KEY, GROQ_API_KEY, XAI_API_KEY, DEEPSEEK_API_KEY), " +
   "or LLM_BASE_URL / OPENAI_BASE_URL for an OpenAI-compatible gateway, " +
   "or JSON in OPENAI_DEFAULT_HEADERS / LLM_DEFAULT_HEADERS. " +
-  "Alternatively pass llmModelProvider or openAiClientProvider to generateSummary or summarizeGitDiff.";
+  "Alternatively pass llmModelProvider to generateSummary or summarizeGitDiff.";

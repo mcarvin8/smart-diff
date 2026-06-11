@@ -44,7 +44,7 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run compile
+        run: npm run build
 
       - name: Run incremental mutation testing
         env:
@@ -81,7 +81,7 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: npm run compile
+        run: npm run build
 
       - name: Run mutation testing
         # GitHub-hosted ubuntu-latest runners have 4 cores (as of 2026). Stryker

@@ -175,13 +175,7 @@ describe("shapeUnifiedDiff", () => {
   });
 
   it("uses singular 'line' when exactly one line is elided", () => {
-    const hunk = [
-      "@@ -1,3 +1,3 @@",
-      " a",
-      "-b",
-      "+c",
-      " d",
-    ].join("\n");
+    const hunk = ["@@ -1,3 +1,3 @@", " a", "-b", "+c", " d"].join("\n");
     const out = shapeUnifiedDiff(hunk, { maxHunkLines: 3 });
     expect(out).toMatch(/1 diff line elided/);
     expect(out).not.toMatch(/1 diff lines elided/);
@@ -249,11 +243,7 @@ describe("shapeUnifiedDiff", () => {
   });
 
   it("treats maxHunkLines of 0 as eliding the entire body", () => {
-    const hunk = [
-      "@@ -1,2 +1,2 @@",
-      "-a",
-      "+b",
-    ].join("\n");
+    const hunk = ["@@ -1,2 +1,2 @@", "-a", "+b"].join("\n");
     const out = shapeUnifiedDiff(hunk, { maxHunkLines: 0 });
     expect(out).toMatch(/^@@ -1,2 \+1,2 @@/);
     expect(out).toContain("2 diff lines elided");

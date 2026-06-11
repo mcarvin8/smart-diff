@@ -243,10 +243,7 @@ describe("parseDiffSummary", () => {
 
   it("fills in oldPath from later rename when earlier entry had none", () => {
     const s = parseDiffSummary(
-      [
-        "M\t1\t1\tshared.ts",
-        "R100\t2\t2\told/name.ts\tshared.ts",
-      ].join("\n"),
+      ["M\t1\t1\tshared.ts", "R100\t2\t2\told/name.ts\tshared.ts"].join("\n"),
     );
     expect(s.totalFiles).toBe(1);
     expect(s.files[0]).toMatchObject({

@@ -283,7 +283,9 @@ describe("resolveLanguageModel", () => {
   it("uses openai provider with API key and optional headers", async () => {
     process.env.OPENAI_API_KEY = "sk-real";
     process.env.OPENAI_DEFAULT_HEADERS = JSON.stringify({ "X-Custom": "1" });
-    const model = (await resolveLanguageModel({ model: "gpt-test" })) as unknown as {
+    const model = (await resolveLanguageModel({
+      model: "gpt-test",
+    })) as unknown as {
       providerName: string;
       modelId: string;
     };
@@ -314,7 +316,9 @@ describe("resolveLanguageModel", () => {
     });
     process.env.LLM_PROVIDER_NAME = "corp-gateway";
 
-    const model = (await resolveLanguageModel({ model: "router/gpt" })) as unknown as {
+    const model = (await resolveLanguageModel({
+      model: "router/gpt",
+    })) as unknown as {
       providerName: string;
       modelId: string;
     };
@@ -330,7 +334,9 @@ describe("resolveLanguageModel", () => {
   it("uses LLM_MODEL env when options.model is absent", async () => {
     process.env.OPENAI_API_KEY = "sk-k";
     process.env.LLM_MODEL = "gpt-4.1-mini";
-    const model = (await resolveLanguageModel()) as unknown as { modelId: string };
+    const model = (await resolveLanguageModel()) as unknown as {
+      modelId: string;
+    };
     expect(model.modelId).toBe("gpt-4.1-mini");
   });
 
@@ -425,9 +431,8 @@ describe("resolveLanguageModel", () => {
     vi.doMock("@ai-sdk/anthropic", () => {
       throw new Error("Cannot find module '@ai-sdk/anthropic'");
     });
-    const { resolveLanguageModel: resolveAgain } = await import(
-      "../src/ai/llmProviders"
-    );
+    const { resolveLanguageModel: resolveAgain } =
+      await import("../src/ai/llmProviders");
     process.env.LLM_PROVIDER = "anthropic";
     await expect(resolveAgain()).rejects.toThrow(
       /Failed to load optional provider package "@ai-sdk\/anthropic"/,

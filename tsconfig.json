@@ -2,11 +2,12 @@
   "compilerOptions": {
     "module": "ESNext",
     "target": "ES2015",
+    "rootDir": "./src",
     "outDir": "./dist",
     "declaration": true,
     "sourceMap": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "strict": true,
     "noImplicitAny": true,
@@ -14,7 +15,6 @@
     "noUnusedParameters": true,
     "removeComments": true,
     "skipLibCheck": true,
-    "baseUrl": ".",
     "types": ["node", "vitest/globals"],
     "paths": {
       "@src/*": ["./src/*"]

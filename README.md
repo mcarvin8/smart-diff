@@ -195,4 +195,4 @@ This package is used by:
 
 ## License
 
-MIT — see [LICENSE.md](LICENSE.md).
+[MIT](LICENSE.md)

@@ -7,4 +7,5 @@ test/**/*.js
 .env
 *.log
 **/*.log
+.stryker-tmp
 reports

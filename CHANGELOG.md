@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.2](https://github.com/mcarvin8/smart-diff/compare/v2.3.1...v2.3.2) (2026-06-11)
+
+
+### Bug Fixes
+
+* correct numstat rename lookup, stale error msg, redundant path check ([#32](https://github.com/mcarvin8/smart-diff/issues/32)) ([c822fbe](https://github.com/mcarvin8/smart-diff/commit/c822fbe8dc5a7cae0e53c4e1c33cd4e4d7e82b7e))
+
 ## [2.3.1](https://github.com/mcarvin8/smart-diff/compare/v2.3.0...v2.3.1) (2026-06-11)
 
 

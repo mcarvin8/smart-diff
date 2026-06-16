@@ -435,6 +435,6 @@ describe("getChangedFiles", () => {
       repoRootOverride: join(__dirname, "fixture-repo"),
     });
 
-    expect(files.sort()).toEqual(["dup.ts", "other.ts"]);
+    expect(files).toEqual(["dup.ts", "other.ts"]);
   });
 });

@@ -61,6 +61,17 @@ function resolveMaxOutputTokens(): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 4000;
 }
 
+function resolveLlmTemperature(): number {
+  const raw = process.env.LLM_TEMPERATURE?.trim();
+  if (raw) {
+    const parsed = Number.parseFloat(raw);
+    if (Number.isFinite(parsed)) {
+      return Math.min(2, Math.max(0, parsed));
+    }
+  }
+  return 0.2;
+}
+
 export async function generateSummary(
   input: GenerateSummaryInput,
 ): Promise<string> {
@@ -189,7 +200,7 @@ async function callLlm(
     model,
     system: systemPrompt,
     prompt: userContent,
-    temperature: 0.2,
+    temperature: resolveLlmTemperature(),
     maxOutputTokens,
   });
 

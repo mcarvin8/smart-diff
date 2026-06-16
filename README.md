@@ -78,6 +78,7 @@ smart-diff is "configured" when [`isLlmProviderConfigured()`](#lower-level-api) 
 | `LLM_PROVIDER_NAME` | Display name used when `openai-compatible` is active (defaults to `openai-compatible`). |
 | `OPENAI_MAX_DIFF_CHARS` / `LLM_MAX_DIFF_CHARS` | Max size of unified diff text sent to the model (default ~120k characters). |
 | `OPENAI_MAX_TOKENS` / `LLM_MAX_TOKENS` | Max completion tokens (default 4000). |
+| `LLM_TEMPERATURE` | Sampling temperature, clamped to 0–2 (default 0.2). Lower = more deterministic; higher = more varied prose. |
 
 ### Example: native OpenAI
 

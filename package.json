@@ -50,8 +50,6 @@
     "vitest": "4.1.5"
   },
   "dependencies": {
-    "@ai-sdk/openai": "3.0.67",
-    "@ai-sdk/openai-compatible": "2.0.48",
     "ai": "6.0.195"
   },
   "optionalDependencies": {
@@ -62,6 +60,8 @@
     "@ai-sdk/google": "3.0.80",
     "@ai-sdk/groq": "3.0.39",
     "@ai-sdk/mistral": "3.0.37",
+    "@ai-sdk/openai": "3.0.67",
+    "@ai-sdk/openai-compatible": "2.0.48",
     "@ai-sdk/xai": "3.0.93"
   },
   "repository": {

@@ -153,10 +153,20 @@ export function defaultModelForProvider(provider: LlmProviderId): string {
 }
 
 async function createOpenAiModel(modelId: string): Promise<LanguageModel> {
-  const { createOpenAI } = await import("@ai-sdk/openai");
+  const mod = await importOptional(
+    "openai",
+    "@ai-sdk/openai",
+    () =>
+      import("@ai-sdk/openai") as unknown as Promise<{
+        createOpenAI: (options?: {
+          apiKey?: string;
+          headers?: Record<string, string>;
+        }) => (modelId: string) => LanguageModel;
+      }>,
+  );
   const apiKey = resolveOpenAiApiKey();
   const headers = parseLlmDefaultHeadersFromEnv();
-  const provider = createOpenAI({
+  const provider = mod.createOpenAI({
     ...(apiKey ? { apiKey } : {}),
     ...(headers ? { headers } : {}),
   });
@@ -166,7 +176,19 @@ async function createOpenAiModel(modelId: string): Promise<LanguageModel> {
 async function createOpenAiCompatibleModel(
   modelId: string,
 ): Promise<LanguageModel> {
-  const { createOpenAICompatible } = await import("@ai-sdk/openai-compatible");
+  const { createOpenAICompatible } = await importOptional(
+    "openai-compatible",
+    "@ai-sdk/openai-compatible",
+    () =>
+      import("@ai-sdk/openai-compatible") as unknown as Promise<{
+        createOpenAICompatible: (options: {
+          name: string;
+          baseURL: string;
+          apiKey?: string;
+          headers?: Record<string, string>;
+        }) => (modelId: string) => LanguageModel;
+      }>,
+  );
   const baseURL = resolveLlmBaseUrl();
   if (!baseURL) {
     throw new Error(

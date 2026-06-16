@@ -17,12 +17,17 @@ export type GitClient = {
   run(args: string[]): Promise<string>;
 };
 
-export function createGitClient(cwd = process.cwd()): GitClient {
+export function createGitClient(
+  cwd = process.cwd(),
+  timeout?: number,
+): GitClient {
   return {
     run: (args) =>
-      execFileAsync("git", args, { cwd, maxBuffer: 100 * 1024 * 1024 }).then(
-        ({ stdout }) => stdout,
-      ),
+      execFileAsync("git", args, {
+        cwd,
+        maxBuffer: 100 * 1024 * 1024,
+        ...(timeout !== undefined ? { timeout } : {}),
+      }).then(({ stdout }) => stdout),
   };
 }
 
@@ -196,12 +201,11 @@ export async function getChangedFiles(
     return output
       .split(/\r?\n/)
       .map((f) => f.trim())
-      .filter(Boolean);
+      .filter(Boolean)
+      .sort();
   }
 
-  const fileSet = new Set<string>();
-
-  await Promise.all(
+  const results = await Promise.all(
     commits.map(async (c) => {
       const output = await git.run([
         "show",
@@ -211,14 +215,12 @@ export async function getChangedFiles(
         "--",
         ...specs,
       ]);
-
-      output
+      return output
         .split(/\r?\n/)
         .map((f) => f.trim())
-        .filter(Boolean)
-        .forEach((f) => fileSet.add(f));
+        .filter(Boolean);
     }),
   );
 
-  return Array.from(fileSet);
+  return [...new Set(results.flat())].sort();
 }

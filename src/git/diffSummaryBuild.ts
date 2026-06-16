@@ -40,7 +40,10 @@ export function buildDiffSummaryFromGitOutputs(
   nameStatusOutput: string,
   numStatOutput: string,
 ): DiffSummary {
-  const numMap = new Map<string, { additions: number; deletions: number }>();
+  const numMap = new Map<
+    string,
+    { additions: number; deletions: number; binary?: boolean }
+  >();
   accumulateNumStat(numStatOutput, numMap);
 
   const mergedName = mergeNameEntriesByPath(
@@ -53,5 +56,13 @@ export function buildDiffSummaryFromGitOutputs(
     syntheticLines.push(buildSyntheticDiffLine(meta, counts));
   }
 
-  return parseDiffSummary(syntheticLines.join("\n"));
+  const summary = parseDiffSummary(syntheticLines.join("\n"));
+
+  for (const file of summary.files) {
+    if (numMap.get(file.path)?.binary) {
+      file.binary = true;
+    }
+  }
+
+  return summary;
 }

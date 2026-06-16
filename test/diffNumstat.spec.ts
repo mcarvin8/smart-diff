@@ -2,8 +2,11 @@ import { accumulateNumStat } from "../src/git/diffNumstatParse";
 
 function accumulate(
   input: string,
-): Map<string, { additions: number; deletions: number }> {
-  const m = new Map<string, { additions: number; deletions: number }>();
+): Map<string, { additions: number; deletions: number; binary?: boolean }> {
+  const m = new Map<
+    string,
+    { additions: number; deletions: number; binary?: boolean }
+  >();
   accumulateNumStat(input, m);
   return m;
 }
@@ -71,5 +74,37 @@ describe("accumulateNumStat", () => {
     const m = accumulate("5\t3\tsrc/a.ts\r\n2\t1\tsrc/b.ts");
     expect(m.get("src/a.ts")).toEqual({ additions: 5, deletions: 3 });
     expect(m.get("src/b.ts")).toEqual({ additions: 2, deletions: 1 });
+  });
+
+  it("marks binary flag when both columns are '-'", () => {
+    const m = accumulate("-\t-\timage.png");
+    expect(m.get("image.png")).toEqual({
+      additions: 0,
+      deletions: 0,
+      binary: true,
+    });
+  });
+
+  it("marks binary flag when only additions column is '-'", () => {
+    const m = accumulate("-\t0\tpartial.bin");
+    expect(m.get("partial.bin")).toEqual({
+      additions: 0,
+      deletions: 0,
+      binary: true,
+    });
+  });
+
+  it("propagates binary flag when accumulating a binary entry onto a text entry", () => {
+    const m = accumulate("2\t1\tsrc/foo.ts\n-\t-\tsrc/foo.ts");
+    expect(m.get("src/foo.ts")).toMatchObject({
+      additions: 2,
+      deletions: 1,
+      binary: true,
+    });
+  });
+
+  it("does not set binary flag for normal numeric entries", () => {
+    const m = accumulate("5\t3\tsrc/foo.ts");
+    expect(m.get("src/foo.ts")).toEqual({ additions: 5, deletions: 3 });
   });
 });

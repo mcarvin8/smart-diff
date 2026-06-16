@@ -21,7 +21,28 @@ TypeScript library that turns a **git revision range** into a **Markdown summary
 npm install @mcarvin/smart-diff
 ```
 
-`@ai-sdk/openai` and `@ai-sdk/openai-compatible` ship as direct dependencies. Every other provider (`@ai-sdk/anthropic`, `@ai-sdk/google`, `@ai-sdk/amazon-bedrock`, `@ai-sdk/mistral`, `@ai-sdk/cohere`, `@ai-sdk/groq`, `@ai-sdk/xai`, `@ai-sdk/deepseek`) is declared as an **optional peer** and only needs to be installed when you actually use that provider. If the package is missing, smart-diff throws a clear error telling you which one to install.
+All provider packages are **optional** — only install the one(s) you need:
+
+```bash
+# OpenAI
+npm install @ai-sdk/openai
+
+# Anthropic
+npm install @ai-sdk/anthropic
+
+# Google Gemini
+npm install @ai-sdk/google
+
+# Amazon Bedrock
+npm install @ai-sdk/amazon-bedrock
+
+# OpenAI-compatible gateway (Azure, Ollama, Together, etc.)
+npm install @ai-sdk/openai-compatible
+
+# Others: @ai-sdk/mistral  @ai-sdk/cohere  @ai-sdk/groq  @ai-sdk/xai  @ai-sdk/deepseek
+```
+
+If the package for the selected provider is missing at runtime, smart-diff throws a clear error telling you which one to install.
 
 ## Provider configuration
 
@@ -177,6 +198,18 @@ The package also exports helpers for building a custom pipeline on top of the sa
 - **AI**: `generateSummary`, `resolveLlmMaxDiffChars`, `truncateUnifiedDiffForLlm`
 - **Provider resolution**: `resolveLanguageModel`, `detectLlmProvider`, `isLlmProviderConfigured`, `defaultModelForProvider`, `resolveLlmBaseUrl`, `parseLlmDefaultHeadersFromEnv`
 - **Constants / types**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`, `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions` — `DiffFileSummary.binary?: boolean` is set to `true` when git reports `-` for additions/deletions (binary file); absent for text files
+
+## Migrating from 2.x → 3.x
+
+`@ai-sdk/openai` and `@ai-sdk/openai-compatible` are no longer bundled as direct dependencies. If you use either, add them explicitly:
+
+```bash
+npm install @ai-sdk/openai
+# or
+npm install @ai-sdk/openai-compatible
+```
+
+Everything else — env vars, auto-detection, the public API — is unchanged.
 
 ## Migrating from 1.x → 2.x
 

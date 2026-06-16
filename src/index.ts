@@ -1,5 +1,3 @@
-import type { SimpleGit } from "simple-git";
-
 import { generateSummary } from "./ai/aiSummary.js";
 import type { LlmModelProvider, SummarizeFlags } from "./ai/aiTypes.js";
 import type { LlmProviderId } from "./ai/llmProviders.js";
@@ -14,6 +12,7 @@ import {
   type CommitInfo,
   type DiffPathFilter,
   type DiffShapingOptions,
+  type GitClient,
 } from "./git/gitDiff.js";
 
 export type GitDiffAiSummaryOptions = {
@@ -23,8 +22,8 @@ export type GitDiffAiSummaryOptions = {
   to?: string;
   /** Working directory of the git repository; defaults to `process.cwd()`. */
   cwd?: string;
-  /** Use an existing `simple-git` instance instead of `cwd`. */
-  git?: SimpleGit;
+  /** Use an existing `GitClient` instance instead of `cwd`. */
+  git?: GitClient;
   /**
    * Only include these directories/files relative to the repo root (as in the tree), e.g. `src`, `packages/lib`.
    * If omitted or empty, the whole repository is considered (minus `excludeFolders`).
@@ -214,6 +213,7 @@ export type {
   DiffPathFilter,
   DiffShapingOptions,
   DiffSummary,
+  GitClient,
   GitDiffRangeQuery,
 } from "./git/gitDiff.js";
 export {

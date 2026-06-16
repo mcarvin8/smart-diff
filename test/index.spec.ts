@@ -1,4 +1,5 @@
 import type { LanguageModel } from "ai";
+import type { Mock } from "vitest";
 
 import * as gitDiff from "../src/git/gitDiff";
 import { summarizeGitDiff } from "../src/index";
@@ -18,10 +19,11 @@ describe("summarizeGitDiff integration", () => {
 
   it("uses createGitClient when git is omitted", async () => {
     const mockGit = {
-      log: vi.fn().mockResolvedValue({ all: [{ hash: "h1", message: "m" }] }),
-      revparse: vi.fn().mockResolvedValue("C:\\repo\n"),
-      diff: vi.fn().mockResolvedValue(""),
-      show: vi.fn().mockResolvedValue(""),
+      run: vi.fn().mockImplementation(async (args: string[]) => {
+        if (args[0] === "log") return "h1\x1fm\n";
+        if (args[0] === "rev-parse") return "C:\\repo\n";
+        return "";
+      }),
     };
 
     const createSpy = vi
@@ -36,11 +38,11 @@ describe("summarizeGitDiff integration", () => {
     });
 
     expect(createSpy).toHaveBeenCalledWith("C:\\some\\cwd");
-    expect(mockGit.log).toHaveBeenCalled();
+    expect(mockGit.run).toHaveBeenCalledWith(expect.arrayContaining(["log"]));
     createSpy.mockRestore();
   });
 
-  it("uses per-commit diff when filtered commits differ without regex options", async () => {
+  it("uses per-commit diff shape when filtered commits differ without regex options", async () => {
     vi.spyOn(gitDiff, "getCommits").mockResolvedValue([
       { hash: "1", message: "a" },
       { hash: "2", message: "b" },
@@ -49,18 +51,15 @@ describe("summarizeGitDiff integration", () => {
       { hash: "1", message: "a" },
     ]);
 
-    const diff = vi.fn().mockImplementation(async (args: string[]) => {
+    const run = vi.fn().mockImplementation(async (args: string[]) => {
+      if (args[0] === "rev-parse") return "C:\\repo\n";
+      if (args[0] === "show") return "f.ts\n";
       if (args.includes("--numstat")) return "1\t1\tf.ts";
       if (args.includes("--name-status")) return "M\tf.ts";
       if (args.includes("--name-only")) return "f.ts\n";
       return "";
     });
-    const mockGit = {
-      log: vi.fn(),
-      revparse: vi.fn().mockResolvedValue("C:\\repo\n"),
-      diff,
-      show: vi.fn().mockResolvedValue("f.ts\n"),
-    } as never;
+    const mockGit = { run } as never;
 
     vi.spyOn(gitDiff, "createGitClient").mockReturnValue(mockGit);
 
@@ -71,6 +70,6 @@ describe("summarizeGitDiff integration", () => {
       llmModelProvider: mockLlmProvider("ok"),
     });
 
-    expect(diff).toHaveBeenCalledWith(expect.arrayContaining(["1^!"]));
+    expect(run).toHaveBeenCalledWith(expect.arrayContaining(["1^!"]));
   });
 });

@@ -173,10 +173,10 @@ const md = await summarizeGitDiff({
 
 The package also exports helpers for building a custom pipeline on top of the same git and LLM behavior:
 
-- **Git**: `createGitClient`, `getRepoRoot`, `getCommits`, `getDiff`, `getDiffSummary`, `getChangedFiles`, `filterCommitsByMessageRegexes`, `buildDiffPathspecs`, `buildDiffShapingGitArgs`, `shapeUnifiedDiff`, `DEFAULT_NOISE_EXCLUDES`
+- **Git**: `createGitClient(cwd?, timeout?)`, `getRepoRoot`, `getCommits`, `getDiff`, `getDiffSummary`, `getChangedFiles`, `filterCommitsByMessageRegexes`, `buildDiffPathspecs`, `buildDiffShapingGitArgs`, `shapeUnifiedDiff`, `DEFAULT_NOISE_EXCLUDES` — `timeout` is in milliseconds, forwarded to `execFile`; omit for no timeout
 - **AI**: `generateSummary`, `resolveLlmMaxDiffChars`, `truncateUnifiedDiffForLlm`
 - **Provider resolution**: `resolveLanguageModel`, `detectLlmProvider`, `isLlmProviderConfigured`, `defaultModelForProvider`, `resolveLlmBaseUrl`, `parseLlmDefaultHeadersFromEnv`
-- **Constants / types**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`, `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`
+- **Constants / types**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`, `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions` — `DiffFileSummary.binary?: boolean` is set to `true` when git reports `-` for additions/deletions (binary file); absent for text files
 
 ## Migrating from 1.x → 2.x
 

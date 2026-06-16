@@ -378,4 +378,99 @@ describe("generateSummary", () => {
       else process.env.LLM_MAX_TOKENS = prev;
     }
   });
+
+  it("defaults temperature to 0.2 when LLM_TEMPERATURE is unset", async () => {
+    const prev = process.env.LLM_TEMPERATURE;
+    delete process.env.LLM_TEMPERATURE;
+    try {
+      const { llmModelProvider, calls } = provideMock("ok");
+      await generateSummary({
+        diffText: "d",
+        fileNames: [],
+        commits: [],
+        flags: flagsBase,
+        llmModelProvider,
+      });
+      expect(calls()[0]!.temperature).toBe(0.2);
+    } finally {
+      if (prev === undefined) delete process.env.LLM_TEMPERATURE;
+      else process.env.LLM_TEMPERATURE = prev;
+    }
+  });
+
+  it("honors LLM_TEMPERATURE when valid", async () => {
+    const prev = process.env.LLM_TEMPERATURE;
+    process.env.LLM_TEMPERATURE = "0.7";
+    try {
+      const { llmModelProvider, calls } = provideMock("ok");
+      await generateSummary({
+        diffText: "d",
+        fileNames: [],
+        commits: [],
+        flags: flagsBase,
+        llmModelProvider,
+      });
+      expect(calls()[0]!.temperature).toBe(0.7);
+    } finally {
+      if (prev === undefined) delete process.env.LLM_TEMPERATURE;
+      else process.env.LLM_TEMPERATURE = prev;
+    }
+  });
+
+  it("clamps LLM_TEMPERATURE above 2 to 2", async () => {
+    const prev = process.env.LLM_TEMPERATURE;
+    process.env.LLM_TEMPERATURE = "5";
+    try {
+      const { llmModelProvider, calls } = provideMock("ok");
+      await generateSummary({
+        diffText: "d",
+        fileNames: [],
+        commits: [],
+        flags: flagsBase,
+        llmModelProvider,
+      });
+      expect(calls()[0]!.temperature).toBe(2);
+    } finally {
+      if (prev === undefined) delete process.env.LLM_TEMPERATURE;
+      else process.env.LLM_TEMPERATURE = prev;
+    }
+  });
+
+  it("clamps LLM_TEMPERATURE below 0 to 0", async () => {
+    const prev = process.env.LLM_TEMPERATURE;
+    process.env.LLM_TEMPERATURE = "-1";
+    try {
+      const { llmModelProvider, calls } = provideMock("ok");
+      await generateSummary({
+        diffText: "d",
+        fileNames: [],
+        commits: [],
+        flags: flagsBase,
+        llmModelProvider,
+      });
+      expect(calls()[0]!.temperature).toBe(0);
+    } finally {
+      if (prev === undefined) delete process.env.LLM_TEMPERATURE;
+      else process.env.LLM_TEMPERATURE = prev;
+    }
+  });
+
+  it("falls back to 0.2 when LLM_TEMPERATURE is invalid", async () => {
+    const prev = process.env.LLM_TEMPERATURE;
+    process.env.LLM_TEMPERATURE = "not-a-number";
+    try {
+      const { llmModelProvider, calls } = provideMock("ok");
+      await generateSummary({
+        diffText: "d",
+        fileNames: [],
+        commits: [],
+        flags: flagsBase,
+        llmModelProvider,
+      });
+      expect(calls()[0]!.temperature).toBe(0.2);
+    } finally {
+      if (prev === undefined) delete process.env.LLM_TEMPERATURE;
+      else process.env.LLM_TEMPERATURE = prev;
+    }
+  });
 });

@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.4.0](https://github.com/mcarvin8/smart-diff/compare/v2.3.2...v2.4.0) (2026-06-16)
+
+
+### Features
+
+* expose binary flag on DiffFileSummary for binary files ([#40](https://github.com/mcarvin8/smart-diff/issues/40)) ([19a32aa](https://github.com/mcarvin8/smart-diff/commit/19a32aa1bec6211b962ac0b929e1c87babeb21b1))
+* update Anthropic default model and add Bedrock auto-detection ([#38](https://github.com/mcarvin8/smart-diff/issues/38)) ([993c7cf](https://github.com/mcarvin8/smart-diff/commit/993c7cf257bfaac18f39fbf64a83f3e9b8e19027))
+
+
+### Bug Fixes
+
+* timeout support, deterministic file order, Windows path escape ([#36](https://github.com/mcarvin8/smart-diff/issues/36)) ([d861946](https://github.com/mcarvin8/smart-diff/commit/d8619465e66ee72cf83a737b2d52bfd4ab9415dc))
+
 ## [2.3.2](https://github.com/mcarvin8/smart-diff/compare/v2.3.1...v2.3.2) (2026-06-11)
 
 

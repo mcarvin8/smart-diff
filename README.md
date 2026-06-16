@@ -7,7 +7,7 @@
 [![codecov](https://codecov.io/gh/mcarvin8/smart-diff/graph/badge.svg?token=H3ZWAGG7S9)](https://codecov.io/gh/mcarvin8/smart-diff)
 [![Mutation testing badge](https://img.shields.io/endpoint?style=flat&url=https%3A%2F%2Fbadge-api.stryker-mutator.io%2Fgithub.com%2Fmcarvin8%2Fsmart-diff%2Fmain)](https://dashboard.stryker-mutator.io/reports/github.com/mcarvin8/smart-diff/main)
 
-TypeScript library that turns a **git revision range** into a **Markdown summary** using any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) — OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, or any OpenAI-compatible gateway. It uses [`simple-git`](https://github.com/steveukx/git-js) to read the repo, respects **path includes/excludes** and **commit message include/exclude regexes**, and sends commits, paths, structured diff stats, and unified diff text to the model.
+TypeScript library that turns a **git revision range** into a **Markdown summary** using any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) — OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, or any OpenAI-compatible gateway. It shells out to `git` to read the repo, respects **path includes/excludes** and **commit message include/exclude regexes**, and sends commits, paths, structured diff stats, and unified diff text to the model.
 
 ## Requirements
 
@@ -29,15 +29,15 @@ smart-diff is "configured" when [`isLlmProviderConfigured()`](#lower-level-api) 
 
 ### Selecting a provider
 
-`LLM_PROVIDER` explicitly selects a provider. When unset, the resolver auto-detects in this order: `LLM_BASE_URL`/`OPENAI_BASE_URL` → `openai-compatible`, `OPENAI_API_KEY`/`LLM_API_KEY` → `openai`, then `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` (or `GOOGLE_API_KEY`), `MISTRAL_API_KEY`, `COHERE_API_KEY`, `GROQ_API_KEY`, `XAI_API_KEY`, `DEEPSEEK_API_KEY`, and finally `OPENAI_DEFAULT_HEADERS`/`LLM_DEFAULT_HEADERS` → `openai`.
+`LLM_PROVIDER` explicitly selects a provider. When unset, the resolver auto-detects in this order: `LLM_BASE_URL`/`OPENAI_BASE_URL` → `openai-compatible`, `OPENAI_API_KEY`/`LLM_API_KEY` → `openai`, then `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` (or `GOOGLE_API_KEY`), `MISTRAL_API_KEY`, `COHERE_API_KEY`, `GROQ_API_KEY`, `XAI_API_KEY`, `DEEPSEEK_API_KEY`, `AWS_ACCESS_KEY_ID`/`AWS_PROFILE` → `bedrock`, and finally `OPENAI_DEFAULT_HEADERS`/`LLM_DEFAULT_HEADERS` → `openai`.
 
 | Provider (`LLM_PROVIDER`) | Package | Credential env vars | Default model |
 |---|---|---|---|
 | `openai` | `@ai-sdk/openai` | `OPENAI_API_KEY` or `LLM_API_KEY` | `gpt-4o-mini` |
 | `openai-compatible` | `@ai-sdk/openai-compatible` | `LLM_BASE_URL` or `OPENAI_BASE_URL` (required); `OPENAI_API_KEY`/`LLM_API_KEY` or custom headers | `gpt-4o-mini` |
-| `anthropic` | `@ai-sdk/anthropic` | `ANTHROPIC_API_KEY` | `claude-3-5-haiku-latest` |
+| `anthropic` | `@ai-sdk/anthropic` | `ANTHROPIC_API_KEY` | `claude-haiku-4-5-20251001` |
 | `google` | `@ai-sdk/google` | `GOOGLE_GENERATIVE_AI_API_KEY` or `GOOGLE_API_KEY` | `gemini-2.0-flash` |
-| `bedrock` | `@ai-sdk/amazon-bedrock` | Standard AWS credential chain (env / profile / role) | `anthropic.claude-3-5-haiku-20241022-v1:0` |
+| `bedrock` | `@ai-sdk/amazon-bedrock` | `AWS_ACCESS_KEY_ID` / `AWS_PROFILE` (auto-detects); full AWS credential chain supported | `anthropic.claude-3-5-haiku-20241022-v1:0` |
 | `mistral` | `@ai-sdk/mistral` | `MISTRAL_API_KEY` | `mistral-small-latest` |
 | `cohere` | `@ai-sdk/cohere` | `COHERE_API_KEY` | `command-r-08-2024` |
 | `groq` | `@ai-sdk/groq` | `GROQ_API_KEY` | `llama-3.1-8b-instant` |
@@ -113,7 +113,7 @@ const markdown = await summarizeGitDiff({
 | Option | Description |
 |--------|-------------|
 | `from` / `to` | Git refs for the range; `to` defaults to `HEAD`. |
-| `cwd` / `git` | Working tree for `simple-git`, or inject your own `SimpleGit` instance. |
+| `cwd` / `git` | Working directory path, or inject your own `GitClient` instance. |
 | `includeFolders` | Limit diff to these paths relative to repo root (omit for full repo minus excludes). |
 | `excludeFolders` | Excluded paths (git `:(exclude)` pathspecs), e.g. `node_modules`. |
 | `commitMessageIncludeRegexes` | If any pattern is non-empty, only commits whose **full message** matches at least one pattern are kept (after excludes). Case-insensitive. |

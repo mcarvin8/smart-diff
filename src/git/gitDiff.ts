@@ -9,6 +9,7 @@ export type {
 
 export { buildDiffPathspecs } from "./diffPathspecs.js";
 export { filterCommitsByMessageRegexes } from "./commitMessageFilter.js";
+export type { GitClient } from "./gitDiffOps.js";
 export {
   createGitClient,
   getChangedFiles,

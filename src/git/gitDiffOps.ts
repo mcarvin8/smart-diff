@@ -1,5 +1,5 @@
-import { simpleGit } from "simple-git";
-import type { SimpleGit } from "simple-git";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 import type {
   CommitInfo,
@@ -11,21 +11,41 @@ import { buildDiffPathspecs } from "./diffPathspecs.js";
 import { buildDiffShapingGitArgs, shapeUnifiedDiff } from "./diffShaping.js";
 import { buildDiffSummaryFromGitOutputs } from "./diffSummaryBuild.js";
 
-export function createGitClient(cwd = process.cwd()): SimpleGit {
-  return simpleGit(cwd);
+const execFileAsync = promisify(execFile);
+
+export type GitClient = {
+  run(args: string[]): Promise<string>;
+};
+
+export function createGitClient(cwd = process.cwd()): GitClient {
+  return {
+    run: (args) =>
+      execFileAsync("git", args, { cwd, maxBuffer: 100 * 1024 * 1024 }).then(
+        ({ stdout }) => stdout,
+      ),
+  };
 }
 
 export async function getCommits(
-  git: SimpleGit,
+  git: GitClient,
   from: string,
   to: string,
 ): Promise<CommitInfo[]> {
-  const logResult = await git.log({ from, to });
-  return logResult.all as unknown as CommitInfo[];
+  const output = await git.run(["log", "--format=%H%x1f%s", `${from}..${to}`]);
+  return output
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      const sep = line.indexOf("\x1f");
+      return {
+        hash: sep >= 0 ? line.slice(0, sep) : line,
+        message: sep >= 0 ? line.slice(sep + 1) : "",
+      };
+    });
 }
 
-export async function getRepoRoot(git: SimpleGit): Promise<string> {
-  const root = await git.revparse(["--show-toplevel"]);
+export async function getRepoRoot(git: GitClient): Promise<string> {
+  const root = await git.run(["rev-parse", "--show-toplevel"]);
   return root.trim();
 }
 
@@ -35,7 +55,7 @@ type DiffPathContext = {
 };
 
 async function getDiffPathContext(
-  git: SimpleGit,
+  git: GitClient,
   pathFilter: DiffPathFilter | undefined,
   repoRootOverride?: string,
 ): Promise<DiffPathContext> {
@@ -45,7 +65,7 @@ async function getDiffPathContext(
 }
 
 export async function getDiff(
-  git: SimpleGit,
+  git: GitClient,
   query: GitDiffRangeQuery,
 ): Promise<string> {
   const {
@@ -61,7 +81,8 @@ export async function getDiff(
   const shapingArgs = buildDiffShapingGitArgs(shaping);
 
   if (!filterByCommits) {
-    const raw = await git.diff([
+    const raw = await git.run([
+      "diff",
       ...shapingArgs,
       `${from}..${to}`,
       "--",
@@ -72,7 +93,7 @@ export async function getDiff(
 
   const patches = await Promise.all(
     commits.map((c) =>
-      git.diff([...shapingArgs, `${c.hash}^!`, "--", ...specs]),
+      git.run(["diff", ...shapingArgs, `${c.hash}^!`, "--", ...specs]),
     ),
   );
 
@@ -83,7 +104,7 @@ export async function getDiff(
 }
 
 export async function getDiffSummary(
-  git: SimpleGit,
+  git: GitClient,
   query: GitDiffRangeQuery,
 ): Promise<DiffSummary> {
   const {
@@ -100,14 +121,16 @@ export async function getDiffSummary(
 
   if (!filterByCommits) {
     const [numOutput, nameOutput] = await Promise.all([
-      git.diff([
+      git.run([
+        "diff",
         ...whitespaceArgs,
         "--numstat",
         `${from}..${to}`,
         "--",
         ...specs,
       ]),
-      git.diff([
+      git.run([
+        "diff",
         ...whitespaceArgs,
         "--name-status",
         `${from}..${to}`,
@@ -122,8 +145,22 @@ export async function getDiffSummary(
     commits.map(async (c) => {
       const range = `${c.hash}^!`;
       const [numOutput, nameOutput] = await Promise.all([
-        git.diff([...whitespaceArgs, "--numstat", range, "--", ...specs]),
-        git.diff([...whitespaceArgs, "--name-status", range, "--", ...specs]),
+        git.run([
+          "diff",
+          ...whitespaceArgs,
+          "--numstat",
+          range,
+          "--",
+          ...specs,
+        ]),
+        git.run([
+          "diff",
+          ...whitespaceArgs,
+          "--name-status",
+          range,
+          "--",
+          ...specs,
+        ]),
       ]);
       return { numOutput, nameOutput };
     }),
@@ -140,7 +177,7 @@ export async function getDiffSummary(
 }
 
 export async function getChangedFiles(
-  git: SimpleGit,
+  git: GitClient,
   query: GitDiffRangeQuery,
 ): Promise<string[]> {
   const { from, to, commits, filterByCommits, pathFilter, repoRootOverride } =
@@ -148,7 +185,8 @@ export async function getChangedFiles(
   const { specs } = await getDiffPathContext(git, pathFilter, repoRootOverride);
 
   if (!filterByCommits) {
-    const output = await git.diff([
+    const output = await git.run([
+      "diff",
       "--name-only",
       `${from}..${to}`,
       "--",
@@ -165,7 +203,8 @@ export async function getChangedFiles(
 
   await Promise.all(
     commits.map(async (c) => {
-      const output = await git.show([
+      const output = await git.run([
+        "show",
         "--name-only",
         "--pretty=format:",
         c.hash,

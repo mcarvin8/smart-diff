@@ -1,5 +1,4 @@
 import { join } from "node:path";
-import type { SimpleGit } from "simple-git";
 import type { Mock } from "vitest";
 
 import {
@@ -10,13 +9,20 @@ import {
   getDiffSummary,
   getRepoRoot,
   type CommitInfo,
+  type GitClient,
 } from "../src/git/gitDiff";
 
+function makeGit(
+  impl: (args: string[]) => Promise<string> = () => Promise.resolve(""),
+): GitClient & { run: Mock } {
+  return { run: vi.fn().mockImplementation(impl) };
+}
+
 describe("createGitClient", () => {
-  it("returns a simple-git instance for the given cwd", () => {
+  it("returns a GitClient with a run function for the given cwd", () => {
     const git = createGitClient(join(__dirname, ".."));
     expect(git).toBeDefined();
-    expect(typeof git.log).toBe("function");
+    expect(typeof git.run).toBe("function");
   });
 
   it("defaults cwd to process.cwd when omitted", () => {
@@ -26,42 +32,41 @@ describe("createGitClient", () => {
 });
 
 describe("getRepoRoot", () => {
-  it("trims revparse output", async () => {
-    const git = {
-      revparse: vi.fn().mockResolvedValue("  /repo/root  \n"),
-    } as unknown as SimpleGit;
+  it("trims rev-parse output", async () => {
+    const git = makeGit(() => Promise.resolve("  /repo/root  \n"));
     await expect(getRepoRoot(git)).resolves.toBe("/repo/root");
   });
 });
 
 describe("getCommits", () => {
-  it("returns log.all as CommitInfo[]", async () => {
-    const git = {
-      log: vi.fn().mockResolvedValue({
-        all: [{ hash: "aaa", message: "msg" }],
-      }),
-    } as unknown as SimpleGit;
+  it("returns parsed log output as CommitInfo[]", async () => {
+    const git = makeGit(() => Promise.resolve("aaa\x1fmsg\n"));
     await expect(getCommits(git, "from", "to")).resolves.toEqual([
       { hash: "aaa", message: "msg" },
     ]);
-    expect(git.log).toHaveBeenCalledWith({ from: "from", to: "to" });
+    expect(git.run).toHaveBeenCalledWith([
+      "log",
+      "--format=%H%x1f%s",
+      "from..to",
+    ]);
   });
 });
 
-function makeGitWithDiff(): { git: SimpleGit; diff: Mock } {
-  const diff = vi.fn();
-  const git = {
-    revparse: vi.fn().mockResolvedValue(`${join(__dirname, "fixture-repo")}\n`),
-    diff,
-    show: vi.fn(),
-  } as unknown as SimpleGit;
-  return { git, diff };
+function makeGitWithDiff(): { git: GitClient & { run: Mock }; run: Mock } {
+  const run = vi.fn().mockImplementation(async (args: string[]) => {
+    if (args[0] === "rev-parse") {
+      return `${join(__dirname, "fixture-repo")}\n`;
+    }
+    return "";
+  });
+  const git = { run };
+  return { git, run };
 }
 
 describe("getDiff", () => {
-  it("uses range diff and repoRootOverride skips revparse", async () => {
-    const { git, diff } = makeGitWithDiff();
-    diff.mockResolvedValue("range-diff");
+  it("uses range diff and repoRootOverride skips rev-parse", async () => {
+    const { git, run } = makeGitWithDiff();
+    run.mockResolvedValue("range-diff");
     const commits: CommitInfo[] = [{ hash: "x", message: "m" }];
 
     const out = await getDiff(git, {
@@ -74,15 +79,22 @@ describe("getDiff", () => {
     });
 
     expect(out).toBe("range-diff");
-    expect(diff).toHaveBeenCalledWith(["a..b", "--", ".", ":(exclude)out"]);
-    expect(
-      (git as unknown as { revparse: Mock }).revparse,
-    ).not.toHaveBeenCalled();
+    expect(run).toHaveBeenCalledWith([
+      "diff",
+      "a..b",
+      "--",
+      ".",
+      ":(exclude)out",
+    ]);
+    const revParseCalled = run.mock.calls.some(
+      (c: string[][]) => c[0][0] === "rev-parse",
+    );
+    expect(revParseCalled).toBe(false);
   });
 
   it("forwards shaping args and post-processes the range diff", async () => {
-    const { git, diff } = makeGitWithDiff();
-    diff.mockResolvedValue(
+    const { git, run } = makeGitWithDiff();
+    run.mockResolvedValue(
       [
         "diff --git a/a.ts b/a.ts",
         "index 111..222 100644",
@@ -107,7 +119,7 @@ describe("getDiff", () => {
       },
     });
 
-    expect(diff).toHaveBeenCalledWith(["-U1", "-w", "a..b", "--", "."]);
+    expect(run).toHaveBeenCalledWith(["diff", "-U1", "-w", "a..b", "--", "."]);
     expect(out).not.toContain("diff --git");
     expect(out).not.toContain("index 111..222");
     expect(out).toContain("--- a/a.ts");
@@ -115,8 +127,8 @@ describe("getDiff", () => {
   });
 
   it("shapes each per-commit patch independently", async () => {
-    const { git, diff } = makeGitWithDiff();
-    diff
+    const { git, run } = makeGitWithDiff();
+    run
       .mockResolvedValueOnce(
         [
           "diff --git a/a.ts b/a.ts",
@@ -142,15 +154,15 @@ describe("getDiff", () => {
       shaping: { stripDiffPreamble: true, contextLines: 0 },
     });
 
-    expect(diff).toHaveBeenCalledWith(["-U0", "aaa^!", "--", "."]);
-    expect(diff).toHaveBeenCalledWith(["-U0", "bbb^!", "--", "."]);
+    expect(run).toHaveBeenCalledWith(["diff", "-U0", "aaa^!", "--", "."]);
+    expect(run).toHaveBeenCalledWith(["diff", "-U0", "bbb^!", "--", "."]);
     expect(out).not.toContain("diff --git");
     expect(out).toContain("--- a/a.ts");
   });
 
   it("joins per-commit patches and drops empty", async () => {
-    const { git, diff } = makeGitWithDiff();
-    diff.mockResolvedValueOnce("").mockResolvedValueOnce("patch-b");
+    const { git, run } = makeGitWithDiff();
+    run.mockResolvedValueOnce("").mockResolvedValueOnce("patch-b");
     const commits: CommitInfo[] = [
       { hash: "aaa111", message: "a" },
       { hash: "bbb222", message: "b" },
@@ -164,16 +176,16 @@ describe("getDiff", () => {
       repoRootOverride: join(__dirname, "fixture-repo"),
     });
 
-    expect(diff).toHaveBeenCalledWith(["aaa111^!", "--", "."]);
-    expect(diff).toHaveBeenCalledWith(["bbb222^!", "--", "."]);
+    expect(run).toHaveBeenCalledWith(["diff", "aaa111^!", "--", "."]);
+    expect(run).toHaveBeenCalledWith(["diff", "bbb222^!", "--", "."]);
     expect(out).toBe("patch-b");
   });
 });
 
 describe("getDiffSummary", () => {
   it("aggregates range numstat and name-status", async () => {
-    const { git, diff } = makeGitWithDiff();
-    diff.mockImplementation(async (args: string[]) => {
+    const { git, run } = makeGitWithDiff();
+    run.mockImplementation(async (args: string[]) => {
       if (args.includes("--numstat")) {
         return [
           "1\t2\tadded.ts",
@@ -223,8 +235,8 @@ describe("getDiffSummary", () => {
   });
 
   it("tolerates malformed numstat lines and non-numeric counts", async () => {
-    const { git, diff } = makeGitWithDiff();
-    diff.mockImplementation(async (args: string[]) => {
+    const { git, run } = makeGitWithDiff();
+    run.mockImplementation(async (args: string[]) => {
       if (args.includes("--numstat")) {
         return [
           "single_col_no_tabs",
@@ -258,8 +270,8 @@ describe("getDiffSummary", () => {
   });
 
   it("merges multiple renames that target the same new path", async () => {
-    const { git, diff } = makeGitWithDiff();
-    diff.mockImplementation(async (args: string[]) => {
+    const { git, run } = makeGitWithDiff();
+    run.mockImplementation(async (args: string[]) => {
       if (args.includes("--numstat")) {
         return "1\t1\tshared.ts";
       }
@@ -285,8 +297,8 @@ describe("getDiffSummary", () => {
   });
 
   it("fills in oldPath when a later rename follows a non-rename entry for the same path", async () => {
-    const { git, diff } = makeGitWithDiff();
-    diff.mockImplementation(async (args: string[]) => {
+    const { git, run } = makeGitWithDiff();
+    run.mockImplementation(async (args: string[]) => {
       if (args.includes("--numstat")) {
         return "1\t1\tshared.ts";
       }
@@ -309,8 +321,8 @@ describe("getDiffSummary", () => {
   });
 
   it("passes -w to numstat and name-status when ignoreWhitespace is set", async () => {
-    const { git, diff } = makeGitWithDiff();
-    diff.mockResolvedValue("");
+    const { git, run } = makeGitWithDiff();
+    run.mockResolvedValue("");
 
     await getDiffSummary(git, {
       from: "a",
@@ -321,8 +333,16 @@ describe("getDiffSummary", () => {
       shaping: { ignoreWhitespace: true },
     });
 
-    expect(diff).toHaveBeenCalledWith(["-w", "--numstat", "a..b", "--", "."]);
-    expect(diff).toHaveBeenCalledWith([
+    expect(run).toHaveBeenCalledWith([
+      "diff",
+      "-w",
+      "--numstat",
+      "a..b",
+      "--",
+      ".",
+    ]);
+    expect(run).toHaveBeenCalledWith([
+      "diff",
       "-w",
       "--name-status",
       "a..b",
@@ -332,8 +352,8 @@ describe("getDiffSummary", () => {
   });
 
   it("passes -w per-commit when ignoreWhitespace is set with filterByCommits", async () => {
-    const { git, diff } = makeGitWithDiff();
-    diff.mockResolvedValue("");
+    const { git, run } = makeGitWithDiff();
+    run.mockResolvedValue("");
 
     await getDiffSummary(git, {
       from: "a",
@@ -344,15 +364,20 @@ describe("getDiffSummary", () => {
       shaping: { ignoreWhitespace: true },
     });
 
-    expect(diff).toHaveBeenCalledWith(["-w", "--numstat", "c1^!", "--", "."]);
+    expect(run).toHaveBeenCalledWith([
+      "diff",
+      "-w",
+      "--numstat",
+      "c1^!",
+      "--",
+      ".",
+    ]);
   });
 
   it("aggregates per-commit summaries", async () => {
-    const { git, diff } = makeGitWithDiff();
-    let call = 0;
-    diff.mockImplementation(async (args: string[]) => {
+    const { git, run } = makeGitWithDiff();
+    run.mockImplementation(async (args: string[]) => {
       const range = args.find((a) => a.endsWith("^!"));
-      call += 1;
       if (args.includes("--numstat")) {
         return range?.startsWith("111") ? "1\t1\tf.ts" : "";
       }
@@ -379,8 +404,8 @@ describe("getDiffSummary", () => {
 
 describe("getChangedFiles", () => {
   it("splits range output on CRLF", async () => {
-    const { git, diff } = makeGitWithDiff();
-    diff.mockResolvedValue("a.ts\r\nb.ts\r\n");
+    const { git, run } = makeGitWithDiff();
+    run.mockResolvedValue("a.ts\r\nb.ts\r\n");
 
     const files = await getChangedFiles(git, {
       from: "a",
@@ -394,14 +419,12 @@ describe("getChangedFiles", () => {
   });
 
   it("dedupes files from per-commit show output", async () => {
-    const { git } = makeGitWithDiff();
-    const show = vi
-      .fn()
+    const { git, run } = makeGitWithDiff();
+    run
       .mockResolvedValueOnce("dup.ts\n")
       .mockResolvedValueOnce("dup.ts\nother.ts\n");
-    (git as unknown as { show: typeof show }).show = show;
 
-    const files = await getChangedFiles(git as unknown as SimpleGit, {
+    const files = await getChangedFiles(git, {
       from: "a",
       to: "b",
       commits: [

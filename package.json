@@ -53,7 +53,6 @@
     "@ai-sdk/openai": "3.0.67",
     "@ai-sdk/openai-compatible": "2.0.48",
     "ai": "6.0.195",
-    "simple-git": "3.20.0",
     "tslib": "2.6.2"
   },
   "optionalDependencies": {

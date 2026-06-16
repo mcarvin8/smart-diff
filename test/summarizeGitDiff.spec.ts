@@ -1,30 +1,22 @@
 import { join } from "node:path";
 import type { LanguageModel } from "ai";
-import type { SimpleGit } from "simple-git";
 import type { Mock } from "vitest";
 
 import { summarizeGitDiff } from "../src/index";
+import type { GitClient } from "../src/git/gitDiff";
 import { makeMockModel } from "./helpers/mockLlm";
 
-function createMockGit(repoRoot: string): SimpleGit {
-  const diff = vi.fn().mockImplementation(async (args: string[]) => {
+function createMockGit(repoRoot: string): GitClient & { run: Mock } {
+  const run = vi.fn().mockImplementation(async (args: string[]) => {
+    if (args[0] === "log") return `aaa111\x1ffeat: one\nbbb222\x1fchore: noise`;
+    if (args[0] === "rev-parse") return `${repoRoot}\n`;
+    if (args[0] === "show") return "";
     if (args.includes("--name-only")) return "src/app.ts\n";
     if (args.includes("--numstat")) return "2\t1\tsrc/app.ts\n";
     if (args.includes("--name-status")) return "M\tsrc/app.ts\n";
     return "diff --git a/src/app.ts\n+ok";
   });
-
-  return {
-    log: vi.fn().mockResolvedValue({
-      all: [
-        { hash: "aaa111", message: "feat: one" },
-        { hash: "bbb222", message: "chore: noise" },
-      ],
-    }),
-    revparse: vi.fn().mockResolvedValue(`${repoRoot}\n`),
-    diff,
-    show: vi.fn().mockResolvedValue(""),
-  } as unknown as SimpleGit;
+  return { run };
 }
 
 function mockLlmProvider(text: string): () => Promise<LanguageModel> {
@@ -47,9 +39,13 @@ describe("summarizeGitDiff", () => {
       llmModelProvider: mockLlmProvider("# Infra Summary\nBody from model"),
     });
 
-    expect(git.log).toHaveBeenCalledWith({ from: "main", to: "topic" });
+    expect(git.run).toHaveBeenCalledWith([
+      "log",
+      "--format=%H%x1f%s",
+      "main..topic",
+    ]);
     expect(md).toBe("# Infra Summary\nBody from model");
-    expect(git.diff).toHaveBeenCalled();
+    expect(git.run).toHaveBeenCalled();
   });
 
   it("uses per-commit diff shape when include regexes are set even if all match", async () => {
@@ -63,9 +59,10 @@ describe("summarizeGitDiff", () => {
       llmModelProvider: mockLlmProvider("ok"),
     });
 
-    const diffCalls = (git.diff as unknown as Mock).mock.calls.map(
-      (c) => c[0] as string[],
-    );
+    const runCalls = (git.run as Mock).mock.calls.map((c) => c[0] as string[]);
+    const diffCalls = runCalls
+      .filter((a) => a[0] === "diff")
+      .map((a) => a.slice(1));
     const hasPerCommitPatch = diffCalls.some((args) =>
       args.some((x) => /^\w+\^!$/.test(x)),
     );
@@ -96,9 +93,10 @@ describe("summarizeGitDiff", () => {
       llmModelProvider: mockLlmProvider("ok"),
     });
 
-    const diffCalls = (git.diff as unknown as Mock).mock.calls.map(
-      (c) => c[0] as string[],
-    );
+    const runCalls = (git.run as Mock).mock.calls.map((c) => c[0] as string[]);
+    const diffCalls = runCalls
+      .filter((a) => a[0] === "diff")
+      .map((a) => a.slice(1));
     const patchCall = findPatchCall(diffCalls);
     expect(patchCall).toEqual(["-U0", "-w", "a..b", "--", "."]);
     const numstatCall = diffCalls.find(
@@ -119,9 +117,10 @@ describe("summarizeGitDiff", () => {
       llmModelProvider: mockLlmProvider("ok"),
     });
 
-    const diffCalls = (git.diff as unknown as Mock).mock.calls.map(
-      (c) => c[0] as string[],
-    );
+    const runCalls = (git.run as Mock).mock.calls.map((c) => c[0] as string[]);
+    const diffCalls = runCalls
+      .filter((a) => a[0] === "diff")
+      .map((a) => a.slice(1));
     const patchCall = findPatchCall(diffCalls);
     expect(patchCall).toBeDefined();
     const excludes = (patchCall ?? []).filter((a) =>
@@ -147,9 +146,10 @@ describe("summarizeGitDiff", () => {
       llmModelProvider: mockLlmProvider("ok"),
     });
 
-    const diffCalls = (git.diff as unknown as Mock).mock.calls.map(
-      (c) => c[0] as string[],
-    );
+    const runCalls = (git.run as Mock).mock.calls.map((c) => c[0] as string[]);
+    const diffCalls = runCalls
+      .filter((a) => a[0] === "diff")
+      .map((a) => a.slice(1));
     const patchCall = findPatchCall(diffCalls);
     const customCount = (patchCall ?? []).filter(
       (e) => e === ":(exclude)custom-out",
@@ -168,9 +168,10 @@ describe("summarizeGitDiff", () => {
       llmModelProvider: mockLlmProvider("ok"),
     });
 
-    const diffCalls = (git.diff as unknown as Mock).mock.calls.map(
-      (c) => c[0] as string[],
-    );
+    const runCalls = (git.run as Mock).mock.calls.map((c) => c[0] as string[]);
+    const diffCalls = runCalls
+      .filter((a) => a[0] === "diff")
+      .map((a) => a.slice(1));
     const patchCall = findPatchCall(diffCalls);
     const excludes = (patchCall ?? []).filter((a) =>
       a.startsWith(":(exclude)"),
@@ -188,9 +189,10 @@ describe("summarizeGitDiff", () => {
       llmModelProvider: mockLlmProvider("ok"),
     });
 
-    const diffCalls = (git.diff as unknown as Mock).mock.calls.map(
-      (c) => c[0] as string[],
-    );
+    const runCalls = (git.run as Mock).mock.calls.map((c) => c[0] as string[]);
+    const diffCalls = runCalls
+      .filter((a) => a[0] === "diff")
+      .map((a) => a.slice(1));
     const patchCall = findPatchCall(diffCalls);
     expect(patchCall).toBeDefined();
     expect((patchCall ?? []).some((a) => a.startsWith(":(exclude)"))).toBe(

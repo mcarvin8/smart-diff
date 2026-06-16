@@ -112,6 +112,8 @@ const ENV_KEYS = [
   "GROQ_API_KEY",
   "XAI_API_KEY",
   "DEEPSEEK_API_KEY",
+  "AWS_ACCESS_KEY_ID",
+  "AWS_PROFILE",
 ];
 
 function clearProviderEnv(): void {
@@ -247,6 +249,16 @@ describe("llmProviders env helpers", () => {
         process.env[envKey] = "k";
         expect(detectLlmProvider()).toBe(provider);
       }
+    });
+
+    it("auto-detects bedrock from AWS_ACCESS_KEY_ID", () => {
+      process.env.AWS_ACCESS_KEY_ID = "AKIA000";
+      expect(detectLlmProvider()).toBe("bedrock");
+    });
+
+    it("auto-detects bedrock from AWS_PROFILE", () => {
+      process.env.AWS_PROFILE = "default";
+      expect(detectLlmProvider()).toBe("bedrock");
     });
 
     it("falls back to openai when only default headers are set", () => {

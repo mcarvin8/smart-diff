@@ -34,7 +34,7 @@ export type LlmProviderId =
 const DEFAULT_MODEL_BY_PROVIDER: Record<LlmProviderId, string> = {
   openai: "gpt-4o-mini",
   "openai-compatible": "gpt-4o-mini",
-  anthropic: "claude-3-5-haiku-latest",
+  anthropic: "claude-haiku-4-5-20251001",
   google: "gemini-2.0-flash",
   bedrock: "anthropic.claude-3-5-haiku-20241022-v1:0",
   mistral: "mistral-small-latest",
@@ -137,6 +137,7 @@ export function detectLlmProvider(): LlmProviderId | undefined {
   if (readEnv("GROQ_API_KEY")) return "groq";
   if (readEnv("XAI_API_KEY")) return "xai";
   if (readEnv("DEEPSEEK_API_KEY")) return "deepseek";
+  if (readEnv("AWS_ACCESS_KEY_ID") ?? readEnv("AWS_PROFILE")) return "bedrock";
   if (parseLlmDefaultHeadersFromEnv()) return "openai";
   return undefined;
 }

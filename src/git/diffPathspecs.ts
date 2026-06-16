@@ -1,4 +1,4 @@
-import { resolve, normalize, sep } from "node:path";
+import { resolve, sep } from "node:path";
 
 import type { DiffPathFilter } from "./diffTypes.js";
 
@@ -10,10 +10,9 @@ function normalizeRepoRelativePath(p: string): string {
 }
 
 function assertPathUnderRepo(repoRoot: string, userPath: string): void {
+  const absRoot = resolve(repoRoot);
   const abs = resolve(repoRoot, userPath);
-  const normRoot = normalize(repoRoot);
-  const normAbs = normalize(abs);
-  if (normAbs !== normRoot && !normAbs.startsWith(normRoot + sep)) {
+  if (abs !== absRoot && !abs.startsWith(absRoot + sep)) {
     throw new Error(
       `Path escapes repository root: ${JSON.stringify(userPath)}`,
     );

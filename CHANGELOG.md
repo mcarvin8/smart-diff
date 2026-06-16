@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.0.0](https://github.com/mcarvin8/smart-diff/compare/v2.4.0...v3.0.0) (2026-06-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* make all AI provider packages optional dependencies ([#41](https://github.com/mcarvin8/smart-diff/issues/41))
+
+### Features
+
+* add LLM_TEMPERATURE env var for configurable sampling temperature ([#43](https://github.com/mcarvin8/smart-diff/issues/43)) ([10975ff](https://github.com/mcarvin8/smart-diff/commit/10975ff0f6a4f41d6f12ee04228342473f810b31))
+* make all AI provider packages optional dependencies ([#41](https://github.com/mcarvin8/smart-diff/issues/41)) ([7503864](https://github.com/mcarvin8/smart-diff/commit/7503864f2876d439b5d3fb0fc0c3fd78f754c5d0))
+
 ## [2.4.0](https://github.com/mcarvin8/smart-diff/compare/v2.3.2...v2.4.0) (2026-06-16)
 
 

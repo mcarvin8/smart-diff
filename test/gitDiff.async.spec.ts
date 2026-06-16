@@ -374,6 +374,28 @@ describe("getDiffSummary", () => {
     ]);
   });
 
+  it("sets binary: true on files reported as '-' in numstat", async () => {
+    const { git, run } = makeGitWithDiff();
+    run.mockImplementation(async (args: string[]) => {
+      if (args.includes("--numstat")) return "-\t-\timage.png";
+      if (args.includes("--name-status")) return "M\timage.png";
+      return "";
+    });
+
+    const summary = await getDiffSummary(git, {
+      from: "a",
+      to: "b",
+      commits: [{ hash: "h", message: "m" }],
+      filterByCommits: false,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+    });
+
+    const file = summary.files.find((f) => f.path === "image.png");
+    expect(file?.binary).toBe(true);
+    expect(file?.additions).toBe(0);
+    expect(file?.deletions).toBe(0);
+  });
+
   it("aggregates per-commit summaries", async () => {
     const { git, run } = makeGitWithDiff();
     run.mockImplementation(async (args: string[]) => {

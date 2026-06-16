@@ -21,6 +21,8 @@ export type DiffFileSummary = {
   deletions: number;
   oldPath?: string;
   newPath?: string;
+  /** True when git reported `-` for both addition and deletion counts (binary file). */
+  binary?: boolean;
 };
 
 export type DiffSummary = {

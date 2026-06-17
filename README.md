@@ -16,13 +16,19 @@ TypeScript library that turns a **git revision range** into a **Markdown summary
 
 ## Alpine Linux / musl libc
 
-Dugite's bundled git binary is compiled against glibc and will not run on Alpine Linux or other musl-based images. Set `LOCAL_GIT_DIRECTORY` to your system git prefix and dugite will use the system binary instead:
+Dugite's bundled git binary is compiled against glibc and will not run on Alpine Linux or other musl-based images. Set the two [dugite execution env vars](https://github.com/desktop/dugite/blob/main/docs/environment-variables.md#execution) to point at your system git instead:
+
+| Variable | Purpose |
+|---|---|
+| `LOCAL_GIT_DIRECTORY` | Root of your git installation (the directory containing `bin/git`) |
+| `GIT_EXEC_PATH` | Directory containing git's subprograms (set if your distro moves them) |
 
 ```sh
-export LOCAL_GIT_DIRECTORY=/usr   # uses /usr/bin/git
+export LOCAL_GIT_DIRECTORY=/usr        # uses /usr/bin/git
+export GIT_EXEC_PATH=/usr/lib/git-core # only needed if subprograms are non-standard
 ```
 
-Install git in your image first if needed (`apk add git`). No code changes are required — `LOCAL_GIT_DIRECTORY` is a first-class dugite env var.
+Install git in your image first if needed (`apk add git`). No code changes are required — these are first-class dugite env vars.
 
 ## Installation
 

@@ -9,7 +9,7 @@ updates:
     allow:
       - dependency-name: '@ai-sdk/*'
       - dependency-name: 'ai'
-      - dependency-type: 'dugite'
+      - dependency-name: 'dugite'
     groups:
       ai-sdk:
         patterns:

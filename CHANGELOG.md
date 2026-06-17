@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.1.0](https://github.com/mcarvin8/smart-diff/compare/v3.0.0...v3.1.0) (2026-06-17)
+
+
+### Features
+
+* **deps:** bump the ai-sdk group with 13 updates ([#47](https://github.com/mcarvin8/smart-diff/issues/47)) ([89b763b](https://github.com/mcarvin8/smart-diff/commit/89b763b5da716c40261e2b1ee2f36c68fd32041f))
+* replace execFile git spawn with dugite bundled binary ([#44](https://github.com/mcarvin8/smart-diff/issues/44)) ([303450c](https://github.com/mcarvin8/smart-diff/commit/303450cfc2280448c48c1c4015aff3abf2d48ceb))
+
 ## [3.0.0](https://github.com/mcarvin8/smart-diff/compare/v2.4.0...v3.0.0) (2026-06-16)
 
 

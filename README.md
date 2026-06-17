@@ -14,6 +14,16 @@ TypeScript library that turns a **git revision range** into a **Markdown summary
 - **Node.js** 20+
 - An LLM provider credential (see [Provider configuration](#provider-configuration))
 
+## Alpine Linux / musl libc
+
+Dugite's bundled git binary is compiled against glibc and will not run on Alpine Linux or other musl-based images. Set `LOCAL_GIT_DIRECTORY` to your system git prefix and dugite will use the system binary instead:
+
+```sh
+export LOCAL_GIT_DIRECTORY=/usr   # uses /usr/bin/git
+```
+
+Install git in your image first if needed (`apk add git`). No code changes are required — `LOCAL_GIT_DIRECTORY` is a first-class dugite env var.
+
 ## Installation
 
 ```bash

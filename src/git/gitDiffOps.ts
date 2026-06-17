@@ -1,5 +1,4 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { exec } from "dugite";
 
 import type {
   CommitInfo,
@@ -11,8 +10,6 @@ import { buildDiffPathspecs } from "./diffPathspecs.js";
 import { buildDiffShapingGitArgs, shapeUnifiedDiff } from "./diffShaping.js";
 import { buildDiffSummaryFromGitOutputs } from "./diffSummaryBuild.js";
 
-const execFileAsync = promisify(execFile);
-
 export type GitClient = {
   run(args: string[]): Promise<string>;
 };
@@ -22,12 +19,19 @@ export function createGitClient(
   timeout?: number,
 ): GitClient {
   return {
-    run: (args) =>
-      execFileAsync("git", args, {
-        cwd,
-        maxBuffer: 100 * 1024 * 1024,
-        ...(timeout !== undefined ? { timeout } : {}),
-      }).then(({ stdout }) => stdout),
+    run: async (args) => {
+      const result = await exec(args, cwd, {
+        ...(timeout !== undefined
+          ? { signal: AbortSignal.timeout(timeout) }
+          : {}),
+      });
+      if (result.exitCode !== 0) {
+        throw new Error(
+          result.stderr || `git exited with code ${result.exitCode}`,
+        );
+      }
+      return result.stdout;
+    },
   };
 }
 

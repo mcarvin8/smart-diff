@@ -5,10 +5,11 @@ updates:
     schedule:
       interval: 'monthly'
     commit-message:
-      prefix: "feat(ai)"
+      prefix: "feat(deps)"
     allow:
       - dependency-name: '@ai-sdk/*'
       - dependency-name: 'ai'
+      - dependency-name: 'dugite'
     groups:
       ai-sdk:
         patterns:

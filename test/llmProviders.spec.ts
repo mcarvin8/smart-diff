@@ -83,6 +83,13 @@ vi.mock("@ai-sdk/deepseek", () => ({
 
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createMistral } from "@ai-sdk/mistral";
+import { createCohere } from "@ai-sdk/cohere";
+import { createGroq } from "@ai-sdk/groq";
+import { createXai } from "@ai-sdk/xai";
+import { createDeepSeek } from "@ai-sdk/deepseek";
 
 import {
   defaultModelForProvider,
@@ -147,6 +154,11 @@ describe("llmProviders env helpers", () => {
     it("returns undefined when unset", () => {
       expect(resolveLlmBaseUrl()).toBeUndefined();
     });
+
+    it("returns undefined for whitespace-only LLM_BASE_URL", () => {
+      process.env.LLM_BASE_URL = "   ";
+      expect(resolveLlmBaseUrl()).toBeUndefined();
+    });
   });
 
   describe("parseLlmDefaultHeadersFromEnv", () => {
@@ -187,12 +199,40 @@ describe("llmProviders env helpers", () => {
       });
       expect(parseLlmDefaultHeadersFromEnv()).toEqual({ "X-Ok": "yes" });
     });
+
+    it("returns undefined for null JSON value", () => {
+      process.env.OPENAI_DEFAULT_HEADERS = "null";
+      expect(parseLlmDefaultHeadersFromEnv()).toBeUndefined();
+    });
+
+    it("returns undefined for JSON string primitive", () => {
+      process.env.OPENAI_DEFAULT_HEADERS = '"hello"';
+      expect(parseLlmDefaultHeadersFromEnv()).toBeUndefined();
+    });
+
+    it("returns undefined for JSON string array with string values", () => {
+      process.env.OPENAI_DEFAULT_HEADERS = '["a","b"]';
+      expect(parseLlmDefaultHeadersFromEnv()).toBeUndefined();
+    });
+
+    it("excludes empty-string header values", () => {
+      process.env.OPENAI_DEFAULT_HEADERS = JSON.stringify({
+        "X-Empty": "",
+        "X-Ok": "1",
+      });
+      expect(parseLlmDefaultHeadersFromEnv()).toEqual({ "X-Ok": "1" });
+    });
   });
 
   describe("detectLlmProvider", () => {
     it("returns undefined when nothing configured", () => {
       expect(detectLlmProvider()).toBeUndefined();
       expect(isLlmProviderConfigured()).toBe(false);
+    });
+
+    it("isLlmProviderConfigured returns true when provider configured", () => {
+      process.env.OPENAI_API_KEY = "sk-test";
+      expect(isLlmProviderConfigured()).toBe(true);
     });
 
     it("honors explicit LLM_PROVIDER", () => {
@@ -455,6 +495,74 @@ describe("resolveLanguageModel", () => {
     expect(model.providerName).toBe("google");
   });
 
+  it("error message includes all provider env var names", async () => {
+    await expect(resolveLanguageModel()).rejects.toThrow(
+      /OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY, MISTRAL_API_KEY/,
+    );
+  });
+
+  it("error message includes remaining provider env var names", async () => {
+    await expect(resolveLanguageModel()).rejects.toThrow(
+      /COHERE_API_KEY, GROQ_API_KEY, XAI_API_KEY, DEEPSEEK_API_KEY/,
+    );
+  });
+
+  it("error message mentions LLM_BASE_URL", async () => {
+    await expect(resolveLanguageModel()).rejects.toThrow(/LLM_BASE_URL/);
+  });
+
+  it("passes ANTHROPIC_API_KEY to createAnthropic factory", async () => {
+    process.env.ANTHROPIC_API_KEY = "ant-key";
+    await resolveLanguageModel({ provider: "anthropic" });
+    expect(createAnthropic).toHaveBeenCalledWith({ apiKey: "ant-key" });
+  });
+
+  it("passes GOOGLE_GENERATIVE_AI_API_KEY to createGoogleGenerativeAI factory", async () => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "gai-key";
+    await resolveLanguageModel({ provider: "google" });
+    expect(createGoogleGenerativeAI).toHaveBeenCalledWith({
+      apiKey: "gai-key",
+    });
+  });
+
+  it("passes GOOGLE_API_KEY to createGoogleGenerativeAI when primary key absent", async () => {
+    process.env.GOOGLE_API_KEY = "gfb-key";
+    await resolveLanguageModel({ provider: "google" });
+    expect(createGoogleGenerativeAI).toHaveBeenCalledWith({
+      apiKey: "gfb-key",
+    });
+  });
+
+  it("passes MISTRAL_API_KEY to createMistral factory", async () => {
+    process.env.MISTRAL_API_KEY = "mist-key";
+    await resolveLanguageModel({ provider: "mistral" });
+    expect(createMistral).toHaveBeenCalledWith({ apiKey: "mist-key" });
+  });
+
+  it("passes COHERE_API_KEY to createCohere factory", async () => {
+    process.env.COHERE_API_KEY = "coh-key";
+    await resolveLanguageModel({ provider: "cohere" });
+    expect(createCohere).toHaveBeenCalledWith({ apiKey: "coh-key" });
+  });
+
+  it("passes GROQ_API_KEY to createGroq factory", async () => {
+    process.env.GROQ_API_KEY = "groq-key";
+    await resolveLanguageModel({ provider: "groq" });
+    expect(createGroq).toHaveBeenCalledWith({ apiKey: "groq-key" });
+  });
+
+  it("passes XAI_API_KEY to createXai factory", async () => {
+    process.env.XAI_API_KEY = "xai-key";
+    await resolveLanguageModel({ provider: "xai" });
+    expect(createXai).toHaveBeenCalledWith({ apiKey: "xai-key" });
+  });
+
+  it("passes DEEPSEEK_API_KEY to createDeepSeek factory", async () => {
+    process.env.DEEPSEEK_API_KEY = "ds-key";
+    await resolveLanguageModel({ provider: "deepseek" });
+    expect(createDeepSeek).toHaveBeenCalledWith({ apiKey: "ds-key" });
+  });
+
   it("wraps missing optional provider package with helpful message", async () => {
     vi.resetModules();
     vi.doMock("@ai-sdk/anthropic", () => {
@@ -464,7 +572,36 @@ describe("resolveLanguageModel", () => {
       await import("../src/ai/llmProviders");
     process.env.LLM_PROVIDER = "anthropic";
     await expect(resolveAgain()).rejects.toThrow(
-      /Failed to load optional provider package "@ai-sdk\/anthropic"/,
+      /Failed to load optional provider package "@ai-sdk\/anthropic" for LLM_PROVIDER="anthropic".*Install it with/,
     );
   });
+
+  const missingPeerCases: [LlmProviderId, string][] = [
+    ["openai", "@ai-sdk/openai"],
+    ["openai-compatible", "@ai-sdk/openai-compatible"],
+    ["google", "@ai-sdk/google"],
+    ["bedrock", "@ai-sdk/amazon-bedrock"],
+    ["mistral", "@ai-sdk/mistral"],
+    ["cohere", "@ai-sdk/cohere"],
+    ["groq", "@ai-sdk/groq"],
+    ["xai", "@ai-sdk/xai"],
+    ["deepseek", "@ai-sdk/deepseek"],
+  ];
+
+  it.each(missingPeerCases)(
+    "wraps missing %s package with provider id and install instruction",
+    async (provider, pkg) => {
+      vi.resetModules();
+      vi.doMock(pkg, () => {
+        throw new Error("Module not found");
+      });
+      const { resolveLanguageModel: r } =
+        await import("../src/ai/llmProviders");
+      await expect(r({ provider })).rejects.toThrow(
+        new RegExp(
+          `package "${pkg.replace(/\//g, "\\/")}.*LLM_PROVIDER="${provider}".*Install it with`,
+        ),
+      );
+    },
+  );
 });

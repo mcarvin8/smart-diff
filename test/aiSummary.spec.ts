@@ -76,6 +76,12 @@ describe("resolveLlmMaxDiffChars", () => {
     process.env.LLM_MAX_DIFF_CHARS = "-5";
     expect(resolveLlmMaxDiffChars()).toBe(120_000);
   });
+
+  it("trims whitespace-only LLM_MAX_DIFF_CHARS and falls through to OPENAI_MAX_DIFF_CHARS", () => {
+    process.env.LLM_MAX_DIFF_CHARS = "   ";
+    process.env.OPENAI_MAX_DIFF_CHARS = "5000";
+    expect(resolveLlmMaxDiffChars()).toBe(5000);
+  });
 });
 
 describe("truncateUnifiedDiffForLlm", () => {
@@ -472,5 +478,224 @@ describe("generateSummary", () => {
       if (prev === undefined) delete process.env.LLM_TEMPERATURE;
       else process.env.LLM_TEMPERATURE = prev;
     }
+  });
+
+  it("uses 4000 when LLM_MAX_TOKENS is zero", async () => {
+    const prev = process.env.LLM_MAX_TOKENS;
+    process.env.LLM_MAX_TOKENS = "0";
+    try {
+      const { llmModelProvider, calls } = provideMock("ok");
+      await generateSummary({
+        diffText: "d",
+        fileNames: [],
+        commits: [],
+        flags: flagsBase,
+        llmModelProvider,
+      });
+      expect(calls()[0]!.maxOutputTokens).toBe(4000);
+    } finally {
+      if (prev === undefined) delete process.env.LLM_MAX_TOKENS;
+      else process.env.LLM_MAX_TOKENS = prev;
+    }
+  });
+
+  it("uses 4000 when LLM_MAX_TOKENS is negative", async () => {
+    const prev = process.env.LLM_MAX_TOKENS;
+    process.env.LLM_MAX_TOKENS = "-3";
+    try {
+      const { llmModelProvider, calls } = provideMock("ok");
+      await generateSummary({
+        diffText: "d",
+        fileNames: [],
+        commits: [],
+        flags: flagsBase,
+        llmModelProvider,
+      });
+      expect(calls()[0]!.maxOutputTokens).toBe(4000);
+    } finally {
+      if (prev === undefined) delete process.env.LLM_MAX_TOKENS;
+      else process.env.LLM_MAX_TOKENS = prev;
+    }
+  });
+
+  it("does not prepend truncation notice when diff length equals maxDiffChars", async () => {
+    const { llmModelProvider } = provideMock("clean");
+    const md = await generateSummary({
+      diffText: "x".repeat(20),
+      fileNames: [],
+      commits: [],
+      flags: { ...flagsBase, maxDiffChars: 20 },
+      llmModelProvider,
+    });
+    expect(md).toBe("clean");
+    expect(md).not.toContain("Truncated diff");
+  });
+
+  it("user message starts with Date line when no team is set", async () => {
+    const { llmModelProvider, calls } = provideMock("x");
+    await generateSummary({
+      diffText: "d",
+      fileNames: [],
+      commits: [],
+      flags: flagsBase,
+      llmModelProvider,
+    });
+    expect(extractUserText(calls()[0]!)).toMatch(/^Date: /);
+  });
+
+  it("formats commit lines with 7-char hash, normalized CRLF, joined by newline", async () => {
+    const { llmModelProvider, calls } = provideMock("x");
+    await generateSummary({
+      diffText: "d",
+      fileNames: [],
+      commits: [
+        { hash: "abcdef1234567", message: "feat: multi\r\nline" },
+        { hash: "zzz0001", message: "fix: other" },
+      ],
+      flags: flagsBase,
+      llmModelProvider,
+    });
+    const userMsg = extractUserText(calls()[0]!);
+    expect(userMsg).toContain("- abcdef1 feat: multi line");
+    expect(userMsg).toContain("- zzz0001 fix: other");
+    expect(userMsg).toContain(
+      "- abcdef1 feat: multi line\n- zzz0001 fix: other",
+    );
+  });
+
+  it("lists fileNames joined with newline when non-empty", async () => {
+    const { llmModelProvider, calls } = provideMock("x");
+    await generateSummary({
+      diffText: "d",
+      fileNames: ["src/a.ts", "src/b.ts"],
+      commits: [],
+      flags: flagsBase,
+      llmModelProvider,
+    });
+    expect(extractUserText(calls()[0]!)).toContain("src/a.ts\nsrc/b.ts");
+  });
+
+  it("message contains section headers with correct surrounding structure", async () => {
+    const { llmModelProvider, calls } = provideMock("x");
+    await generateSummary({
+      diffText: "the-diff",
+      fileNames: ["a.ts"],
+      commits: [],
+      flags: flagsBase,
+      llmModelProvider,
+    });
+    const userMsg = extractUserText(calls()[0]!);
+    expect(userMsg).toContain("Date: ");
+    expect(userMsg).toMatch(/\n\n=== Included commits \(subject lines\) ===/);
+    expect(userMsg).toContain("=== Changed paths ===");
+    expect(userMsg).toMatch(/\n\n=== Git context/);
+    expect(userMsg).toContain("the-diff");
+  });
+
+  it("omits structured diff section and preserves git context header when diffSummary absent", async () => {
+    const { llmModelProvider, calls } = provideMock("x");
+    await generateSummary({
+      diffText: "d",
+      fileNames: [],
+      commits: [],
+      flags: flagsBase,
+      llmModelProvider,
+    });
+    const userMsg = extractUserText(calls()[0]!);
+    expect(userMsg).not.toContain("=== Structured git context");
+    expect(userMsg).toMatch(/\n\n=== Git context/);
+  });
+
+  it("omits include filter line when all include regexes are whitespace-only", async () => {
+    const { llmModelProvider, calls } = provideMock("x");
+    await generateSummary({
+      diffText: "d",
+      fileNames: [],
+      commits: [],
+      flags: { ...flagsBase, commitMessageIncludeRegexes: ["   ", "  "] },
+      llmModelProvider,
+    });
+    expect(extractUserText(calls()[0]!)).not.toContain("include regexes");
+  });
+
+  it("omits exclude filter line when all exclude regexes are whitespace-only", async () => {
+    const { llmModelProvider, calls } = provideMock("x");
+    await generateSummary({
+      diffText: "d",
+      fileNames: [],
+      commits: [],
+      flags: { ...flagsBase, commitMessageExcludeRegexes: ["   "] },
+      llmModelProvider,
+    });
+    expect(extractUserText(calls()[0]!)).not.toContain("exclude regexes");
+  });
+
+  it("trims whitespace from include regex and shows JSON-stringified value", async () => {
+    const { llmModelProvider, calls } = provideMock("x");
+    await generateSummary({
+      diffText: "d",
+      fileNames: [],
+      commits: [],
+      flags: { ...flagsBase, commitMessageIncludeRegexes: ["  ^feat  "] },
+      llmModelProvider,
+    });
+    const userMsg = extractUserText(calls()[0]!);
+    expect(userMsg).toContain('"^feat"');
+    expect(userMsg).not.toContain('"  ^feat  "');
+  });
+
+  it("trims whitespace from exclude regex and shows JSON-stringified value", async () => {
+    const { llmModelProvider, calls } = provideMock("x");
+    await generateSummary({
+      diffText: "d",
+      fileNames: [],
+      commits: [],
+      flags: { ...flagsBase, commitMessageExcludeRegexes: ["  ^WIP  "] },
+      llmModelProvider,
+    });
+    const userMsg = extractUserText(calls()[0]!);
+    expect(userMsg).toContain('"^WIP"');
+    expect(userMsg).not.toContain('"  ^WIP  "');
+  });
+
+  it("joins multiple include regexes with comma-space separator", async () => {
+    const { llmModelProvider, calls } = provideMock("x");
+    await generateSummary({
+      diffText: "d",
+      fileNames: [],
+      commits: [],
+      flags: { ...flagsBase, commitMessageIncludeRegexes: ["^feat", "^fix"] },
+      llmModelProvider,
+    });
+    expect(extractUserText(calls()[0]!)).toContain('"^feat", "^fix"');
+  });
+
+  it("joins multiple exclude regexes with comma-space separator", async () => {
+    const { llmModelProvider, calls } = provideMock("x");
+    await generateSummary({
+      diffText: "d",
+      fileNames: [],
+      commits: [],
+      flags: {
+        ...flagsBase,
+        commitMessageExcludeRegexes: ["^WIP", "^chore"],
+      },
+      llmModelProvider,
+    });
+    expect(extractUserText(calls()[0]!)).toContain('"^WIP", "^chore"');
+  });
+
+  it("shows per-commit shape context line when include regexes are set", async () => {
+    const { llmModelProvider, calls } = provideMock("x");
+    await generateSummary({
+      diffText: "d",
+      fileNames: [],
+      commits: [],
+      flags: { ...flagsBase, commitMessageIncludeRegexes: ["^feat"] },
+      llmModelProvider,
+    });
+    expect(extractUserText(calls()[0]!)).toContain(
+      "Git context shape: concatenated per-commit",
+    );
   });
 });

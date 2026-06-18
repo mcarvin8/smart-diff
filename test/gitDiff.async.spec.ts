@@ -114,6 +114,13 @@ describe("getCommits", () => {
       { hash: "deadbeef", message: "" },
     ]);
   });
+
+  it("handles separator at position zero (empty hash)", async () => {
+    const git = makeGit(() => Promise.resolve("\x1fmsg\n"));
+    await expect(getCommits(git, "from", "to")).resolves.toEqual([
+      { hash: "", message: "msg" },
+    ]);
+  });
 });
 
 function makeGitWithDiff(): { git: GitClient & { run: Mock }; run: Mock } {
@@ -243,6 +250,24 @@ describe("getDiff", () => {
     expect(run).toHaveBeenCalledWith(["diff", "aaa111^!", "--", "."]);
     expect(run).toHaveBeenCalledWith(["diff", "bbb222^!", "--", "."]);
     expect(out).toBe("patch-b");
+  });
+
+  it("joins two non-empty per-commit patches with a newline separator", async () => {
+    const { git, run } = makeGitWithDiff();
+    run.mockResolvedValueOnce("patch-a").mockResolvedValueOnce("patch-b");
+
+    const out = await getDiff(git, {
+      from: "f",
+      to: "t",
+      commits: [
+        { hash: "aaa", message: "1" },
+        { hash: "bbb", message: "2" },
+      ],
+      filterByCommits: true,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+    });
+
+    expect(out).toBe("patch-a\npatch-b");
   });
 });
 
@@ -486,6 +511,27 @@ describe("getDiffSummary", () => {
 
     expect(summary.files.some((f) => f.path === "f.ts")).toBe(true);
   });
+
+  it("includes per-commit numstat additions in filterByCommits mode", async () => {
+    const { git, run } = makeGitWithDiff();
+    run.mockImplementation(async (args: string[]) => {
+      if (args.includes("--numstat")) return "5\t3\tf.ts";
+      if (args.includes("--name-status")) return "M\tf.ts";
+      return "";
+    });
+
+    const summary = await getDiffSummary(git, {
+      from: "a",
+      to: "b",
+      commits: [{ hash: "c1", message: "m" }],
+      filterByCommits: true,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+    });
+
+    const file = summary.files.find((f) => f.path === "f.ts");
+    expect(file?.additions).toBe(5);
+    expect(file?.deletions).toBe(3);
+  });
 });
 
 describe("getChangedFiles", () => {
@@ -522,5 +568,65 @@ describe("getChangedFiles", () => {
     });
 
     expect(files).toEqual(["dup.ts", "other.ts"]);
+  });
+
+  it("sorts range-mode changed files alphabetically", async () => {
+    const { git, run } = makeGitWithDiff();
+    run.mockResolvedValue("z.ts\na.ts\n");
+
+    const files = await getChangedFiles(git, {
+      from: "a",
+      to: "b",
+      commits: [{ hash: "h", message: "m" }],
+      filterByCommits: false,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+    });
+
+    expect(files).toEqual(["a.ts", "z.ts"]);
+  });
+
+  it("sorts filterByCommits changed files alphabetically", async () => {
+    const { git, run } = makeGitWithDiff();
+    run.mockResolvedValue("z.ts\na.ts\n");
+
+    const files = await getChangedFiles(git, {
+      from: "a",
+      to: "b",
+      commits: [{ hash: "c1", message: "1" }],
+      filterByCommits: true,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+    });
+
+    expect(files).toEqual(["a.ts", "z.ts"]);
+  });
+
+  it("trims trailing whitespace from filenames in range mode", async () => {
+    const { git, run } = makeGitWithDiff();
+    run.mockResolvedValue("file.ts   \n");
+
+    const files = await getChangedFiles(git, {
+      from: "a",
+      to: "b",
+      commits: [{ hash: "h", message: "m" }],
+      filterByCommits: false,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+    });
+
+    expect(files).toEqual(["file.ts"]);
+  });
+
+  it("trims trailing whitespace from filenames in filterByCommits mode", async () => {
+    const { git, run } = makeGitWithDiff();
+    run.mockResolvedValue("file.ts   \n");
+
+    const files = await getChangedFiles(git, {
+      from: "a",
+      to: "b",
+      commits: [{ hash: "c1", message: "1" }],
+      filterByCommits: true,
+      repoRootOverride: join(__dirname, "fixture-repo"),
+    });
+
+    expect(files).toEqual(["file.ts"]);
   });
 });

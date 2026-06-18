@@ -94,6 +94,15 @@ describe("accumulateNumStat", () => {
     });
   });
 
+  it("marks binary flag when only deletions column is '-'", () => {
+    const m = accumulate("0\t-\tdel-only.bin");
+    expect(m.get("del-only.bin")).toEqual({
+      additions: 0,
+      deletions: 0,
+      binary: true,
+    });
+  });
+
   it("propagates binary flag when accumulating a binary entry onto a text entry", () => {
     const m = accumulate("2\t1\tsrc/foo.ts\n-\t-\tsrc/foo.ts");
     expect(m.get("src/foo.ts")).toMatchObject({

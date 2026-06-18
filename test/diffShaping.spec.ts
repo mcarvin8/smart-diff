@@ -59,6 +59,26 @@ describe("DEFAULT_NOISE_EXCLUDES", () => {
       ]),
     );
   });
+
+  it("includes extended lockfiles, build dirs, and snapshot dirs", () => {
+    expect(DEFAULT_NOISE_EXCLUDES).toEqual(
+      expect.arrayContaining([
+        "npm-shrinkwrap.json",
+        "bun.lockb",
+        "go.sum",
+        "Cargo.lock",
+        "Gemfile.lock",
+        "composer.lock",
+        "Pipfile.lock",
+        "poetry.lock",
+        "uv.lock",
+        "Podfile.lock",
+        "build",
+        "out",
+        "__snapshots__",
+      ]),
+    );
+  });
 });
 
 const SAMPLE_DIFF = [
@@ -248,6 +268,95 @@ describe("shapeUnifiedDiff", () => {
     expect(out).toMatch(/^@@ -1,2 \+1,2 @@/);
     expect(out).toContain("2 diff lines elided");
     expect(out).not.toContain("\n-a");
+  });
+
+  it("flushes an open hunk before a --- file header line", () => {
+    const raw = [
+      "@@ -1,5 +1,5 @@",
+      " a",
+      "-b",
+      "+c",
+      " d",
+      " e",
+      "--- a/next.ts",
+      "+++ b/next.ts",
+      "@@ -1,1 +1,1 @@",
+      "-x",
+      "+y",
+    ].join("\n");
+    const out = shapeUnifiedDiff(raw, { maxHunkLines: 2 });
+    const lines = out.split("\n");
+    expect(lines).toContain("--- a/next.ts");
+    const elidedIdx = lines.findIndex((l) => /diff line.* elided/.test(l));
+    const headerIdx = lines.indexOf("--- a/next.ts");
+    expect(elidedIdx).toBeGreaterThanOrEqual(0);
+    expect(elidedIdx).toBeLessThan(headerIdx);
+  });
+
+  it("does not treat mid-line '--- a/' as a file header marker", () => {
+    const raw = [
+      "@@ -1,4 +1,4 @@",
+      " ctx",
+      "- removed --- a/old",
+      "+ added",
+      " ctx2",
+    ].join("\n");
+    const out = shapeUnifiedDiff(raw, { maxHunkLines: 1 });
+    expect(out).toMatch(/diff line.* elided/);
+    expect(out).not.toContain("- removed --- a/old");
+  });
+
+  it("does not treat mid-line '+++ b/' as a file header marker", () => {
+    const raw = [
+      "@@ -1,4 +1,4 @@",
+      " ctx",
+      "+ appended +++ b/something",
+      "- old",
+      " ctx2",
+    ].join("\n");
+    const out = shapeUnifiedDiff(raw, { maxHunkLines: 1 });
+    expect(out).toMatch(/diff line.* elided/);
+    expect(out).not.toContain("+ appended +++ b/something");
+  });
+
+  it("outputs pre-hunk lines unchanged regardless of maxHunkLines", () => {
+    const raw = [
+      "Binary files a/img.png and b/img.png differ",
+      "@@ -1,1 +1,1 @@",
+      "-a",
+      "+b",
+    ].join("\n");
+    const out = shapeUnifiedDiff(raw, { maxHunkLines: 0 });
+    expect(out.split("\n")).toContain(
+      "Binary files a/img.png and b/img.png differ",
+    );
+  });
+
+  it("outputs non-header lines between diff sections unchanged", () => {
+    const raw = [
+      "@@ -1,2 +1,2 @@",
+      "-a",
+      "+b",
+      "diff --git a/next.ts b/next.ts",
+      "some preamble line",
+      "@@ -5,1 +5,1 @@",
+      "-x",
+      "+y",
+    ].join("\n");
+    const out = shapeUnifiedDiff(raw, { maxHunkLines: 0 });
+    const lines = out.split("\n");
+    expect(lines).toContain("diff --git a/next.ts b/next.ts");
+    expect(lines).toContain("some preamble line");
+  });
+
+  it("detects @@ hunk headers that include trailing function context", () => {
+    const raw = ["@@ -1,3 +1,3 @@ function foo() {", "-a", "+b", " c"].join(
+      "\n",
+    );
+    const out = shapeUnifiedDiff(raw, { maxHunkLines: 1 });
+    const lines = out.split("\n");
+    expect(lines).toContain("@@ -1,3 +1,3 @@ function foo() {");
+    expect(lines.some((l) => /diff line.* elided/.test(l))).toBe(true);
   });
 
   it("normalizes negative and non-finite maxHunkLines to 0", () => {

@@ -99,6 +99,18 @@ describe("buildDiffPathspecs", () => {
       buildDiffPathspecs(repoRoot, { includeFolders: ["  ", "src"] }),
     ).toEqual(["src"]);
   });
+
+  it("normalizes leading/trailing spaces within an include path", () => {
+    expect(
+      buildDiffPathspecs(repoRoot, { includeFolders: ["  src  "] }),
+    ).toEqual(["src"]);
+  });
+
+  it("root-plus-real path does not produce redundant dot", () => {
+    expect(
+      buildDiffPathspecs(repoRoot, { includeFolders: ["/", "src"] }),
+    ).toEqual(["src"]);
+  });
 });
 
 describe("filterCommitsByMessageRegexes", () => {
@@ -317,6 +329,27 @@ describe("parseDiffSummary", () => {
     expect(s.files[0]).toMatchObject({
       path: "shared.ts",
       oldPath: "old/name.ts",
+    });
+  });
+
+  it("fills in newPath from a later rename when first occurrence was not a rename", () => {
+    const s = parseDiffSummary(
+      ["M\t1\t1\tshared.ts", "R100\t2\t2\told/name.ts\tshared.ts"].join("\n"),
+    );
+    expect(s.files[0]).toMatchObject({
+      newPath: "shared.ts",
+      oldPath: "old/name.ts",
+    });
+  });
+
+  it("parses lines that have leading or trailing whitespace", () => {
+    const s = parseDiffSummary("  M\t1\t1\tsrc/foo.ts  ");
+    expect(s.totalFiles).toBe(1);
+    expect(s.files[0]).toMatchObject({
+      path: "src/foo.ts",
+      status: "modified",
+      additions: 1,
+      deletions: 1,
     });
   });
 });

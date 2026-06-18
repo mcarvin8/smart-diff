@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import type { Mock } from "vitest";
 
+import { exec } from "dugite";
 import {
   createGitClient,
   getChangedFiles,
@@ -11,6 +12,8 @@ import {
   type CommitInfo,
   type GitClient,
 } from "../src/git/gitDiff";
+
+vi.mock("dugite", () => ({ exec: vi.fn() }));
 
 function makeGit(
   impl: (args: string[]) => Promise<string> = () => Promise.resolve(""),
@@ -28,6 +31,60 @@ describe("createGitClient", () => {
   it("defaults cwd to process.cwd when omitted", () => {
     const git = createGitClient();
     expect(git).toBeDefined();
+  });
+
+  describe("run", () => {
+    beforeEach(() => {
+      vi.mocked(exec).mockReset();
+    });
+
+    it("returns stdout on success", async () => {
+      vi.mocked(exec).mockResolvedValue({
+        exitCode: 0,
+        stdout: "v2.42.0\n",
+        stderr: "",
+      });
+      const git = createGitClient("/repo");
+      await expect(git.run(["--version"])).resolves.toBe("v2.42.0\n");
+      expect(vi.mocked(exec)).toHaveBeenCalledWith(["--version"], "/repo", {});
+    });
+
+    it("passes AbortSignal when timeout is provided", async () => {
+      vi.mocked(exec).mockResolvedValue({
+        exitCode: 0,
+        stdout: "ok",
+        stderr: "",
+      });
+      const git = createGitClient("/repo", 5000);
+      await git.run(["status"]);
+      expect(vi.mocked(exec)).toHaveBeenCalledWith(["status"], "/repo", {
+        signal: expect.any(AbortSignal),
+      });
+    });
+
+    it("throws stderr when exit code is non-zero and stderr is non-empty", async () => {
+      vi.mocked(exec).mockResolvedValue({
+        exitCode: 1,
+        stdout: "",
+        stderr: "fatal: not a git repository",
+      });
+      const git = createGitClient("/repo");
+      await expect(git.run(["status"])).rejects.toThrow(
+        "fatal: not a git repository",
+      );
+    });
+
+    it("throws generic message when exit code is non-zero and stderr is empty", async () => {
+      vi.mocked(exec).mockResolvedValue({
+        exitCode: 128,
+        stdout: "",
+        stderr: "",
+      });
+      const git = createGitClient("/repo");
+      await expect(git.run(["status"])).rejects.toThrow(
+        "git exited with code 128",
+      );
+    });
   });
 });
 
@@ -48,6 +105,13 @@ describe("getCommits", () => {
       "log",
       "--format=%H%x1f%s",
       "from..to",
+    ]);
+  });
+
+  it("uses full line as hash and empty message when separator is absent", async () => {
+    const git = makeGit(() => Promise.resolve("deadbeef\n"));
+    await expect(getCommits(git, "from", "to")).resolves.toEqual([
+      { hash: "deadbeef", message: "" },
     ]);
   });
 });

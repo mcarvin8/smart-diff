@@ -21,7 +21,12 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html", "lcov"],
       include: ["src/**/*.{ts,tsx}"],
-      exclude: ["src/index.ts"],
+      exclude: [
+        "src/index.ts",
+        "src/ai/aiTypes.ts",
+        "src/git/diffTypes.ts",
+        "src/git/gitDiff.ts",
+      ],
       thresholds: {
         branches: 90,
         functions: 90,

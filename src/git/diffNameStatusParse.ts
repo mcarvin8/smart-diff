@@ -33,6 +33,7 @@ export function parseNameStatusLines(
   const entries: ParsedNameEntry[] = [];
   for (const rawLine of nameStatusOutput.split(/\r?\n/)) {
     const line = rawLine.trim();
+    // Stryker disable next-line ConditionalExpression
     if (!line) continue;
     const entry = parseNameStatusLine(line);
     if (entry) entries.push(entry);

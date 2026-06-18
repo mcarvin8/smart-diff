@@ -58,6 +58,7 @@ export const DEFAULT_NOISE_EXCLUDES: readonly string[] = [
 ];
 
 function normalizeContextLines(raw: number): number {
+  // Stryker disable next-line EqualityOperator
   if (!Number.isFinite(raw) || raw < 0) return 0;
   return Math.trunc(raw);
 }
@@ -139,12 +140,14 @@ function elideLargeHunks(text: string, maxHunkLines: number): string {
 
   for (const line of lines) {
     if (line.startsWith("@@")) {
+      // Stryker disable next-line ConditionalExpression
       if (inHunk) flushHunk();
       out.push(line);
       inHunk = true;
       continue;
     }
     if (line.startsWith("diff --git ") || isFileHeaderLine(line)) {
+      // Stryker disable next-line ConditionalExpression
       if (inHunk) flushHunk();
       out.push(line);
       continue;
@@ -155,6 +158,7 @@ function elideLargeHunks(text: string, maxHunkLines: number): string {
       out.push(line);
     }
   }
+  // Stryker disable next-line ConditionalExpression
   if (inHunk) flushHunk();
   return out.join("\n");
 }

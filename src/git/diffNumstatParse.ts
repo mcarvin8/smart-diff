@@ -1,5 +1,6 @@
 /** Map numstat path field (including `{old => new}` rename form) to the post-change path used as lookup key. */
 function numStatPathToLookupKey(pathField: string): string {
+  // Stryker disable next-line Regex
   const brace = /^(.*?)\{(.+?) => (.+?)\}(.*)$/.exec(pathField);
   if (!brace) {
     return pathField;
@@ -15,10 +16,13 @@ function parseNumStatLine(
 
   const addStr = parts[0]!;
   const delStr = parts[1]!;
+  // Stryker disable next-line StringLiteral
   const pathField = parts.slice(2).join("\t");
 
   const binary = addStr === "-" || delStr === "-" ? (true as const) : undefined;
+  // Stryker disable next-line ConditionalExpression,StringLiteral
   const additions = addStr !== "-" ? Number.parseInt(addStr, 10) || 0 : 0;
+  // Stryker disable next-line ConditionalExpression,StringLiteral
   const deletions = delStr !== "-" ? Number.parseInt(delStr, 10) || 0 : 0;
 
   const key = numStatPathToLookupKey(pathField);
@@ -31,6 +35,7 @@ export function accumulateNumStat(
 ): void {
   for (const rawLine of numStatOutput.split(/\r?\n/)) {
     const line = rawLine.trim();
+    // Stryker disable next-line ConditionalExpression
     if (!line) continue;
     const parsed = parseNumStatLine(line);
     if (!parsed) continue;

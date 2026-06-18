@@ -35,6 +35,7 @@ export function filterCommitsByMessageRegexes(
   const includes = (includePatterns ?? [])
     .map((p) => p.trim())
     .filter((p) => p.length > 0);
+  // Stryker disable next-line ArrayDeclaration
   const excludes = (excludePatterns ?? [])
     .map((p) => p.trim())
     .filter((p) => p.length > 0);

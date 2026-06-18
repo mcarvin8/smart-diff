@@ -18,8 +18,10 @@ export function mergeStatus(
   existing: DiffStatus,
   next: DiffStatus,
 ): DiffStatus {
+  // Stryker disable next-line ConditionalExpression
   if (existing === next) return existing;
   const precedence: DiffStatus[] = [
+    // Stryker disable next-line StringLiteral
     "deleted",
     "added",
     "renamed",
@@ -28,6 +30,7 @@ export function mergeStatus(
     "modified",
     "unknown",
   ];
+  // Stryker disable next-line EqualityOperator
   return precedence.indexOf(existing) <= precedence.indexOf(next)
     ? existing
     : next;

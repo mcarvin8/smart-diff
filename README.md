@@ -14,7 +14,7 @@ TypeScript library that turns a **git revision range** into a **Markdown summary
 - **Node.js** 20+
 - An LLM provider credential (see [Provider configuration](#provider-configuration))
 
-## Alpine Linux / musl libc
+### Alpine Linux / musl libc
 
 Dugite's bundled git binary is compiled against glibc and will not run on Alpine Linux or other musl-based images. Set the two [dugite execution env vars](https://github.com/desktop/dugite/blob/main/docs/environment-variables.md#execution) to point at your system git instead:
 
@@ -226,16 +226,6 @@ npm install @ai-sdk/openai-compatible
 ```
 
 Everything else — env vars, auto-detection, the public API — is unchanged.
-
-## Migrating from 1.x → 2.x
-
-v2 replaces the direct `openai` SDK dependency with the Vercel AI SDK. If you only rely on env-var configuration, your setup keeps working — `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_DEFAULT_HEADERS`, `LLM_*` equivalents, `OPENAI_MAX_DIFF_CHARS`, and `OPENAI_MAX_TOKENS` are all still honored.
-
-Breaking changes:
-
-- **Removed `openAiClientProvider` option** on `summarizeGitDiff`/`generateSummary`. Use `llmModelProvider: () => Promise<LanguageModel>` returning a Vercel AI SDK model instead.
-- **Removed `OpenAiLikeClient` and `createOpenAiLikeClient` exports**, along with `shouldUseLlmGateway`. Use `isLlmProviderConfigured()` / `resolveLanguageModel()` instead.
-- **`openai` npm package is no longer a dependency.** Remove it from your own `package.json` if you only depended on it transitively via smart-diff.
 
 ## Used By
 

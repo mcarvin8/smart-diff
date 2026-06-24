@@ -1,1 +1,1 @@
-npm run lint && npx lint-staged
+npx lint-staged && npx pretty-quick --staged

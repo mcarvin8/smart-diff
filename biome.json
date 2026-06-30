@@ -52,7 +52,7 @@
         "useValidTypeof": "error",
         "useYield": "error"
       },
-      "style": { "useBlockStatements": "off", "useErrorCause": "error" },
+      "style": { "useBlockStatements": "off", "useErrorCause": "off" },
       "suspicious": {
         "noAsyncPromiseExecutor": "error",
         "noCatchAssign": "error",

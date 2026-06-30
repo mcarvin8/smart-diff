@@ -1,14 +1,13 @@
 import { exec } from "dugite";
-
+import { buildDiffPathspecs } from "./diffPathspecs.js";
+import { buildDiffShapingGitArgs, shapeUnifiedDiff } from "./diffShaping.js";
+import { buildDiffSummaryFromGitOutputs } from "./diffSummaryBuild.js";
 import type {
   CommitInfo,
   DiffPathFilter,
   DiffSummary,
   GitDiffRangeQuery,
 } from "./diffTypes.js";
-import { buildDiffPathspecs } from "./diffPathspecs.js";
-import { buildDiffShapingGitArgs, shapeUnifiedDiff } from "./diffShaping.js";
-import { buildDiffSummaryFromGitOutputs } from "./diffSummaryBuild.js";
 
 export type GitClient = {
   run(args: string[]): Promise<string>;

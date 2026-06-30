@@ -81,24 +81,24 @@ vi.mock("@ai-sdk/deepseek", () => ({
   })),
 }));
 
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createCohere } from "@ai-sdk/cohere";
+import { createDeepSeek } from "@ai-sdk/deepseek";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createGroq } from "@ai-sdk/groq";
+import { createMistral } from "@ai-sdk/mistral";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { createMistral } from "@ai-sdk/mistral";
-import { createCohere } from "@ai-sdk/cohere";
-import { createGroq } from "@ai-sdk/groq";
 import { createXai } from "@ai-sdk/xai";
-import { createDeepSeek } from "@ai-sdk/deepseek";
 
 import {
   defaultModelForProvider,
   detectLlmProvider,
   isLlmProviderConfigured,
+  type LlmProviderId,
   parseLlmDefaultHeadersFromEnv,
   resolveLanguageModel,
   resolveLlmBaseUrl,
-  type LlmProviderId,
 } from "../src/ai/llmProviders";
 
 const ENV_KEYS = [
@@ -568,8 +568,9 @@ describe("resolveLanguageModel", () => {
     vi.doMock("@ai-sdk/anthropic", () => {
       throw new Error("Cannot find module '@ai-sdk/anthropic'");
     });
-    const { resolveLanguageModel: resolveAgain } =
-      await import("../src/ai/llmProviders");
+    const { resolveLanguageModel: resolveAgain } = await import(
+      "../src/ai/llmProviders"
+    );
     process.env.LLM_PROVIDER = "anthropic";
     await expect(resolveAgain()).rejects.toThrow(
       /Failed to load optional provider package "@ai-sdk\/anthropic" for LLM_PROVIDER="anthropic".*Install it with/,
@@ -588,20 +589,18 @@ describe("resolveLanguageModel", () => {
     ["deepseek", "@ai-sdk/deepseek"],
   ];
 
-  it.each(missingPeerCases)(
-    "wraps missing %s package with provider id and install instruction",
-    async (provider, pkg) => {
-      vi.resetModules();
-      vi.doMock(pkg, () => {
-        throw new Error("Module not found");
-      });
-      const { resolveLanguageModel: r } =
-        await import("../src/ai/llmProviders");
-      await expect(r({ provider })).rejects.toThrow(
-        new RegExp(
-          `package "${pkg.replace(/\//g, "\\/")}.*LLM_PROVIDER="${provider}".*Install it with`,
-        ),
-      );
-    },
-  );
+  it.each(
+    missingPeerCases,
+  )("wraps missing %s package with provider id and install instruction", async (provider, pkg) => {
+    vi.resetModules();
+    vi.doMock(pkg, () => {
+      throw new Error("Module not found");
+    });
+    const { resolveLanguageModel: r } = await import("../src/ai/llmProviders");
+    await expect(r({ provider })).rejects.toThrow(
+      new RegExp(
+        `package "${pkg.replace(/\//g, "\\/")}.*LLM_PROVIDER="${provider}".*Install it with`,
+      ),
+    );
+  });
 });

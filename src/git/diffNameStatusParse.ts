@@ -1,5 +1,5 @@
-import type { DiffStatus } from "./diffTypes.js";
 import { mapGitStatus, mergeStatus } from "./diffGitStatus.js";
+import type { DiffStatus } from "./diffTypes.js";
 
 export type ParsedNameEntry = {
   path: string;

@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   test:
-    uses: ./.github/workflows/coverage.yml
+    uses: ./.github/workflows/test.yml
     secrets: inherit
 
   release-please:

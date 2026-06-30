@@ -1,3 +1,13 @@
+export { filterCommitsByMessageRegexes } from "./commitMessageFilter.js";
+
+export { buildDiffPathspecs } from "./diffPathspecs.js";
+export type { DiffShapingOptions } from "./diffShaping.js";
+export {
+  buildDiffShapingGitArgs,
+  DEFAULT_NOISE_EXCLUDES,
+  shapeUnifiedDiff,
+} from "./diffShaping.js";
+export { parseDiffSummary } from "./diffSummaryParse.js";
 export type {
   CommitInfo,
   DiffFileSummary,
@@ -6,9 +16,6 @@ export type {
   DiffSummary,
   GitDiffRangeQuery,
 } from "./diffTypes.js";
-
-export { buildDiffPathspecs } from "./diffPathspecs.js";
-export { filterCommitsByMessageRegexes } from "./commitMessageFilter.js";
 export type { GitClient } from "./gitDiffOps.js";
 export {
   createGitClient,
@@ -18,10 +25,3 @@ export {
   getDiffSummary,
   getRepoRoot,
 } from "./gitDiffOps.js";
-export { parseDiffSummary } from "./diffSummaryParse.js";
-export type { DiffShapingOptions } from "./diffShaping.js";
-export {
-  DEFAULT_NOISE_EXCLUDES,
-  buildDiffShapingGitArgs,
-  shapeUnifiedDiff,
-} from "./diffShaping.js";

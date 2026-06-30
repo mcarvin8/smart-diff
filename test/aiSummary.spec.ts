@@ -1,14 +1,14 @@
-import type { CommitInfo } from "../src/git/gitDiff";
+import {
+  DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
+  LLM_GATEWAY_REQUIRED_MESSAGE,
+} from "../src/ai/aiConstants";
 import {
   generateSummary,
   resolveLlmMaxDiffChars,
   truncateUnifiedDiffForLlm,
 } from "../src/ai/aiSummary";
-import {
-  DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
-  LLM_GATEWAY_REQUIRED_MESSAGE,
-} from "../src/ai/aiConstants";
 import * as llmProviders from "../src/ai/llmProviders";
+import type { CommitInfo } from "../src/git/gitDiff";
 import {
   extractSystemText,
   extractUserText,

@@ -1,16 +1,15 @@
 import { join } from "node:path";
-import type { Mock } from "vitest";
-
 import { exec } from "dugite";
+import type { Mock } from "vitest";
 import {
+  type CommitInfo,
   createGitClient,
+  type GitClient,
   getChangedFiles,
   getCommits,
   getDiff,
   getDiffSummary,
   getRepoRoot,
-  type CommitInfo,
-  type GitClient,
 } from "../src/git/gitDiff";
 
 vi.mock("dugite", () => ({ exec: vi.fn() }));

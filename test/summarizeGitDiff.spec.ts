@@ -1,9 +1,8 @@
 import { join } from "node:path";
 import type { LanguageModel } from "ai";
 import type { Mock } from "vitest";
-
-import { summarizeGitDiff } from "../src/index";
 import type { GitClient } from "../src/git/gitDiff";
+import { summarizeGitDiff } from "../src/index";
 import { makeMockModel } from "./helpers/mockLlm";
 
 function createMockGit(repoRoot: string): GitClient & { run: Mock } {

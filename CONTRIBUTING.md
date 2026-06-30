@@ -26,7 +26,7 @@ Husky hooks install automatically via `prepare`.
 
 | Hook | Runs |
 |------|------|
-| `pre-commit` | ESLint + Prettier (staged files) |
+| `pre-commit` | Biome check (staged files) |
 | `pre-push` | Build + full test suite |
 | `commit-msg` | commitlint |
 

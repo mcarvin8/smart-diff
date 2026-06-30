@@ -1,11 +1,11 @@
-import type { DiffStatus, DiffSummary } from "./diffTypes.js";
 import {
   mergeNameEntriesByPath,
-  parseNameStatusLines,
   type ParsedNameEntry,
+  parseNameStatusLines,
 } from "./diffNameStatusParse.js";
 import { accumulateNumStat } from "./diffNumstatParse.js";
 import { parseDiffSummary } from "./diffSummaryParse.js";
+import type { DiffStatus, DiffSummary } from "./diffTypes.js";
 
 const STATUS_TO_SYNTHETIC_PREFIX: Record<DiffStatus, string> = {
   added: "A",

@@ -2,9 +2,9 @@ import { join } from "node:path";
 
 import {
   buildDiffPathspecs,
+  type CommitInfo,
   filterCommitsByMessageRegexes,
   parseDiffSummary,
-  type CommitInfo,
 } from "../src/git/gitDiff";
 
 describe("buildDiffPathspecs", () => {

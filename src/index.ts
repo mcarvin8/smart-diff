@@ -2,17 +2,17 @@ import { generateSummary } from "./ai/aiSummary.js";
 import type { LlmModelProvider, SummarizeFlags } from "./ai/aiTypes.js";
 import type { LlmProviderId } from "./ai/llmProviders.js";
 import {
+  type CommitInfo,
   createGitClient,
   DEFAULT_NOISE_EXCLUDES,
+  type DiffPathFilter,
+  type DiffShapingOptions,
   filterCommitsByMessageRegexes,
+  type GitClient,
   getChangedFiles,
   getCommits,
   getDiff,
   getDiffSummary,
-  type CommitInfo,
-  type DiffPathFilter,
-  type DiffShapingOptions,
-  type GitClient,
 } from "./git/gitDiff.js";
 
 export type GitDiffAiSummaryOptions = {
@@ -207,40 +207,21 @@ export async function summarizeGitDiff(
   });
 }
 
-export type {
-  CommitInfo,
-  DiffFileSummary,
-  DiffPathFilter,
-  DiffShapingOptions,
-  DiffSummary,
-  GitClient,
-  GitDiffRangeQuery,
-} from "./git/gitDiff.js";
 export {
-  DEFAULT_NOISE_EXCLUDES,
-  buildDiffPathspecs,
-  buildDiffShapingGitArgs,
-  createGitClient,
-  filterCommitsByMessageRegexes,
-  getChangedFiles,
-  getCommits,
-  getDiff,
-  getDiffSummary,
-  getRepoRoot,
-  shapeUnifiedDiff,
-} from "./git/gitDiff.js";
-
-export type {
-  GenerateSummaryInput,
-  LlmModelProvider,
-  SummarizeFlags,
-} from "./ai/aiTypes.js";
+  DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
+  LLM_GATEWAY_REQUIRED_MESSAGE,
+} from "./ai/aiConstants.js";
 export {
   generateSummary,
   resolveLlmMaxDiffChars,
   truncateUnifiedDiffForLlm,
 } from "./ai/aiSummary.js";
 
+export type {
+  GenerateSummaryInput,
+  LlmModelProvider,
+  SummarizeFlags,
+} from "./ai/aiTypes.js";
 export type {
   LlmProviderId,
   ResolveLanguageModelOptions,
@@ -253,8 +234,25 @@ export {
   resolveLanguageModel,
   resolveLlmBaseUrl,
 } from "./ai/llmProviders.js";
-
+export type {
+  CommitInfo,
+  DiffFileSummary,
+  DiffPathFilter,
+  DiffShapingOptions,
+  DiffSummary,
+  GitClient,
+  GitDiffRangeQuery,
+} from "./git/gitDiff.js";
 export {
-  DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
-  LLM_GATEWAY_REQUIRED_MESSAGE,
-} from "./ai/aiConstants.js";
+  buildDiffPathspecs,
+  buildDiffShapingGitArgs,
+  createGitClient,
+  DEFAULT_NOISE_EXCLUDES,
+  filterCommitsByMessageRegexes,
+  getChangedFiles,
+  getCommits,
+  getDiff,
+  getDiffSummary,
+  getRepoRoot,
+  shapeUnifiedDiff,
+} from "./git/gitDiff.js";

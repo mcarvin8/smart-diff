@@ -1,5 +1,5 @@
-import type { DiffFileSummary, DiffStatus, DiffSummary } from "./diffTypes.js";
 import { mapGitStatus, mergeStatus } from "./diffGitStatus.js";
+import type { DiffFileSummary, DiffStatus, DiffSummary } from "./diffTypes.js";
 
 type ParsedDiffSummaryLine = {
   status: DiffStatus;

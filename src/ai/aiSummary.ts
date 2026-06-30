@@ -2,8 +2,8 @@ import { generateText } from "ai";
 
 import type { CommitInfo, DiffSummary } from "../git/gitDiff.js";
 import {
-  DEFAULT_LLM_MAX_DIFF_CHARS,
   DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
+  DEFAULT_LLM_MAX_DIFF_CHARS,
   LLM_GATEWAY_REQUIRED_MESSAGE,
 } from "./aiConstants.js";
 import type {

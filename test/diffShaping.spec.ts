@@ -1,6 +1,6 @@
 import {
-  DEFAULT_NOISE_EXCLUDES,
   buildDiffShapingGitArgs,
+  DEFAULT_NOISE_EXCLUDES,
   shapeUnifiedDiff,
 } from "../src/git/gitDiff";
 

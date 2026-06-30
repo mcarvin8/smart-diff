@@ -3,9 +3,10 @@ import type { CommitInfo } from "./diffTypes.js";
 function compileRegex(pattern: string, label: string): RegExp {
   try {
     return new RegExp(pattern, "i");
-  } catch {
+  } catch (error) {
     throw new Error(
       `Invalid ${label} regular expression: ${JSON.stringify(pattern)}`,
+      { cause: error },
     );
   }
 }

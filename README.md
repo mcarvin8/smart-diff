@@ -11,7 +11,7 @@ TypeScript library that turns a **git revision range** into a **Markdown summary
 
 ## Requirements
 
-- **Node.js** 20+
+- **Node.js** 22+
 - An LLM provider credential (see [Provider configuration](#provider-configuration))
 
 ### Alpine Linux / musl libc

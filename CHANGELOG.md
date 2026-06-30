@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.0](https://github.com/mcarvin8/smart-diff/compare/v3.1.0...v3.2.0) (2026-06-30)
+
+
+### Features
+
+* **package:** bump minimum Node engine to 22 ([#49](https://github.com/mcarvin8/smart-diff/issues/49)) ([97d70cb](https://github.com/mcarvin8/smart-diff/commit/97d70cb0a15a6a00cd13555d49c32904a5eda74b))
+
 ## [3.1.0](https://github.com/mcarvin8/smart-diff/compare/v3.0.0...v3.1.0) (2026-06-17)
 
 

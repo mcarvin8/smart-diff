@@ -229,9 +229,10 @@ Everything else — env vars, auto-detection, the public API — is unchanged.
 
 ## Used By
 
-This package is used by:
+This package is used downstream by:
 
 - [sf-git-ai-meta-insights](https://github.com/mcarvin8/sf-git-ai-meta-insights) — Salesforce metadata wrapper compatible with Salesforce DX projects
+- [gitlab-llm-kit](https://github.com/mcarvin8/gitlab-llm-kit) - TypeScript toolkit for GitLab REST API access and LLM-powered insights (merge requests, issues, pipelines, security, releases, wiki, and more)
 
 ## License
 

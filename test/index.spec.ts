@@ -1,106 +1,155 @@
 import type { LanguageModel } from "ai";
-import type { Mock } from "vitest";
 
 import * as gitDiff from "../src/git/gitDiff";
-import { summarizeGitDiff, summarizeGitDiffWithUsage } from "../src/index";
-import { makeMockModel, makeUsageMockProvider } from "./helpers/mockLlm";
+import { summarizeGitDiff } from "../src/index";
+import { extractUserText, makeMockModel } from "./helpers/mockLlm";
+import { createFixtureRepo, type FixtureRepo } from "./helpers/tsgitFixture";
 
 function mockLlmProvider(text: string): () => Promise<LanguageModel> {
   return async () => makeMockModel(text).model;
 }
 
-describe("summarizeGitDiff integration", () => {
-  const originalEnv = process.env;
+describe("summarizeGitDiff", () => {
+  let fx: FixtureRepo;
 
-  afterEach(() => {
+  beforeEach(async () => {
+    fx = await createFixtureRepo();
+  });
+
+  afterEach(async () => {
     vi.restoreAllMocks();
-    process.env = originalEnv;
+    await fx.cleanup();
   });
 
-  it("uses createGitClient when git is omitted", async () => {
-    const mockGit = {
-      run: vi.fn().mockImplementation(async (args: string[]) => {
-        if (args[0] === "log") return "h1\x1fm\n";
-        if (args[0] === "rev-parse") return "C:\\repo\n";
-        return "";
-      }),
-    };
-
-    const createSpy = vi
-      .spyOn(gitDiff, "createGitClient")
-      .mockReturnValue(mockGit as never);
-
-    await summarizeGitDiff({
-      from: "a",
-      to: "b",
-      cwd: "C:\\some\\cwd",
-      llmModelProvider: mockLlmProvider("summary"),
+  it("aggregates git calls and returns LLM summary via llmModelProvider", async () => {
+    const c1 = await fx.commit("root", {
+      "src/app.ts": "one\n",
+      "node_modules/pkg.js": "vendored\n",
+    });
+    const c2 = await fx.commit("chore: noise", {
+      "src/app.ts": "two\n",
+      "node_modules/pkg.js": "vendored2\n",
     });
 
-    expect(createSpy).toHaveBeenCalledWith("C:\\some\\cwd");
-    expect(mockGit.run).toHaveBeenCalledWith(expect.arrayContaining(["log"]));
-    createSpy.mockRestore();
+    const md = await summarizeGitDiff({
+      from: c1,
+      to: c2,
+      git: fx.repo,
+      teamName: "Infra",
+      excludeFolders: ["node_modules"],
+      commitMessageExcludeRegexes: ["^chore:"],
+      llmModelProvider: mockLlmProvider("# Infra Summary\nBody from model"),
+    });
+
+    expect(md).toBe("# Infra Summary\nBody from model");
   });
 
-  it("uses per-commit diff shape when filtered commits differ without regex options", async () => {
-    vi.spyOn(gitDiff, "getCommits").mockResolvedValue([
-      { hash: "1", message: "a" },
-      { hash: "2", message: "b" },
-    ]);
-    vi.spyOn(gitDiff, "filterCommitsByMessageRegexes").mockReturnValue([
-      { hash: "1", message: "a" },
-    ]);
-
-    const run = vi.fn().mockImplementation(async (args: string[]) => {
-      if (args[0] === "rev-parse") return "C:\\repo\n";
-      if (args[0] === "show") return "f.ts\n";
-      if (args.includes("--numstat")) return "1\t1\tf.ts";
-      if (args.includes("--name-status")) return "M\tf.ts";
-      if (args.includes("--name-only")) return "f.ts\n";
-      return "";
-    });
-    const mockGit = { run } as never;
-
-    vi.spyOn(gitDiff, "createGitClient").mockReturnValue(mockGit);
+  it("uses per-commit diff shape when include regexes are set even if all match", async () => {
+    const c1 = await fx.commit("root", { "a.ts": "1\n" });
+    const c2 = await fx.commit("edit", { "a.ts": "2\n" });
+    const getDiffSpy = vi.spyOn(gitDiff, "getDiff");
 
     await summarizeGitDiff({
-      from: "x",
-      to: "y",
-      cwd: ".",
+      from: c1,
+      to: c2,
+      git: fx.repo,
+      commitMessageIncludeRegexes: ["."],
       llmModelProvider: mockLlmProvider("ok"),
     });
 
-    expect(run).toHaveBeenCalledWith(expect.arrayContaining(["1^!"]));
+    expect(getDiffSpy).toHaveBeenCalledWith(
+      fx.repo,
+      expect.objectContaining({ filterByCommits: true }),
+    );
   });
 
-  it("summarizeGitDiffWithUsage returns the summary alongside aggregated token usage", async () => {
-    const mockGit = {
-      run: vi.fn().mockImplementation(async (args: string[]) => {
-        if (args[0] === "log") return "h1\x1fm\n";
-        if (args[0] === "rev-parse") return "C:\\repo\n";
-        return "";
+  it("forwards shaping options through to getDiff's query", async () => {
+    const c1 = await fx.commit("root", { "a.ts": "1\n2\n3\n" });
+    const c2 = await fx.commit("edit", { "a.ts": "1\n2b\n3\n" });
+    const getDiffSpy = vi.spyOn(gitDiff, "getDiff");
+
+    await summarizeGitDiff({
+      from: c1,
+      to: c2,
+      git: fx.repo,
+      contextLines: 0,
+      ignoreWhitespace: true,
+      stripDiffPreamble: true,
+      maxHunkLines: 200,
+      llmModelProvider: mockLlmProvider("ok"),
+    });
+
+    expect(getDiffSpy).toHaveBeenCalledWith(
+      fx.repo,
+      expect.objectContaining({
+        shaping: expect.objectContaining({
+          contextLines: 0,
+          ignoreWhitespace: true,
+          stripDiffPreamble: true,
+          maxHunkLines: 200,
+        }),
       }),
-    };
-    vi.spyOn(gitDiff, "createGitClient").mockReturnValue(mockGit as never);
+    );
+  });
 
-    const { llmModelProvider } = makeUsageMockProvider([
-      { text: "summary", inputTokens: 42, outputTokens: 8 },
-    ]);
+  it("merges excludeDefaultNoise into excludeFolders and deduplicates user entries", async () => {
+    const c1 = await fx.commit("root", { "a.ts": "1\n" });
+    const c2 = await fx.commit("edit", { "a.ts": "2\n" });
+    const getDiffSpy = vi.spyOn(gitDiff, "getDiff");
 
-    const { summary, usage } = await summarizeGitDiffWithUsage({
-      from: "a",
-      to: "b",
-      cwd: "C:\\some\\cwd",
-      llmModelProvider,
+    await summarizeGitDiff({
+      from: c1,
+      to: c2,
+      git: fx.repo,
+      excludeFolders: ["node_modules", "custom-out"],
+      excludeDefaultNoise: true,
+      llmModelProvider: mockLlmProvider("ok"),
     });
 
-    expect(summary).toBe("summary");
-    expect(usage).toEqual({
-      requestCount: 1,
-      inputTokens: 42,
-      outputTokens: 8,
-      totalTokens: 50,
-      cachedInputTokens: 0,
+    const query = getDiffSpy.mock.calls[0]?.[1];
+    const excludes = query?.pathFilter?.excludeFolders ?? [];
+    expect(excludes).toContain("package-lock.json");
+    expect(excludes).toContain("custom-out");
+    expect(excludes.filter((e) => e === "node_modules")).toHaveLength(1);
+  });
+
+  it("leaves path filter untouched when excludeDefaultNoise is not set", async () => {
+    const c1 = await fx.commit("root", { "a.ts": "1\n" });
+    const c2 = await fx.commit("edit", { "a.ts": "2\n" });
+    const getDiffSpy = vi.spyOn(gitDiff, "getDiff");
+
+    await summarizeGitDiff({
+      from: c1,
+      to: c2,
+      git: fx.repo,
+      llmModelProvider: mockLlmProvider("ok"),
     });
+
+    const query = getDiffSpy.mock.calls[0]?.[1];
+    expect(query?.pathFilter).toBeUndefined();
+  });
+
+  it("actually excludes noise paths from the diff sent to the LLM", async () => {
+    const c1 = await fx.commit("root", {
+      "package-lock.json": "{}\n",
+      "src/app.ts": "1\n",
+    });
+    const c2 = await fx.commit("edit", {
+      "package-lock.json": '{"a":1}\n',
+      "src/app.ts": "2\n",
+    });
+
+    const { model, calls } = makeMockModel("ok");
+    await summarizeGitDiff({
+      from: c1,
+      to: c2,
+      git: fx.repo,
+      excludeDefaultNoise: true,
+      llmModelProvider: async () => model,
+    });
+
+    const userText = extractUserText(calls()[0]!);
+    expect(userText).not.toContain("package-lock.json");
+    expect(userText).toContain("src/app.ts");
   });
 });

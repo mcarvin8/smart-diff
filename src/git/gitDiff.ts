@@ -1,15 +1,18 @@
 export { filterCommitsByMessageRegexes } from "./commitMessageFilter.js";
 
-export { buildDiffPathspecs } from "./diffPathspecs.js";
+export type { PathFilterPredicate } from "./diffPathFilter.js";
+export { buildPathFilterPredicate, matchesAnyPath } from "./diffPathFilter.js";
 export type { SecretRedactionRule } from "./diffRedaction.js";
 export { DEFAULT_SECRET_PATTERNS, redactSecrets } from "./diffRedaction.js";
+export type { RenderedFileDiff } from "./diffRender.js";
+export { renderFileDiff, renderUnifiedDiff } from "./diffRender.js";
 export type { DiffShapingOptions } from "./diffShaping.js";
+export { DEFAULT_NOISE_EXCLUDES, shapeUnifiedDiff } from "./diffShaping.js";
 export {
-  buildDiffShapingGitArgs,
-  DEFAULT_NOISE_EXCLUDES,
-  shapeUnifiedDiff,
-} from "./diffShaping.js";
-export { parseDiffSummary } from "./diffSummaryParse.js";
+  buildFileSummary,
+  mergeFileSummariesByPath,
+  summarizeFiles,
+} from "./diffSummary.js";
 export type {
   CommitInfo,
   DiffFileSummary,

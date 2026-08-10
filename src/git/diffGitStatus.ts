@@ -1,17 +1,18 @@
+import type { DiffChangeType } from "@scolladon/tsgit";
+
 import type { DiffStatus } from "./diffTypes.js";
 
-/** First character of git name-status / synthetic tokens (e.g. R100 → R). */
-const GIT_STATUS_BY_FIRST_CHAR: Record<string, DiffStatus> = {
-  A: "added",
-  D: "deleted",
-  R: "renamed",
-  C: "copied",
-  T: "type-changed",
-  M: "modified",
+const CHANGE_TYPE_TO_STATUS: Record<DiffChangeType, DiffStatus> = {
+  add: "added",
+  delete: "deleted",
+  rename: "renamed",
+  copy: "copied",
+  "type-change": "type-changed",
+  modify: "modified",
 };
 
-export function mapGitStatus(statusCode: string): DiffStatus {
-  return GIT_STATUS_BY_FIRST_CHAR[statusCode.charAt(0)] ?? "unknown";
+export function mapChangeTypeToStatus(type: DiffChangeType): DiffStatus {
+  return CHANGE_TYPE_TO_STATUS[type];
 }
 
 export function mergeStatus(

@@ -1,19 +1,18 @@
-import { mapGitStatus, mergeStatus } from "../src/git/diffGitStatus";
+import { mapChangeTypeToStatus, mergeStatus } from "../src/git/diffGitStatus";
 
-describe("mapGitStatus", () => {
-  it("maps A to added", () => expect(mapGitStatus("A")).toBe("added"));
-  it("maps D to deleted", () => expect(mapGitStatus("D")).toBe("deleted"));
-  it("maps R to renamed", () => expect(mapGitStatus("R")).toBe("renamed"));
-  it("maps R100 to renamed", () =>
-    expect(mapGitStatus("R100")).toBe("renamed"));
-  it("maps C to copied", () => expect(mapGitStatus("C")).toBe("copied"));
-  it("maps T to type-changed", () =>
-    expect(mapGitStatus("T")).toBe("type-changed"));
-  it("maps M to modified", () => expect(mapGitStatus("M")).toBe("modified"));
-  it("maps unknown code to unknown", () =>
-    expect(mapGitStatus("X")).toBe("unknown"));
-  it("maps empty string to unknown", () =>
-    expect(mapGitStatus("")).toBe("unknown"));
+describe("mapChangeTypeToStatus", () => {
+  it("maps add to added", () =>
+    expect(mapChangeTypeToStatus("add")).toBe("added"));
+  it("maps delete to deleted", () =>
+    expect(mapChangeTypeToStatus("delete")).toBe("deleted"));
+  it("maps rename to renamed", () =>
+    expect(mapChangeTypeToStatus("rename")).toBe("renamed"));
+  it("maps copy to copied", () =>
+    expect(mapChangeTypeToStatus("copy")).toBe("copied"));
+  it("maps type-change to type-changed", () =>
+    expect(mapChangeTypeToStatus("type-change")).toBe("type-changed"));
+  it("maps modify to modified", () =>
+    expect(mapChangeTypeToStatus("modify")).toBe("modified"));
 });
 
 describe("mergeStatus", () => {

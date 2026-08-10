@@ -19,6 +19,13 @@ export type SummarizeFlags = {
   systemPrompt?: string;
   commitMessageIncludeRegexes?: string[];
   commitMessageExcludeRegexes?: string[];
+  /**
+   * When the diff exceeds `maxDiffChars`, split it into per-file batches, summarize
+   * each batch independently (map), then synthesize one final summary from the
+   * batch summaries (reduce) instead of hard-truncating the diff. No effect when
+   * the diff already fits within `maxDiffChars`.
+   */
+  mapReduce?: boolean;
 };
 
 /**

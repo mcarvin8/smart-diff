@@ -42,6 +42,33 @@ export function makeMockProvider(text: string): {
   return { llmModelProvider: async () => model, calls };
 }
 
+/**
+ * Returns a distinct response per call, in order (the last entry repeats for
+ * any calls beyond the list length). Useful for asserting map-reduce behavior,
+ * where the map calls and the final reduce call need to return different text.
+ */
+export function makeSequentialMockProvider(texts: string[]): {
+  llmModelProvider: () => Promise<LanguageModel>;
+  calls: () => MockDoGenerateCall[];
+} {
+  const seenCalls: MockDoGenerateCall[] = [];
+  let callIndex = 0;
+  const model = new MockLanguageModelV3({
+    doGenerate: async (call) => {
+      seenCalls.push(call);
+      const text = texts[Math.min(callIndex, texts.length - 1)] ?? "";
+      callIndex += 1;
+      return {
+        content: text === "" ? [] : [{ type: "text" as const, text }],
+        finishReason: { unified: "stop" as const, raw: undefined },
+        usage: ZERO_USAGE,
+        warnings: [],
+      };
+    },
+  });
+  return { llmModelProvider: async () => model, calls: () => seenCalls };
+}
+
 export function extractUserText(call: MockDoGenerateCall): string {
   const userMessage = call.prompt.find((m) => m.role === "user");
   if (!userMessage) return "";

@@ -54,6 +54,13 @@ export type GitDiffAiSummaryOptions = {
   provider?: LlmProviderId;
   maxDiffChars?: number;
   /**
+   * When the diff exceeds `maxDiffChars`, split it into per-file batches, summarize
+   * each batch independently (map), then synthesize one final summary from the
+   * batch summaries (reduce) instead of hard-truncating the diff. No effect when
+   * the diff already fits within `maxDiffChars`.
+   */
+  mapReduce?: boolean;
+  /**
    * Number of context lines around each change (git `-U<n>`). Default git behavior is 3;
    * dropping to 0 or 1 is the single biggest token saver on modification-heavy diffs.
    */
@@ -207,6 +214,7 @@ export async function summarizeGitDiff(
     model: options.model,
     provider: options.provider,
     maxDiffChars: options.maxDiffChars,
+    mapReduce: options.mapReduce,
     systemPrompt: options.systemPrompt,
     commitMessageIncludeRegexes: options.commitMessageIncludeRegexes,
     commitMessageExcludeRegexes: options.commitMessageExcludeRegexes,
@@ -224,6 +232,8 @@ export async function summarizeGitDiff(
 
 export {
   DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
+  DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT,
+  DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT,
   LLM_GATEWAY_REQUIRED_MESSAGE,
 } from "./ai/aiConstants.js";
 export {
@@ -231,12 +241,15 @@ export {
   resolveLlmMaxDiffChars,
   truncateUnifiedDiffForLlm,
 } from "./ai/aiSummary.js";
-
 export type {
   GenerateSummaryInput,
   LlmModelProvider,
   SummarizeFlags,
 } from "./ai/aiTypes.js";
+export {
+  groupDiffChunksByBudget,
+  splitUnifiedDiffIntoFileChunks,
+} from "./ai/diffChunking.js";
 export type {
   LlmProviderId,
   ResolveLanguageModelOptions,

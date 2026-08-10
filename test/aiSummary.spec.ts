@@ -1,5 +1,7 @@
 import {
   DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
+  DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT,
+  DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT,
   LLM_GATEWAY_REQUIRED_MESSAGE,
 } from "../src/ai/aiConstants";
 import {
@@ -14,6 +16,7 @@ import {
   extractUserText,
   makeMockModel as mockModel,
   makeMockProvider as provideMock,
+  makeSequentialMockProvider as provideSequentialMock,
 } from "./helpers/mockLlm";
 
 describe("resolveLlmMaxDiffChars", () => {
@@ -697,5 +700,174 @@ describe("generateSummary", () => {
     expect(extractUserText(calls()[0]!)).toContain(
       "Git context shape: concatenated per-commit",
     );
+  });
+});
+
+describe("generateSummary map-reduce", () => {
+  const commits: CommitInfo[] = [
+    { hash: "deadbeef", message: "feat: example" },
+  ];
+  const flagsBase = { from: "main", to: "HEAD" };
+
+  const fileDiff = (name: string, content: string) =>
+    [
+      `diff --git a/${name} b/${name}`,
+      "index abc..def 100644",
+      `--- a/${name}`,
+      `+++ b/${name}`,
+      "@@ -1,1 +1,1 @@",
+      `-old ${content}`,
+      `+new ${content}`,
+    ].join("\n");
+
+  const threeFileDiff = [
+    fileDiff("a.ts", "AAAAAAAAAA"),
+    fileDiff("b.ts", "BBBBBBBBBB"),
+    fileDiff("c.ts", "CCCCCCCCCC"),
+  ].join("\n");
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("does not use map-reduce when mapReduce is unset, even if the diff is oversized", async () => {
+    const { llmModelProvider, calls } = provideMock("single-shot summary");
+
+    const md = await generateSummary({
+      diffText: threeFileDiff,
+      fileNames: ["a.ts", "b.ts", "c.ts"],
+      commits,
+      flags: { ...flagsBase, maxDiffChars: 10 },
+      llmModelProvider,
+    });
+
+    expect(calls()).toHaveLength(1);
+    expect(md.startsWith("> **Truncated diff:**")).toBe(true);
+    expect(md).not.toContain("Map-reduce summary");
+  });
+
+  it("does not use map-reduce when the diff already fits within maxDiffChars", async () => {
+    const { llmModelProvider, calls } = provideMock("single-shot summary");
+
+    const md = await generateSummary({
+      diffText: threeFileDiff,
+      fileNames: ["a.ts", "b.ts", "c.ts"],
+      commits,
+      flags: { ...flagsBase, maxDiffChars: 1_000_000, mapReduce: true },
+      llmModelProvider,
+    });
+
+    expect(calls()).toHaveLength(1);
+    expect(md).toBe("single-shot summary");
+  });
+
+  it("splits an oversized diff into per-file batches, maps, then reduces", async () => {
+    const { llmModelProvider, calls } = provideSequentialMock([
+      "batch1 summary",
+      "batch2 summary",
+      "batch3 summary",
+      "FINAL SUMMARY",
+    ]);
+
+    const md = await generateSummary({
+      diffText: threeFileDiff,
+      fileNames: ["a.ts", "b.ts", "c.ts"],
+      commits,
+      flags: { ...flagsBase, maxDiffChars: 10, mapReduce: true },
+      llmModelProvider,
+    });
+
+    expect(calls()).toHaveLength(4);
+    expect(md.startsWith("> **Map-reduce summary:**")).toBe(true);
+    expect(md).toContain("3 batches");
+    expect(md).toContain("FINAL SUMMARY");
+
+    const [mapCall1, mapCall2, mapCall3, reduceCall] = calls();
+
+    expect(extractSystemText(mapCall1!)).toBe(
+      DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT,
+    );
+    expect(extractUserText(mapCall1!)).toContain("Diff batch 1 of 3");
+    expect(extractUserText(mapCall2!)).toContain("Diff batch 2 of 3");
+    expect(extractUserText(mapCall3!)).toContain("Diff batch 3 of 3");
+
+    expect(extractSystemText(reduceCall!)).toBe(
+      DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT,
+    );
+    const reduceUserText = extractUserText(reduceCall!);
+    expect(reduceUserText).toContain(
+      "Per-batch summaries (synthesize into one cohesive report",
+    );
+    expect(reduceUserText).toContain("batch1 summary");
+    expect(reduceUserText).toContain("batch2 summary");
+    expect(reduceUserText).toContain("batch3 summary");
+    expect(reduceUserText).toContain("--- Batch 1 of 3 ---");
+    expect(reduceUserText).toContain("--- Batch 3 of 3 ---");
+  });
+
+  it("uses singular 'batch' wording when only one batch is produced", async () => {
+    const { llmModelProvider } = provideSequentialMock(["only batch", "FINAL"]);
+
+    const md = await generateSummary({
+      diffText: fileDiff("solo.ts", "SOLO"),
+      fileNames: ["solo.ts"],
+      commits,
+      flags: { ...flagsBase, maxDiffChars: 10, mapReduce: true },
+      llmModelProvider,
+    });
+
+    expect(md).toContain("1 batch,");
+    expect(md).not.toContain("1 batches");
+  });
+
+  it("uses a custom systemPrompt for the reduce phase but not the map phase", async () => {
+    const { llmModelProvider, calls } = provideSequentialMock([
+      "b1",
+      "b2",
+      "b3",
+      "FINAL",
+    ]);
+
+    await generateSummary({
+      diffText: threeFileDiff,
+      fileNames: ["a.ts", "b.ts", "c.ts"],
+      commits,
+      flags: {
+        ...flagsBase,
+        maxDiffChars: 10,
+        mapReduce: true,
+        systemPrompt: "Custom reduce prompt.",
+      },
+      llmModelProvider,
+    });
+
+    const [mapCall1, , , reduceCall] = calls();
+    expect(extractSystemText(mapCall1!)).toBe(
+      DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT,
+    );
+    expect(extractSystemText(reduceCall!)).toBe("Custom reduce prompt.");
+  });
+
+  it("includes team, commits, and paths context in the reduce call", async () => {
+    const { llmModelProvider, calls } = provideSequentialMock([
+      "b1",
+      "b2",
+      "b3",
+      "FINAL",
+    ]);
+
+    await generateSummary({
+      diffText: threeFileDiff,
+      fileNames: ["a.ts", "b.ts", "c.ts"],
+      commits,
+      flags: { ...flagsBase, maxDiffChars: 10, mapReduce: true, team: "QA" },
+      llmModelProvider,
+    });
+
+    const reduceCall = calls().at(-1)!;
+    const reduceUserText = extractUserText(reduceCall);
+    expect(reduceUserText).toContain("Team: QA");
+    expect(reduceUserText).toContain("deadbeef".slice(0, 7));
+    expect(reduceUserText).toContain("a.ts\nb.ts\nc.ts");
   });
 });

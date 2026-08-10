@@ -1,6 +1,8 @@
 export { filterCommitsByMessageRegexes } from "./commitMessageFilter.js";
 
 export { buildDiffPathspecs } from "./diffPathspecs.js";
+export type { SecretRedactionRule } from "./diffRedaction.js";
+export { DEFAULT_SECRET_PATTERNS, redactSecrets } from "./diffRedaction.js";
 export type { DiffShapingOptions } from "./diffShaping.js";
 export {
   buildDiffShapingGitArgs,

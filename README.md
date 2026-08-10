@@ -165,6 +165,8 @@ const markdown = await summarizeGitDiff({
 | `stripDiffPreamble` | Removes low-value lines from the unified diff (`diff --git`, `index`, mode changes, `similarity/rename/copy` metadata). `--- a/…`, `+++ b/…`, and `@@` hunk headers are kept. |
 | `maxHunkLines` | Caps the body of each hunk; anything past the limit is replaced with a single elision marker. The `@@` header and `DiffSummary` totals are preserved. |
 | `excludeDefaultNoise` | Merges the built-in `DEFAULT_NOISE_EXCLUDES` list (lockfiles, `dist`, `build`, `out`, `coverage`, `node_modules`, `__snapshots__`) into `excludeFolders`. |
+| `redactSecrets` | Masks likely secrets/credentials in the diff text before it's sent to the LLM — cloud provider keys, VCS/chat tokens, PEM private key blocks, JWTs, `Bearer` headers, basic-auth URL passwords, and generic `KEY=value` assignments. Uses `DEFAULT_SECRET_PATTERNS` unless `secretPatterns` overrides them. |
+| `secretPatterns` | Overrides the built-in secret-detection rules used when `redactSecrets` is true. |
 | `llmModelProvider` | `() => Promise<LanguageModel>` — bypass env-based resolution entirely; hand-wire a Vercel AI SDK `LanguageModel` (required in tests or custom setups). |
 
 #### Reducing tokens
@@ -210,10 +212,10 @@ const md = await summarizeGitDiff({
 
 The package also exports helpers for building a custom pipeline on top of the same git and LLM behavior:
 
-- **Git**: `createGitClient(cwd?, timeout?)`, `getRepoRoot`, `getCommits`, `getDiff`, `getDiffSummary`, `getChangedFiles`, `filterCommitsByMessageRegexes`, `buildDiffPathspecs`, `buildDiffShapingGitArgs`, `shapeUnifiedDiff`, `DEFAULT_NOISE_EXCLUDES` — `timeout` is in milliseconds; omit for no timeout
+- **Git**: `createGitClient(cwd?, timeout?)`, `getRepoRoot`, `getCommits`, `getDiff`, `getDiffSummary`, `getChangedFiles`, `filterCommitsByMessageRegexes`, `buildDiffPathspecs`, `buildDiffShapingGitArgs`, `shapeUnifiedDiff`, `redactSecrets`, `DEFAULT_NOISE_EXCLUDES`, `DEFAULT_SECRET_PATTERNS` — `timeout` is in milliseconds; omit for no timeout
 - **AI**: `generateSummary`, `resolveLlmMaxDiffChars`, `truncateUnifiedDiffForLlm`
 - **Provider resolution**: `resolveLanguageModel`, `detectLlmProvider`, `isLlmProviderConfigured`, `defaultModelForProvider`, `resolveLlmBaseUrl`, `parseLlmDefaultHeadersFromEnv`
-- **Constants / types**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`, `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions` — `DiffFileSummary.binary?: boolean` is set to `true` when git reports `-` for additions/deletions (binary file); absent for text files
+- **Constants / types**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`, `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `SecretRedactionRule` — `DiffFileSummary.binary?: boolean` is set to `true` when git reports `-` for additions/deletions (binary file); absent for text files
 
 ## Migrating from 2.x → 3.x
 

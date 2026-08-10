@@ -13,6 +13,7 @@ import {
   getCommits,
   getDiff,
   getDiffSummary,
+  type SecretRedactionRule,
 } from "./git/gitDiff.js";
 
 export type GitDiffAiSummaryOptions = {
@@ -76,6 +77,16 @@ export type GitDiffAiSummaryOptions = {
    */
   excludeDefaultNoise?: boolean;
   /**
+   * Redact likely secrets/credentials from the diff text before it's sent to the
+   * LLM — cloud provider keys, VCS/chat tokens, private key blocks, JWTs, `Bearer`
+   * headers, basic-auth URL passwords, and generic `KEY=value` assignments.
+   */
+  redactSecrets?: boolean;
+  /**
+   * Overrides the built-in secret-detection rules used when `redactSecrets` is true.
+   */
+  secretPatterns?: readonly SecretRedactionRule[];
+  /**
    * Optional factory returning a Vercel AI SDK `LanguageModel` — bypass env-based
    * provider resolution (useful in tests and bespoke setups).
    */
@@ -93,6 +104,10 @@ function buildShapingFromOptions(
   if (options.stripDiffPreamble) shaping.stripDiffPreamble = true;
   if (options.maxHunkLines !== undefined) {
     shaping.maxHunkLines = options.maxHunkLines;
+  }
+  if (options.redactSecrets) shaping.redactSecrets = true;
+  if (options.secretPatterns !== undefined) {
+    shaping.secretPatterns = options.secretPatterns;
   }
   return Object.keys(shaping).length > 0 ? shaping : undefined;
 }
@@ -242,17 +257,20 @@ export type {
   DiffSummary,
   GitClient,
   GitDiffRangeQuery,
+  SecretRedactionRule,
 } from "./git/gitDiff.js";
 export {
   buildDiffPathspecs,
   buildDiffShapingGitArgs,
   createGitClient,
   DEFAULT_NOISE_EXCLUDES,
+  DEFAULT_SECRET_PATTERNS,
   filterCommitsByMessageRegexes,
   getChangedFiles,
   getCommits,
   getDiff,
   getDiffSummary,
   getRepoRoot,
+  redactSecrets,
   shapeUnifiedDiff,
 } from "./git/gitDiff.js";

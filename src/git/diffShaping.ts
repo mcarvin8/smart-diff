@@ -1,6 +1,13 @@
+import {
+  DEFAULT_SECRET_PATTERNS,
+  redactSecrets,
+  type SecretRedactionRule,
+} from "./diffRedaction.js";
+
 /**
  * Options that reshape a unified diff to reduce token cost before sending it to an LLM.
- * Every option is opt-in; none of them alter the logical meaning of the diff.
+ * Every option is opt-in; none of them alter the logical meaning of the diff (`redactSecrets`
+ * is the one exception — it deliberately masks credential-shaped values).
  */
 export type DiffShapingOptions = {
   /**
@@ -27,6 +34,18 @@ export type DiffShapingOptions = {
    * reflected by the structured `DiffSummary`.
    */
   maxHunkLines?: number;
+  /**
+   * Redact likely secrets/credentials (cloud keys, tokens, private key blocks,
+   * JWTs, `Bearer` headers, basic-auth URL passwords, `KEY=value` assignments)
+   * from the diff text before it's sent to the LLM. Uses {@link DEFAULT_SECRET_PATTERNS}
+   * unless `secretPatterns` overrides them.
+   */
+  redactSecrets?: boolean;
+  /**
+   * Overrides the built-in secret-detection rules used when `redactSecrets` is
+   * true. Defaults to {@link DEFAULT_SECRET_PATTERNS}.
+   */
+  secretPatterns?: readonly SecretRedactionRule[];
 };
 
 /**
@@ -164,20 +183,28 @@ function elideLargeHunks(text: string, maxHunkLines: number): string {
 }
 
 /**
- * Apply post-processing shaping (preamble stripping and hunk elision) to a
- * unified diff. `-U<n>` / `-w` are handled separately via
+ * Apply post-processing shaping (secret redaction, preamble stripping, and
+ * hunk elision) to a unified diff. `-U<n>` / `-w` are handled separately via
  * {@link buildDiffShapingGitArgs} since they need to reach `git diff`.
  *
- * Order: strip preamble, then elide hunks.
+ * Order: redact secrets, then strip preamble, then elide hunks — redaction
+ * runs first so nothing bypasses it via later truncation.
  */
 export function shapeUnifiedDiff(
   text: string,
   shaping?: DiffShapingOptions,
 ): string {
-  if (!shaping?.stripDiffPreamble && shaping?.maxHunkLines === undefined) {
+  if (
+    !shaping?.stripDiffPreamble &&
+    shaping?.maxHunkLines === undefined &&
+    !shaping?.redactSecrets
+  ) {
     return text;
   }
   let out = text;
+  if (shaping.redactSecrets) {
+    out = redactSecrets(out, shaping.secretPatterns ?? DEFAULT_SECRET_PATTERNS);
+  }
   if (shaping.stripDiffPreamble) {
     out = stripPreambleLines(out);
   }

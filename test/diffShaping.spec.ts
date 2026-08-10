@@ -378,4 +378,53 @@ describe("shapeUnifiedDiff", () => {
     ].join("\n");
     expect(shapeUnifiedDiff(raw, { maxHunkLines: 1 })).toBe(raw);
   });
+
+  it("redacts secrets when redactSecrets is true", () => {
+    const raw = [
+      "--- a/config.ts",
+      "+++ b/config.ts",
+      "@@ -1,1 +1,1 @@",
+      '+const apiKey = "abcdef1234567890";',
+    ].join("\n");
+    const out = shapeUnifiedDiff(raw, { redactSecrets: true });
+    expect(out).toContain('apiKey = "[REDACTED]"');
+    expect(out).not.toContain("abcdef1234567890");
+  });
+
+  it("does not redact secrets when redactSecrets is unset", () => {
+    const raw = '+const apiKey = "abcdef1234567890";';
+    expect(shapeUnifiedDiff(raw, { maxHunkLines: 100 })).toBe(raw);
+  });
+
+  it("honors a custom secretPatterns list", () => {
+    const raw = "+token=abcdef1234567890";
+    const out = shapeUnifiedDiff(raw, {
+      redactSecrets: true,
+      secretPatterns: [
+        { name: "custom", pattern: /abcdef\d+/g, replacement: "[GONE]" },
+      ],
+    });
+    expect(out).toBe("+token=[GONE]");
+  });
+
+  it("redacts secrets before stripping preamble and eliding hunks", () => {
+    const raw = [
+      "diff --git a/config.ts b/config.ts",
+      "index abc..def 100644",
+      "--- a/config.ts",
+      "+++ b/config.ts",
+      "@@ -1,1 +1,1 @@",
+      '+const apiKey = "abcdef1234567890";',
+      "+line2",
+      "+line3",
+    ].join("\n");
+    const out = shapeUnifiedDiff(raw, {
+      redactSecrets: true,
+      stripDiffPreamble: true,
+      maxHunkLines: 2,
+    });
+    expect(out).not.toMatch(/^diff --git /m);
+    expect(out).toContain('apiKey = "[REDACTED]"');
+    expect(out).toMatch(/diff line.* elided/);
+  });
 });

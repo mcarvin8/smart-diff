@@ -1,4 +1,10 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { Repository } from "@scolladon/tsgit";
@@ -28,7 +34,9 @@ function writeFiles(dir: string, files: FixtureFileMap): void {
 
 /** Real temp-directory git repo backed by tsgit's Node adapter — one integer clock tick per commit for determinism. */
 export async function createFixtureRepo(): Promise<FixtureRepo> {
-  const dir = mkdtempSync(join(tmpdir(), "smart-diff-fixture-"));
+  // realpath'd because getRepoRoot() returns the canonical path — macOS's
+  // /var -> /private/var symlink makes the raw mkdtemp path not match otherwise.
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "smart-diff-fixture-")));
   const repo = await openRepository({ cwd: dir });
   await repo.init();
   let timestamp = 1_700_000_000;

@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.1](https://github.com/mcarvin8/smart-diff/compare/v3.4.0...v3.4.1) (2026-08-10)
+
+
+### Bug Fixes
+
+* **deps:** bump all ai-sdk deps ([#62](https://github.com/mcarvin8/smart-diff/issues/62)) ([be46543](https://github.com/mcarvin8/smart-diff/commit/be4654314535fa24107feb56a080563093f0f243))
+
 ## [3.4.0](https://github.com/mcarvin8/smart-diff/compare/v3.3.0...v3.4.0) (2026-08-10)
 
 

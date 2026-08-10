@@ -1,6 +1,6 @@
 {
   "name": "@mcarvin/smart-diff",
-  "version": "3.4.0",
+  "version": "3.4.1",
   "description": "Generates AI-powered natural-language summaries of git diffs for code review.",
   "author": "Matt Carvin",
   "license": "MIT",

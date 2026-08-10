@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.0.0](https://github.com/mcarvin8/smart-diff/compare/v3.4.1...v4.0.0) (2026-08-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* **git:** createGitClient is now async and returns a tsgit Repository handle instead of a `{ run(args) }` shell wrapper. buildDiffPathspecs, buildDiffShapingGitArgs, and parseDiffSummary are removed in favor of buildPathFilterPredicate, direct renderer options, and buildFileSummary/mergeFileSummariesByPath/summarizeFiles. Node engine requirement bumped to >=22.22.1 (tsgit's actual minimum).
+
+### Features
+
+* **git:** replace dugite with tsgit, own the unified-diff rendering ([#64](https://github.com/mcarvin8/smart-diff/issues/64)) ([bc538a3](https://github.com/mcarvin8/smart-diff/commit/bc538a386472a5e6c86f0bff3145d6ea62968ee1))
+
 ## [3.4.1](https://github.com/mcarvin8/smart-diff/compare/v3.4.0...v3.4.1) (2026-08-10)
 
 

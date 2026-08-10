@@ -50,3 +50,23 @@ export type GenerateSummaryInput = {
   llmModelProvider?: LlmModelProvider;
   diffSummary?: DiffSummary;
 };
+
+/**
+ * Token usage aggregated across every LLM call made to produce one summary —
+ * a single call for the default path, or every map batch plus the reduce call
+ * when `mapReduce` is used. Token counts only; no cost/dollar estimate, since
+ * pricing varies by provider/model and changes over time. Fields default to 0
+ * when a provider doesn't report a given figure.
+ */
+export type LlmUsageReport = {
+  /** Number of LLM calls made for this summary (>1 only under `mapReduce`). */
+  requestCount: number;
+  /** Sum of input (prompt) tokens across all calls. */
+  inputTokens: number;
+  /** Sum of output (completion) tokens across all calls. */
+  outputTokens: number;
+  /** Sum of total tokens across all calls, as reported by the provider. */
+  totalTokens: number;
+  /** Sum of cached input tokens read across all calls (0 if unsupported/unreported). */
+  cachedInputTokens: number;
+};

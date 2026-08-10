@@ -15,6 +15,12 @@ export type SummarizeFlags = {
   team?: string;
   /** Max characters of unified diff sent to the LLM; see `resolveLlmMaxDiffChars`. */
   maxDiffChars?: number;
+  /**
+   * Max retry count for transient LLM call failures (rate limits, 5xx, network
+   * errors); see `resolveLlmMaxRetries`. Default 2 (matches the Vercel AI SDK's
+   * own default). Set to 0 to disable retries.
+   */
+  maxRetries?: number;
   /** When set, replaces {@link DEFAULT_GIT_DIFF_SYSTEM_PROMPT} for the chat completion. */
   systemPrompt?: string;
   commitMessageIncludeRegexes?: string[];

@@ -94,6 +94,7 @@ smart-diff is "configured" when [`isLlmProviderConfigured()`](#lower-level-api) 
 | `OPENAI_MAX_DIFF_CHARS` / `LLM_MAX_DIFF_CHARS` | Max size of unified diff text sent to the model (default ~120k characters). |
 | `OPENAI_MAX_TOKENS` / `LLM_MAX_TOKENS` | Max completion tokens (default 4000). |
 | `LLM_TEMPERATURE` | Sampling temperature, clamped to 0–2 (default 0.2). Lower = more deterministic; higher = more varied prose. |
+| `LLM_MAX_RETRIES` | Retry count for transient LLM call failures — rate limits, 5xx, network errors (default 2, matching the Vercel AI SDK's own default). Set to 0 to disable retries. |
 
 ### Example: native OpenAI
 
@@ -160,6 +161,7 @@ const markdown = await summarizeGitDiff({
 | `provider` | `LlmProviderId` — wins over `LLM_PROVIDER` env and auto-detection. |
 | `model` | Chat model id; overrides `LLM_MODEL` and the provider default. |
 | `maxDiffChars` | Caps unified diff size for the request. |
+| `maxRetries` | Retry count for transient LLM call failures (rate limits, 5xx, network errors); also settable via `LLM_MAX_RETRIES`. Default 2 (matches the Vercel AI SDK's own default). Set to 0 to disable retries. |
 | `mapReduce` | When the diff exceeds `maxDiffChars`, split it into per-file batches, summarize each batch independently (map), then synthesize one final summary from the batch summaries (reduce) instead of hard-truncating the diff. No effect when the diff already fits within `maxDiffChars`. |
 | `contextLines` | Number of context lines around each change (`git diff -U<n>`). Lower values (1 or 0) are the single biggest token saver on modification-heavy diffs. |
 | `ignoreWhitespace` | Passes `-w` / `--ignore-all-space` to `git diff` so pure-whitespace hunks don't consume tokens. Also applies to `--numstat` / `--name-status` so counts stay consistent. |
@@ -228,7 +230,7 @@ const md = await summarizeGitDiff({
 The package also exports helpers for building a custom pipeline on top of the same git and LLM behavior:
 
 - **Git**: `createGitClient(cwd?, timeout?)`, `getRepoRoot`, `getCommits`, `getDiff`, `getDiffSummary`, `getChangedFiles`, `filterCommitsByMessageRegexes`, `buildDiffPathspecs`, `buildDiffShapingGitArgs`, `shapeUnifiedDiff`, `redactSecrets`, `DEFAULT_NOISE_EXCLUDES`, `DEFAULT_SECRET_PATTERNS` — `timeout` is in milliseconds; omit for no timeout
-- **AI**: `generateSummary`, `resolveLlmMaxDiffChars`, `truncateUnifiedDiffForLlm`, `splitUnifiedDiffIntoFileChunks`, `groupDiffChunksByBudget`
+- **AI**: `generateSummary`, `resolveLlmMaxDiffChars`, `resolveLlmMaxRetries`, `truncateUnifiedDiffForLlm`, `splitUnifiedDiffIntoFileChunks`, `groupDiffChunksByBudget`
 - **Provider resolution**: `resolveLanguageModel`, `detectLlmProvider`, `isLlmProviderConfigured`, `defaultModelForProvider`, `resolveLlmBaseUrl`, `parseLlmDefaultHeadersFromEnv`
 - **Constants / types**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`, `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `SecretRedactionRule` — `DiffFileSummary.binary?: boolean` is set to `true` when git reports `-` for additions/deletions (binary file); absent for text files
 

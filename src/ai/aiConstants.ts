@@ -4,6 +4,13 @@
  */
 export const DEFAULT_LLM_MAX_DIFF_CHARS = 120_000;
 
+/**
+ * Default retry count for transient LLM call failures (rate limits, 5xx, network
+ * errors). Matches the Vercel AI SDK's own `generateText` default; override with
+ * `LLM_MAX_RETRIES` or `maxRetries` in options. Set to 0 to disable retries.
+ */
+export const DEFAULT_LLM_MAX_RETRIES = 2;
+
 /** Default system prompt when summarizing a git diff for any repository. */
 export const DEFAULT_GIT_DIFF_SYSTEM_PROMPT = `You are a senior software engineer helping developers understand code and configuration changes from the git context they supplied.
 You receive: commit subject lines (when available), changed file paths, and unified git patch(es)—either one range diff or concatenated per-commit patches, depending on how the diff was produced. Patches may be truncated mid-section with an explicit marker—do not infer changes beyond visible lines.

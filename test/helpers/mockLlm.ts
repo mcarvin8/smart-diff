@@ -1,4 +1,4 @@
-import type { LanguageModel } from "ai";
+import { APICallError, type LanguageModel } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
 
 export type MockDoGenerateCall = Parameters<
@@ -67,6 +67,45 @@ export function makeSequentialMockProvider(texts: string[]): {
     },
   });
   return { llmModelProvider: async () => model, calls: () => seenCalls };
+}
+
+/**
+ * Fails with a retryable APICallError the first `failTimes` calls, then
+ * succeeds with `successText`. Useful for asserting maxRetries is actually
+ * threaded through to the Vercel AI SDK's own retry behavior.
+ */
+export function makeFlakyMockProvider(
+  failTimes: number,
+  successText: string,
+): {
+  llmModelProvider: () => Promise<LanguageModel>;
+  attemptCount: () => number;
+} {
+  let attempts = 0;
+  const model = new MockLanguageModelV3({
+    doGenerate: async () => {
+      attempts += 1;
+      if (attempts <= failTimes) {
+        throw new APICallError({
+          message: "rate limited",
+          url: "https://example.test/v1/chat",
+          requestBodyValues: {},
+          statusCode: 429,
+          isRetryable: true,
+        });
+      }
+      return {
+        content:
+          successText === ""
+            ? []
+            : [{ type: "text" as const, text: successText }],
+        finishReason: { unified: "stop" as const, raw: undefined },
+        usage: ZERO_USAGE,
+        warnings: [],
+      };
+    },
+  });
+  return { llmModelProvider: async () => model, attemptCount: () => attempts };
 }
 
 export function extractUserText(call: MockDoGenerateCall): string {

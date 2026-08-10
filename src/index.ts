@@ -54,6 +54,12 @@ export type GitDiffAiSummaryOptions = {
   provider?: LlmProviderId;
   maxDiffChars?: number;
   /**
+   * Max retry count for transient LLM call failures (rate limits, 5xx, network
+   * errors). Default 2 (matches the Vercel AI SDK's own default); also settable via
+   * `LLM_MAX_RETRIES`. Set to 0 to disable retries.
+   */
+  maxRetries?: number;
+  /**
    * When the diff exceeds `maxDiffChars`, split it into per-file batches, summarize
    * each batch independently (map), then synthesize one final summary from the
    * batch summaries (reduce) instead of hard-truncating the diff. No effect when
@@ -214,6 +220,7 @@ export async function summarizeGitDiff(
     model: options.model,
     provider: options.provider,
     maxDiffChars: options.maxDiffChars,
+    maxRetries: options.maxRetries,
     mapReduce: options.mapReduce,
     systemPrompt: options.systemPrompt,
     commitMessageIncludeRegexes: options.commitMessageIncludeRegexes,
@@ -239,6 +246,7 @@ export {
 export {
   generateSummary,
   resolveLlmMaxDiffChars,
+  resolveLlmMaxRetries,
   truncateUnifiedDiffForLlm,
 } from "./ai/aiSummary.js";
 export type {

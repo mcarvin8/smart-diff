@@ -7,6 +7,7 @@ import {
 import {
   generateSummary,
   resolveLlmMaxDiffChars,
+  resolveLlmMaxRetries,
   truncateUnifiedDiffForLlm,
 } from "../src/ai/aiSummary";
 import * as llmProviders from "../src/ai/llmProviders";
@@ -15,6 +16,7 @@ import {
   extractSystemText,
   extractUserText,
   makeMockModel as mockModel,
+  makeFlakyMockProvider as provideFlakyMock,
   makeMockProvider as provideMock,
   makeSequentialMockProvider as provideSequentialMock,
 } from "./helpers/mockLlm";
@@ -84,6 +86,68 @@ describe("resolveLlmMaxDiffChars", () => {
     process.env.LLM_MAX_DIFF_CHARS = "   ";
     process.env.OPENAI_MAX_DIFF_CHARS = "5000";
     expect(resolveLlmMaxDiffChars()).toBe(5000);
+  });
+});
+
+describe("resolveLlmMaxRetries", () => {
+  const originalEnv = process.env.LLM_MAX_RETRIES;
+
+  afterEach(() => {
+    if (originalEnv === undefined) delete process.env.LLM_MAX_RETRIES;
+    else process.env.LLM_MAX_RETRIES = originalEnv;
+  });
+
+  it("defaults to 2 when unset", () => {
+    delete process.env.LLM_MAX_RETRIES;
+    expect(resolveLlmMaxRetries()).toBe(2);
+  });
+
+  it("uses a positive cli override", () => {
+    expect(resolveLlmMaxRetries(5)).toBe(5);
+  });
+
+  it("honors a cli override of 0 (disables retries)", () => {
+    expect(resolveLlmMaxRetries(0)).toBe(0);
+  });
+
+  it("truncates a float cli override", () => {
+    expect(resolveLlmMaxRetries(3.9)).toBe(3);
+  });
+
+  it("ignores a negative cli override and reads env", () => {
+    process.env.LLM_MAX_RETRIES = "4";
+    expect(resolveLlmMaxRetries(-1)).toBe(4);
+  });
+
+  it("ignores a non-finite cli override and reads env", () => {
+    process.env.LLM_MAX_RETRIES = "4";
+    expect(resolveLlmMaxRetries(Number.NaN)).toBe(4);
+    expect(resolveLlmMaxRetries(Number.POSITIVE_INFINITY)).toBe(4);
+  });
+
+  it("honors LLM_MAX_RETRIES from env when no cli override is given", () => {
+    process.env.LLM_MAX_RETRIES = "7";
+    expect(resolveLlmMaxRetries()).toBe(7);
+  });
+
+  it("allows env value of 0 (disables retries)", () => {
+    process.env.LLM_MAX_RETRIES = "0";
+    expect(resolveLlmMaxRetries()).toBe(0);
+  });
+
+  it("falls back to default when env is invalid", () => {
+    process.env.LLM_MAX_RETRIES = "not-a-number";
+    expect(resolveLlmMaxRetries()).toBe(2);
+  });
+
+  it("falls back to default when env is negative", () => {
+    process.env.LLM_MAX_RETRIES = "-2";
+    expect(resolveLlmMaxRetries()).toBe(2);
+  });
+
+  it("trims whitespace-only env and falls back to default", () => {
+    process.env.LLM_MAX_RETRIES = "   ";
+    expect(resolveLlmMaxRetries()).toBe(2);
   });
 });
 
@@ -869,5 +933,28 @@ describe("generateSummary map-reduce", () => {
     expect(reduceUserText).toContain("Team: QA");
     expect(reduceUserText).toContain("deadbeef".slice(0, 7));
     expect(reduceUserText).toContain("a.ts\nb.ts\nc.ts");
+  });
+});
+
+describe("generateSummary maxRetries (real SDK retry path)", () => {
+  const commits: CommitInfo[] = [
+    { hash: "deadbeef", message: "feat: example" },
+  ];
+  const flagsBase = { from: "main", to: "HEAD" };
+
+  it("does not retry when maxRetries is 0", async () => {
+    const { llmModelProvider, attemptCount } = provideFlakyMock(1, "recovered");
+
+    await expect(
+      generateSummary({
+        diffText: "d",
+        fileNames: [],
+        commits,
+        flags: { ...flagsBase, maxRetries: 0 },
+        llmModelProvider,
+      }),
+    ).rejects.toThrow();
+
+    expect(attemptCount()).toBe(1);
   });
 });

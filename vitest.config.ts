@@ -24,9 +24,10 @@ export default defineConfig({
       exclude: [
         "src/index.ts",
         "src/cli.ts",
+        "src/ai/index.ts",
         "src/ai/aiTypes.ts",
+        "src/git/index.ts",
         "src/git/diffTypes.ts",
-        "src/git/gitDiff.ts",
       ],
       thresholds: {
         branches: 90,

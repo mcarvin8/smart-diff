@@ -11,7 +11,7 @@ import {
   truncateUnifiedDiffForLlm,
 } from "../src/ai/aiSummary";
 import * as llmProviders from "../src/ai/llmProviders";
-import type { CommitInfo } from "../src/git/gitDiff";
+import type { CommitInfo } from "../src/git/index";
 import {
   extractSystemText,
   extractUserText,

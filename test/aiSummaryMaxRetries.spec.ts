@@ -11,7 +11,7 @@ vi.mock("ai", () => ({
 
 import * as aiSdk from "ai";
 import { generateSummary } from "../src/ai/aiSummary";
-import type { CommitInfo } from "../src/git/gitDiff";
+import type { CommitInfo } from "../src/git/index";
 
 const generateTextMock = vi.mocked(aiSdk.generateText);
 const dummyProvider = async () => ({}) as LanguageModel;

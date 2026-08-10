@@ -1,5 +1,5 @@
 import { generateSummary, generateSummaryWithUsage } from "../src/ai/aiSummary";
-import type { CommitInfo } from "../src/git/gitDiff";
+import type { CommitInfo } from "../src/git/index";
 import {
   makeMockProvider as provideMock,
   makeUsageMockProvider as provideUsageMock,

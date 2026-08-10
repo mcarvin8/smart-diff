@@ -1,7 +1,7 @@
 import {
   type CommitInfo,
   filterCommitsByMessageRegexes,
-} from "../src/git/gitDiff";
+} from "../src/git/index";
 
 describe("filterCommitsByMessageRegexes", () => {
   const commits: CommitInfo[] = [

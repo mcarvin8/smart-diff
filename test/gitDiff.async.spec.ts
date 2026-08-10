@@ -7,7 +7,7 @@ import {
   getDiff,
   getDiffSummary,
   getRepoRoot,
-} from "../src/git/gitDiff";
+} from "../src/git/index";
 import { createFixtureRepo, type FixtureRepo } from "./helpers/tsgitFixture";
 
 /** Re-normalize both sides at comparison time — belt-and-braces against any

@@ -1,6 +1,6 @@
 import { generateText, type LanguageModelUsage } from "ai";
 
-import type { CommitInfo, DiffSummary } from "../git/gitDiff.js";
+import type { CommitInfo, DiffSummary } from "../git/index.js";
 import {
   DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
   DEFAULT_LLM_MAX_DIFF_CHARS,

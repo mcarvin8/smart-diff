@@ -4,6 +4,8 @@ import type { CommitInfo, DiffSummary } from "../git/gitDiff.js";
 import {
   DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
   DEFAULT_LLM_MAX_DIFF_CHARS,
+  DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT,
+  DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT,
   LLM_GATEWAY_REQUIRED_MESSAGE,
 } from "./aiConstants.js";
 import type {
@@ -11,6 +13,10 @@ import type {
   LlmModelProvider,
   SummarizeFlags,
 } from "./aiTypes.js";
+import {
+  groupDiffChunksByBudget,
+  splitUnifiedDiffIntoFileChunks,
+} from "./diffChunking.js";
 import {
   isLlmProviderConfigured,
   resolveLanguageModel,
@@ -58,6 +64,10 @@ function markdownDiffTruncationNotice(
   return `> **Truncated diff:** The unified diff was ${originalChars} characters; only the first ${maxChars} were sent to the model. The summary may not reflect the full change set. Narrow the ref range, adjust path filters, or raise \`maxDiffChars\` / \`LLM_MAX_DIFF_CHARS\`—often together with switching to a model whose context window can fit a larger prompt.\n\n`;
 }
 
+function markdownMapReduceNotice(batchCount: number): string {
+  return `> **Map-reduce summary:** The unified diff exceeded the configured size limit and was split into ${batchCount} batch${batchCount === 1 ? "" : "es"}, summarized independently, then combined into the report below.\n\n`;
+}
+
 function resolveMaxOutputTokens(): number {
   const raw = process.env.LLM_MAX_TOKENS ?? process.env.OPENAI_MAX_TOKENS;
   // Stryker disable next-line ConditionalExpression
@@ -91,6 +101,21 @@ export async function generateSummary(
 
   const maxDiffChars = resolveLlmMaxDiffChars(flags.maxDiffChars);
   const diffTruncated = diffText.length > maxDiffChars;
+  const maxOutputTokens = resolveMaxOutputTokens();
+
+  if (flags.mapReduce && diffTruncated) {
+    return generateSummaryMapReduce(
+      diffText,
+      fileNames,
+      commits,
+      flags,
+      diffSummary,
+      maxDiffChars,
+      maxOutputTokens,
+      llmModelProvider,
+    );
+  }
+
   const diffForLlm = truncateUnifiedDiffForLlm(diffText, maxDiffChars);
   const userContent = buildUserContent(
     flags,
@@ -100,7 +125,6 @@ export async function generateSummary(
     diffSummary,
   );
   const systemPrompt = flags.systemPrompt ?? DEFAULT_GIT_DIFF_SYSTEM_PROMPT;
-  const maxOutputTokens = resolveMaxOutputTokens();
 
   const summary = await callLlm(
     userContent,
@@ -114,6 +138,55 @@ export async function generateSummary(
     return summary;
   }
   return markdownDiffTruncationNotice(diffText.length, maxDiffChars) + summary;
+}
+
+async function generateSummaryMapReduce(
+  diffText: string,
+  fileNames: string[],
+  commits: CommitInfo[],
+  flags: SummarizeFlags,
+  diffSummary: DiffSummary | undefined,
+  maxDiffChars: number,
+  maxOutputTokens: number,
+  llmModelProvider: LlmModelProvider | undefined,
+): Promise<string> {
+  const chunks = splitUnifiedDiffIntoFileChunks(diffText);
+  const batches = groupDiffChunksByBudget(chunks, maxDiffChars);
+
+  const batchSummaries: string[] = [];
+  for (const [i, batch] of batches.entries()) {
+    const batchForLlm = truncateUnifiedDiffForLlm(batch, maxDiffChars);
+    const mapUserContent = `=== Diff batch ${i + 1} of ${batches.length} ===\n\n${batchForLlm}`;
+    batchSummaries.push(
+      await callLlm(
+        mapUserContent,
+        DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT,
+        maxOutputTokens,
+        llmModelProvider,
+        flags,
+      ),
+    );
+  }
+
+  const reduceSystemPrompt =
+    flags.systemPrompt ?? DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT;
+  const reduceUserContent = buildReduceUserContent(
+    flags,
+    commits,
+    fileNames,
+    diffSummary,
+    batchSummaries,
+  );
+
+  const finalSummary = await callLlm(
+    reduceUserContent,
+    reduceSystemPrompt,
+    maxOutputTokens,
+    llmModelProvider,
+    flags,
+  );
+
+  return markdownMapReduceNotice(batches.length) + finalSummary;
 }
 
 function formatRegexFilterLines(flags: SummarizeFlags): string {
@@ -143,11 +216,10 @@ function formatRegexFilterLines(flags: SummarizeFlags): string {
   );
 }
 
-function buildUserContent(
+function buildContextHeader(
   flags: SummarizeFlags,
   commits: CommitInfo[],
   fileNames: string[],
-  diffText: string,
   diffSummary?: DiffSummary,
 ): string {
   const from = flags.from;
@@ -183,9 +255,39 @@ function buildUserContent(
     `${commitBlock}\n\n` +
     "=== Changed paths ===\n" +
     `${pathsBlock}\n\n` +
-    structuredDiffSection +
+    structuredDiffSection
+  );
+}
+
+function buildUserContent(
+  flags: SummarizeFlags,
+  commits: CommitInfo[],
+  fileNames: string[],
+  diffText: string,
+  diffSummary?: DiffSummary,
+): string {
+  return (
+    buildContextHeader(flags, commits, fileNames, diffSummary) +
     "=== Git context (unified diff(s); patches may be truncated with an explicit marker) ===\n" +
     diffText
+  );
+}
+
+function buildReduceUserContent(
+  flags: SummarizeFlags,
+  commits: CommitInfo[],
+  fileNames: string[],
+  diffSummary: DiffSummary | undefined,
+  batchSummaries: string[],
+): string {
+  const batchesBlock = batchSummaries
+    .map((s, i) => `--- Batch ${i + 1} of ${batchSummaries.length} ---\n${s}`)
+    .join("\n\n");
+
+  return (
+    buildContextHeader(flags, commits, fileNames, diffSummary) +
+    "=== Per-batch summaries (synthesize into one cohesive report; do not just concatenate) ===\n" +
+    batchesBlock
   );
 }
 

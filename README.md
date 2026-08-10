@@ -160,6 +160,7 @@ const markdown = await summarizeGitDiff({
 | `provider` | `LlmProviderId` — wins over `LLM_PROVIDER` env and auto-detection. |
 | `model` | Chat model id; overrides `LLM_MODEL` and the provider default. |
 | `maxDiffChars` | Caps unified diff size for the request. |
+| `mapReduce` | When the diff exceeds `maxDiffChars`, split it into per-file batches, summarize each batch independently (map), then synthesize one final summary from the batch summaries (reduce) instead of hard-truncating the diff. No effect when the diff already fits within `maxDiffChars`. |
 | `contextLines` | Number of context lines around each change (`git diff -U<n>`). Lower values (1 or 0) are the single biggest token saver on modification-heavy diffs. |
 | `ignoreWhitespace` | Passes `-w` / `--ignore-all-space` to `git diff` so pure-whitespace hunks don't consume tokens. Also applies to `--numstat` / `--name-status` so counts stay consistent. |
 | `stripDiffPreamble` | Removes low-value lines from the unified diff (`diff --git`, `index`, mode changes, `similarity/rename/copy` metadata). `--- a/…`, `+++ b/…`, and `@@` hunk headers are kept. |
@@ -185,6 +186,20 @@ await summarizeGitDiff({
 ```
 
 These options only reshape the *unified diff text* — the structured `DiffSummary` still reports true file counts and line totals, so the model always sees the full change inventory.
+
+#### Map-reduce for oversized diffs
+
+By default, a diff over `maxDiffChars` is hard-truncated — only the first N characters are sent, and a notice is prepended to the summary. Set `mapReduce: true` to instead split the diff into per-file batches, summarize each batch independently, then synthesize one final summary from the batch summaries:
+
+```ts
+await summarizeGitDiff({
+  from: 'origin/main',
+  maxDiffChars: 20_000,
+  mapReduce: true, // no-op when the diff already fits within maxDiffChars
+});
+```
+
+This costs one extra LLM call per batch plus one reduce call, so it's slower and more expensive than a single request — use it when losing coverage of the tail of a large diff matters more than latency/cost. `systemPrompt` (if set) applies to the reduce phase only; the map phase always uses `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`.
 
 ### Injecting your own `LanguageModel`
 
@@ -213,9 +228,9 @@ const md = await summarizeGitDiff({
 The package also exports helpers for building a custom pipeline on top of the same git and LLM behavior:
 
 - **Git**: `createGitClient(cwd?, timeout?)`, `getRepoRoot`, `getCommits`, `getDiff`, `getDiffSummary`, `getChangedFiles`, `filterCommitsByMessageRegexes`, `buildDiffPathspecs`, `buildDiffShapingGitArgs`, `shapeUnifiedDiff`, `redactSecrets`, `DEFAULT_NOISE_EXCLUDES`, `DEFAULT_SECRET_PATTERNS` — `timeout` is in milliseconds; omit for no timeout
-- **AI**: `generateSummary`, `resolveLlmMaxDiffChars`, `truncateUnifiedDiffForLlm`
+- **AI**: `generateSummary`, `resolveLlmMaxDiffChars`, `truncateUnifiedDiffForLlm`, `splitUnifiedDiffIntoFileChunks`, `groupDiffChunksByBudget`
 - **Provider resolution**: `resolveLanguageModel`, `detectLlmProvider`, `isLlmProviderConfigured`, `defaultModelForProvider`, `resolveLlmBaseUrl`, `parseLlmDefaultHeadersFromEnv`
-- **Constants / types**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`, `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `SecretRedactionRule` — `DiffFileSummary.binary?: boolean` is set to `true` when git reports `-` for additions/deletions (binary file); absent for text files
+- **Constants / types**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`, `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `SecretRedactionRule` — `DiffFileSummary.binary?: boolean` is set to `true` when git reports `-` for additions/deletions (binary file); absent for text files
 
 ## Migrating from 2.x → 3.x
 

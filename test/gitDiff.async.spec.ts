@@ -1,3 +1,4 @@
+import { realpathSync } from "node:fs";
 import {
   createGitClient,
   type GitClient,
@@ -8,6 +9,13 @@ import {
   getRepoRoot,
 } from "../src/git/gitDiff";
 import { createFixtureRepo, type FixtureRepo } from "./helpers/tsgitFixture";
+
+/** Re-normalize both sides at comparison time — belt-and-braces against any
+ * platform-specific canonical-path quirk (Windows 8.3 short names, macOS
+ * /var -> /private/var) the fixture's own realpath call didn't fully iron out. */
+function canonical(p: string): string {
+  return realpathSync.native(p);
+}
 
 describe("gitDiffOps against a real tsgit repo", () => {
   let fx: FixtureRepo;
@@ -31,14 +39,14 @@ describe("gitDiffOps against a real tsgit repo", () => {
 
     it("accepts a timeout and still opens successfully", async () => {
       const timedGit = await createGitClient(fx.dir, 5000);
-      expect(await getRepoRoot(timedGit)).toBe(fx.dir);
+      expect(canonical(await getRepoRoot(timedGit))).toBe(canonical(fx.dir));
       await timedGit.dispose();
     });
   });
 
   describe("getRepoRoot", () => {
     it("returns the repository working-tree root", async () => {
-      expect(await getRepoRoot(git)).toBe(fx.dir);
+      expect(canonical(await getRepoRoot(git))).toBe(canonical(fx.dir));
     });
   });
 

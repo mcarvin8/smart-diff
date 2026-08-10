@@ -7,9 +7,7 @@
 [![codecov](https://codecov.io/gh/mcarvin8/smart-diff/graph/badge.svg?token=H3ZWAGG7S9)](https://codecov.io/gh/mcarvin8/smart-diff)
 [![Mutation testing badge](https://img.shields.io/endpoint?style=flat&url=https%3A%2F%2Fbadge-api.stryker-mutator.io%2Fgithub.com%2Fmcarvin8%2Fsmart-diff%2Fmain)](https://dashboard.stryker-mutator.io/reports/github.com/mcarvin8/smart-diff/main)
 
-TypeScript library that turns a **git revision range** into a **Markdown summary** using any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) (OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, and OpenAI-compatible gateways). Ships a bundled git binary via [dugite](https://github.com/desktop/dugite) — no system git required. Supports path includes/excludes and commit message regex filters, and sends commits, file paths, diff stats, and unified diff text to the model.
-
-## Contents
+TypeScript library that turns a **git revision range** into a **Markdown summary** using any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) (OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, and OpenAI-compatible gateways).
 
 - [Requirements](#requirements)
 - [Installation](#installation)
@@ -28,6 +26,7 @@ TypeScript library that turns a **git revision range** into a **Markdown summary
 
 - **Node.js** 22+
 - An LLM provider credential (see [Provider configuration](#provider-configuration))
+- No git binary required for **glibc** systems - Uses [dugite](https://github.com/desktop/dugite) wich ships its own git binary
 
 ### Alpine Linux / musl libc
 

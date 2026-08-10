@@ -23,7 +23,7 @@ Use any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) (Op
   - [Injecting your own `LanguageModel`](#injecting-your-own-languagemodel)
   - [Diff shape: single range vs per-commit](#diff-shape-single-range-vs-per-commit)
   - [Lower-level API](#lower-level-api)
-- [Migrating from 2.x → 3.x](#migrating-from-2x--3x)
+- [Migrating from 3.x → 4.x](#migrating-from-3x--4x)
 - [Used By](#used-by)
 
 ## Requirements

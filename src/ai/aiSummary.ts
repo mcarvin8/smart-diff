@@ -4,6 +4,7 @@ import type { CommitInfo, DiffSummary } from "../git/gitDiff.js";
 import {
   DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
   DEFAULT_LLM_MAX_DIFF_CHARS,
+  DEFAULT_LLM_MAX_RETRIES,
   DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT,
   DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT,
   LLM_GATEWAY_REQUIRED_MESSAGE,
@@ -44,6 +45,27 @@ export function resolveLlmMaxDiffChars(cliOverride?: number): number {
     }
   }
   return DEFAULT_LLM_MAX_DIFF_CHARS;
+}
+
+/** Resolve max retry count for transient LLM call failures. CLI wins, then env, then default. */
+export function resolveLlmMaxRetries(cliOverride?: number): number {
+  if (
+    // Stryker disable next-line ConditionalExpression
+    cliOverride !== undefined &&
+    Number.isFinite(cliOverride) &&
+    cliOverride >= 0
+  ) {
+    return Math.trunc(cliOverride);
+  }
+  const raw = process.env.LLM_MAX_RETRIES?.trim();
+  // Stryker disable next-line ConditionalExpression
+  if (raw) {
+    const parsed = Number.parseInt(raw, 10);
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      return parsed;
+    }
+  }
+  return DEFAULT_LLM_MAX_RETRIES;
 }
 
 export function truncateUnifiedDiffForLlm(
@@ -102,6 +124,7 @@ export async function generateSummary(
   const maxDiffChars = resolveLlmMaxDiffChars(flags.maxDiffChars);
   const diffTruncated = diffText.length > maxDiffChars;
   const maxOutputTokens = resolveMaxOutputTokens();
+  const maxRetries = resolveLlmMaxRetries(flags.maxRetries);
 
   if (flags.mapReduce && diffTruncated) {
     return generateSummaryMapReduce(
@@ -112,6 +135,7 @@ export async function generateSummary(
       diffSummary,
       maxDiffChars,
       maxOutputTokens,
+      maxRetries,
       llmModelProvider,
     );
   }
@@ -130,6 +154,7 @@ export async function generateSummary(
     userContent,
     systemPrompt,
     maxOutputTokens,
+    maxRetries,
     llmModelProvider,
     flags,
   );
@@ -148,6 +173,7 @@ async function generateSummaryMapReduce(
   diffSummary: DiffSummary | undefined,
   maxDiffChars: number,
   maxOutputTokens: number,
+  maxRetries: number,
   llmModelProvider: LlmModelProvider | undefined,
 ): Promise<string> {
   const chunks = splitUnifiedDiffIntoFileChunks(diffText);
@@ -162,6 +188,7 @@ async function generateSummaryMapReduce(
         mapUserContent,
         DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT,
         maxOutputTokens,
+        maxRetries,
         llmModelProvider,
         flags,
       ),
@@ -182,6 +209,7 @@ async function generateSummaryMapReduce(
     reduceUserContent,
     reduceSystemPrompt,
     maxOutputTokens,
+    maxRetries,
     llmModelProvider,
     flags,
   );
@@ -295,6 +323,7 @@ async function callLlm(
   userContent: string,
   systemPrompt: string,
   maxOutputTokens: number,
+  maxRetries: number,
   llmModelProvider: LlmModelProvider | undefined,
   flags: SummarizeFlags,
 ): Promise<string> {
@@ -311,6 +340,7 @@ async function callLlm(
     prompt: userContent,
     temperature: resolveLlmTemperature(),
     maxOutputTokens,
+    maxRetries,
   });
 
   const text = result.text.trim();

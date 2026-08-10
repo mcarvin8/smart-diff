@@ -1,37 +1,44 @@
-import { exec } from "dugite";
-import { buildDiffPathspecs } from "./diffPathspecs.js";
-import { buildDiffShapingGitArgs, shapeUnifiedDiff } from "./diffShaping.js";
-import { buildDiffSummaryFromGitOutputs } from "./diffSummaryBuild.js";
+import type { DiffChange, ObjectId, Repository } from "@scolladon/tsgit";
+import { openRepository } from "@scolladon/tsgit";
+import {
+  buildPathFilterPredicate,
+  matchesAnyPath,
+  type PathFilterPredicate,
+} from "./diffPathFilter.js";
+import { changePaths, renderUnifiedDiff } from "./diffRender.js";
+import { shapeUnifiedDiff } from "./diffShaping.js";
+import {
+  buildFileSummary,
+  mergeFileSummariesByPath,
+  summarizeFiles,
+} from "./diffSummary.js";
 import type {
   CommitInfo,
-  DiffPathFilter,
   DiffSummary,
   GitDiffRangeQuery,
 } from "./diffTypes.js";
 
-export type GitClient = {
-  run(args: string[]): Promise<string>;
-};
+/** A live `@scolladon/tsgit` repository handle. Dispose with `git.dispose()` when done. */
+export type GitClient = Repository;
 
-export function createGitClient(
+/** Git's well-known SHA-1 empty-tree object id; tsgit special-cases it without needing the object stored. */
+const EMPTY_TREE_OID = "4b825dc642cb6eb9a060e54bf8d69288fbee4904" as ObjectId;
+
+/** Matches `git diff`'s own default context, applied when `shaping.contextLines` is unset. */
+const DEFAULT_CONTEXT_LINES = 3;
+
+export async function createGitClient(
   cwd = process.cwd(),
   timeout?: number,
-): GitClient {
-  return {
-    run: async (args) => {
-      const result = await exec(args, cwd, {
-        ...(timeout !== undefined
-          ? { signal: AbortSignal.timeout(timeout) }
-          : {}),
-      });
-      if (result.exitCode !== 0) {
-        throw new Error(
-          result.stderr || `git exited with code ${result.exitCode}`,
-        );
-      }
-      return result.stdout;
-    },
-  };
+): Promise<GitClient> {
+  return openRepository({
+    cwd,
+    ...(timeout !== undefined ? { signal: AbortSignal.timeout(timeout) } : {}),
+  });
+}
+
+export async function getRepoRoot(git: GitClient): Promise<string> {
+  return git.primitives.getRepoRoot();
 }
 
 export async function getCommits(
@@ -39,191 +46,146 @@ export async function getCommits(
   from: string,
   to: string,
 ): Promise<CommitInfo[]> {
-  const output = await git.run(["log", "--format=%H%x1f%s", `${from}..${to}`]);
-  return output
-    .split("\n")
-    .filter(Boolean)
-    .map((line) => {
-      const sep = line.indexOf("\x1f");
-      return {
-        hash: sep >= 0 ? line.slice(0, sep) : line,
-        message: sep >= 0 ? line.slice(sep + 1) : "",
-      };
-    });
+  const entries = await git.log({ rev: to, excluding: [from] });
+  return entries.map((e) => ({
+    hash: e.id,
+    message: e.message.split("\n")[0]!,
+  }));
 }
 
-export async function getRepoRoot(git: GitClient): Promise<string> {
-  const root = await git.run(["rev-parse", "--show-toplevel"]);
-  return root.trim();
-}
-
-type DiffPathContext = {
-  repoRoot: string;
-  specs: string[];
-};
-
-async function getDiffPathContext(
+async function resolveRepoRoot(
   git: GitClient,
-  pathFilter: DiffPathFilter | undefined,
   repoRootOverride?: string,
-): Promise<DiffPathContext> {
-  const repoRoot = repoRootOverride ?? (await getRepoRoot(git));
-  const specs = buildDiffPathspecs(repoRoot, pathFilter);
-  return { repoRoot, specs };
+): Promise<string> {
+  return repoRootOverride ?? getRepoRoot(git);
+}
+
+async function resolveParentTree(
+  git: GitClient,
+  parentId: ObjectId | undefined,
+): Promise<ObjectId> {
+  if (parentId === undefined) return EMPTY_TREE_OID;
+  const [parentEntry] = await git.log({ rev: parentId, limit: 1 });
+  return parentEntry!.tree;
+}
+
+async function diffRangeChanges(
+  git: GitClient,
+  from: string,
+  to: string,
+  ignoreWhitespace: boolean | undefined,
+): Promise<readonly DiffChange[]> {
+  const result = await git.diff({
+    from,
+    to,
+    detectRenames: true,
+    recursive: true,
+    ...(ignoreWhitespace ? { ignoreWhitespace: "all" as const } : {}),
+  });
+  return result.changes;
+}
+
+async function diffCommitChanges(
+  git: GitClient,
+  hash: string,
+  ignoreWhitespace: boolean | undefined,
+): Promise<readonly DiffChange[]> {
+  const [entry] = await git.log({ rev: hash, limit: 1 });
+  const parentTree = await resolveParentTree(git, entry!.parents[0]);
+  const result = await git.primitives.diffTrees(parentTree, entry!.tree, {
+    detectRenames: true,
+    recursive: true,
+    ...(ignoreWhitespace ? { ignoreWhitespace: "all" as const } : {}),
+  });
+  return result.changes;
+}
+
+function changeMatchesPathFilter(
+  change: DiffChange,
+  predicate: PathFilterPredicate,
+): boolean {
+  const { oldPath, newPath, path } = changePaths(change);
+  if (change.type === "rename" || change.type === "copy") {
+    return matchesAnyPath(predicate, [oldPath, newPath]);
+  }
+  return predicate(path);
+}
+
+async function collectChanges(
+  git: GitClient,
+  query: GitDiffRangeQuery,
+  predicate: PathFilterPredicate,
+): Promise<readonly DiffChange[][]> {
+  const { from, to, commits, filterByCommits, shaping } = query;
+  const ignoreWhitespace = shaping?.ignoreWhitespace;
+
+  if (!filterByCommits) {
+    const changes = await diffRangeChanges(git, from, to, ignoreWhitespace);
+    return [changes.filter((c) => changeMatchesPathFilter(c, predicate))];
+  }
+
+  return Promise.all(
+    commits.map(async (c) => {
+      const changes = await diffCommitChanges(git, c.hash, ignoreWhitespace);
+      return changes.filter((ch) => changeMatchesPathFilter(ch, predicate));
+    }),
+  );
 }
 
 export async function getDiff(
   git: GitClient,
   query: GitDiffRangeQuery,
 ): Promise<string> {
-  const {
-    from,
-    to,
-    commits,
-    filterByCommits,
-    pathFilter,
-    repoRootOverride,
-    shaping,
-  } = query;
-  const { specs } = await getDiffPathContext(git, pathFilter, repoRootOverride);
-  const shapingArgs = buildDiffShapingGitArgs(shaping);
+  const { pathFilter, repoRootOverride, shaping } = query;
+  const repoRoot = await resolveRepoRoot(git, repoRootOverride);
+  const predicate = buildPathFilterPredicate(repoRoot, pathFilter);
+  const contextLines = shaping?.contextLines ?? DEFAULT_CONTEXT_LINES;
 
-  if (!filterByCommits) {
-    const raw = await git.run([
-      "diff",
-      ...shapingArgs,
-      `${from}..${to}`,
-      "--",
-      ...specs,
-    ]);
-    return shapeUnifiedDiff(raw, shaping);
-  }
-
+  const changeGroups = await collectChanges(git, query, predicate);
   const patches = await Promise.all(
-    commits.map((c) =>
-      git.run(["diff", ...shapingArgs, `${c.hash}^!`, "--", ...specs]),
-    ),
+    changeGroups.map(async (changes) => {
+      const rendered = await renderUnifiedDiff(git, changes, contextLines);
+      const text = rendered
+        .map((r) => r.text)
+        .filter(Boolean)
+        .join("\n");
+      return shapeUnifiedDiff(text, shaping);
+    }),
   );
-
-  return patches
-    .map((p) => shapeUnifiedDiff(p, shaping))
-    .filter(Boolean)
-    .join("\n");
+  return patches.filter(Boolean).join("\n");
 }
 
 export async function getDiffSummary(
   git: GitClient,
   query: GitDiffRangeQuery,
 ): Promise<DiffSummary> {
-  const {
-    from,
-    to,
-    commits,
-    filterByCommits,
-    pathFilter,
-    repoRootOverride,
-    shaping,
-  } = query;
-  const { specs } = await getDiffPathContext(git, pathFilter, repoRootOverride);
-  const whitespaceArgs = shaping?.ignoreWhitespace ? ["-w"] : [];
+  const { pathFilter, repoRootOverride } = query;
+  const repoRoot = await resolveRepoRoot(git, repoRootOverride);
+  const predicate = buildPathFilterPredicate(repoRoot, pathFilter);
 
-  if (!filterByCommits) {
-    const [numOutput, nameOutput] = await Promise.all([
-      git.run([
-        "diff",
-        ...whitespaceArgs,
-        "--numstat",
-        `${from}..${to}`,
-        "--",
-        ...specs,
-      ]),
-      git.run([
-        "diff",
-        ...whitespaceArgs,
-        "--name-status",
-        `${from}..${to}`,
-        "--",
-        ...specs,
-      ]),
-    ]);
-    return buildDiffSummaryFromGitOutputs(nameOutput, numOutput);
-  }
-
-  const pairs = await Promise.all(
-    commits.map(async (c) => {
-      const range = `${c.hash}^!`;
-      const [numOutput, nameOutput] = await Promise.all([
-        git.run([
-          "diff",
-          ...whitespaceArgs,
-          "--numstat",
-          range,
-          "--",
-          ...specs,
-        ]),
-        git.run([
-          "diff",
-          ...whitespaceArgs,
-          "--name-status",
-          range,
-          "--",
-          ...specs,
-        ]),
-      ]);
-      return { numOutput, nameOutput };
+  const changeGroups = await collectChanges(git, query, predicate);
+  const fileGroups = await Promise.all(
+    changeGroups.map(async (changes) => {
+      const rendered = await renderUnifiedDiff(git, changes, 0);
+      return changes.map((c, i) => buildFileSummary(c, rendered[i]!));
     }),
   );
-  const nameJoined = pairs
-    .map((p) => p.nameOutput)
-    .filter(Boolean)
-    .join("\n");
-  const numJoined = pairs
-    .map((p) => p.numOutput)
-    .filter(Boolean)
-    .join("\n");
-  return buildDiffSummaryFromGitOutputs(nameJoined, numJoined);
+  const files =
+    changeGroups.length > 1
+      ? mergeFileSummariesByPath(fileGroups.flat())
+      : fileGroups.flat();
+  return summarizeFiles(files);
 }
 
 export async function getChangedFiles(
   git: GitClient,
   query: GitDiffRangeQuery,
 ): Promise<string[]> {
-  const { from, to, commits, filterByCommits, pathFilter, repoRootOverride } =
-    query;
-  const { specs } = await getDiffPathContext(git, pathFilter, repoRootOverride);
+  const { pathFilter, repoRootOverride } = query;
+  const repoRoot = await resolveRepoRoot(git, repoRootOverride);
+  const predicate = buildPathFilterPredicate(repoRoot, pathFilter);
 
-  if (!filterByCommits) {
-    const output = await git.run([
-      "diff",
-      "--name-only",
-      `${from}..${to}`,
-      "--",
-      ...specs,
-    ]);
-
-    return output
-      .split(/\r?\n/)
-      .map((f) => f.trim())
-      .filter(Boolean)
-      .sort();
-  }
-
-  const results = await Promise.all(
-    commits.map(async (c) => {
-      const output = await git.run([
-        "show",
-        "--name-only",
-        "--pretty=format:",
-        c.hash,
-        "--",
-        ...specs,
-      ]);
-      return output
-        .split(/\r?\n/)
-        .map((f) => f.trim())
-        .filter(Boolean);
-    }),
-  );
-
-  return [...new Set(results.flat())].sort();
+  const changeGroups = await collectChanges(git, query, predicate);
+  const paths = changeGroups.flat().map((c) => changePaths(c).path);
+  return [...new Set(paths)].sort();
 }

@@ -19,14 +19,23 @@ function assertPathUnderRepo(repoRoot: string, userPath: string): void {
   }
 }
 
+function isUnderOrEqual(path: string, folder: string): boolean {
+  return path === folder || path.startsWith(`${folder}/`);
+}
+
+/** Repo-root-relative path predicate produced by {@link buildPathFilterPredicate}. */
+export type PathFilterPredicate = (path: string) => boolean;
+
 /**
- * Build git pathspec arguments: include paths plus `:(exclude)…` entries.
- * Paths are relative to the repository root using forward slashes, as users see them in the repo tree.
+ * Build a predicate over repo-root-relative diff paths, mirroring the directory-prefix
+ * semantics of git `:(exclude)` pathspecs (the only pathspec shape this library ever
+ * produced — no globs). tsgit's `diff` has no pathspec support, so filtering happens
+ * client-side over the returned `DiffChange[]` instead of being passed to git.
  */
-export function buildDiffPathspecs(
+export function buildPathFilterPredicate(
   repoRoot: string,
   pathFilter?: DiffPathFilter,
-): string[] {
+): PathFilterPredicate {
   const includeRaw =
     pathFilter?.includeFolders?.filter((p) => p.trim().length > 0) ?? [];
   const excludeRaw =
@@ -47,16 +56,17 @@ export function buildDiffPathspecs(
     assertPathUnderRepo(repoRoot, exc);
   }
 
-  const specs: string[] = [];
-  if (includes.length === 0) {
-    specs.push(".");
-  } else {
-    for (const inc of includes) {
-      specs.push(inc);
-    }
-  }
-  for (const exc of excludes) {
-    specs.push(`:(exclude)${exc}`);
-  }
-  return specs;
+  return (path: string): boolean => {
+    if (excludes.some((exc) => isUnderOrEqual(path, exc))) return false;
+    if (includes.length === 0) return true;
+    return includes.some((inc) => isUnderOrEqual(path, inc));
+  };
+}
+
+/** True when at least one defined candidate path (e.g. a rename's old+new path) passes the predicate. */
+export function matchesAnyPath(
+  predicate: PathFilterPredicate,
+  paths: ReadonlyArray<string | undefined>,
+): boolean {
+  return paths.some((p) => p !== undefined && predicate(p));
 }

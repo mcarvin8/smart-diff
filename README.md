@@ -28,25 +28,9 @@ Use any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) (Op
 
 ## Requirements
 
-- **Node.js** 22+
+- **Node.js** 22.22.1+
 - An LLM provider credential (see [Provider configuration](#provider-configuration))
-- No git binary required for **glibc** systems - Uses [dugite](https://github.com/desktop/dugite) wich ships its own git binary
-
-### Alpine Linux / musl libc
-
-Dugite's bundled git binary is compiled against glibc and will not run on Alpine Linux or other musl-based images. Set the two [dugite execution env vars](https://github.com/desktop/dugite/blob/main/docs/environment-variables.md#execution) to point at your system git instead:
-
-| Variable | Purpose |
-|---|---|
-| `LOCAL_GIT_DIRECTORY` | Root of your git installation (the directory containing `bin/git`) |
-| `GIT_EXEC_PATH` | Directory containing git's subprograms (set if your distro moves them) |
-
-```sh
-export LOCAL_GIT_DIRECTORY=/usr        # uses /usr/bin/git
-export GIT_EXEC_PATH=/usr/lib/git-core # only needed if subprograms are non-standard
-```
-
-Install git in your image first if needed (`apk add git`). No code changes are required — these are first-class dugite env vars.
+- No git binary required, on any platform — smart-diff reads the repository directly via [`@scolladon/tsgit`](https://github.com/scolladon/tsgit), a pure-TypeScript git implementation with zero native dependencies. Nothing to install, nothing glibc/musl-sensitive.
 
 ## Installation
 
@@ -188,9 +172,9 @@ npx smart-diff --help
 | Option | CLI flag | Description |
 |--------|----------|-------------|
 | `from` / `to` | `<from>` `[to]` / `--from` / `--to` | Git refs for the range; `to` defaults to `HEAD`. |
-| `cwd` / `git` | `--cwd <path>` | Working directory path, or inject your own `GitClient` instance (library only). |
+| `cwd` / `git` | `--cwd <path>` | Working directory path, or inject your own `GitClient` instance (library only; see [Lower-level API](#lower-level-api)). |
 | `includeFolders` | `--include <path>` | Limit diff to these paths relative to repo root (omit for full repo minus excludes). |
-| `excludeFolders` | `--exclude <path>` | Excluded paths (git `:(exclude)` pathspecs), e.g. `node_modules`. |
+| `excludeFolders` | `--exclude <path>` | Excluded paths, applied client-side to the changed-path list (directory-prefix match), e.g. `node_modules`. |
 | `commitMessageIncludeRegexes` | `--commit-include <regex>` | If any pattern is non-empty, only commits whose **full message** matches at least one pattern are kept (after excludes). Case-insensitive. |
 | `commitMessageExcludeRegexes` | `--commit-exclude <regex>` | Drop commits whose message matches **any** of these patterns. |
 | `teamName` | `--team <name>` | Adds a `Team:` line to the user payload for the model. |
@@ -298,30 +282,32 @@ const md = await summarizeGitDiff({
 ### Diff shape: single range vs per-commit
 
 - **Single unified diff** for `from..to` when no commit-message filters apply and the filtered commit list matches the full log for that range.
-- **Concatenated per-commit patches** (`<hash>^!`) when you use include/exclude regexes or when the filtered commit list differs in length from the full range (so the diff reflects only the commits that remain).
+- **Concatenated per-commit patches** (each commit diffed against its first parent, or the empty tree for a root commit) when you use include/exclude regexes or when the filtered commit list differs in length from the full range (so the diff reflects only the commits that remain).
 
 ### Lower-level API
 
 The package also exports helpers for building a custom pipeline on top of the same git and LLM behavior:
 
-- **Git**: `createGitClient(cwd?, timeout?)`, `getRepoRoot`, `getCommits`, `getDiff`, `getDiffSummary`, `getChangedFiles`, `filterCommitsByMessageRegexes`, `buildDiffPathspecs`, `buildDiffShapingGitArgs`, `shapeUnifiedDiff`, `redactSecrets`, `DEFAULT_NOISE_EXCLUDES`, `DEFAULT_SECRET_PATTERNS` — `timeout` is in milliseconds; omit for no timeout
+- **Git**: `createGitClient(cwd?, timeout?)` *(async — returns `Promise<GitClient>`, a live [`@scolladon/tsgit`](https://github.com/scolladon/tsgit) repository handle; call `git.dispose()` when done)*, `getRepoRoot`, `getCommits`, `getDiff`, `getDiffSummary`, `getChangedFiles`, `filterCommitsByMessageRegexes`, `buildPathFilterPredicate`, `matchesAnyPath`, `renderFileDiff`, `renderUnifiedDiff`, `buildFileSummary`, `mergeFileSummariesByPath`, `summarizeFiles`, `shapeUnifiedDiff`, `redactSecrets`, `DEFAULT_NOISE_EXCLUDES`, `DEFAULT_SECRET_PATTERNS` — `timeout` is in milliseconds; omit for no timeout
 - **AI**: `generateSummary`, `generateSummaryWithUsage`, `resolveLlmMaxDiffChars`, `resolveLlmMaxRetries`, `truncateUnifiedDiffForLlm`, `splitUnifiedDiffIntoFileChunks`, `groupDiffChunksByBudget`
 - **Provider resolution**: `resolveLanguageModel`, `detectLlmProvider`, `isLlmProviderConfigured`, `defaultModelForProvider`, `resolveLlmBaseUrl`, `parseLlmDefaultHeadersFromEnv`
 - **Constants**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`
-- **Types**: `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `LlmUsageReport`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `SecretRedactionRule`
-  - `DiffFileSummary.binary?: boolean` is `true` when git reports `-` for additions/deletions (binary file); absent for text files
+- **Types**: `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `LlmUsageReport`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `PathFilterPredicate`, `RenderedFileDiff`, `SecretRedactionRule`
+  - `DiffFileSummary.binary?: boolean` is `true` when either blob sniffs as binary; absent for text files
 
-## Migrating from 2.x → 3.x
+## Migrating from 3.x → 4.x
 
-`@ai-sdk/openai` and `@ai-sdk/openai-compatible` are no longer bundled as direct dependencies. If you use either, add them explicitly:
+The git backend moved from shelling out to a bundled [dugite](https://github.com/desktop/dugite) git binary to reading the repository directly via the pure-TypeScript [`@scolladon/tsgit`](https://github.com/scolladon/tsgit) — no git binary, no native dependency, on any platform.
 
-```bash
-npm install @ai-sdk/openai
-# or
-npm install @ai-sdk/openai-compatible
-```
+Only the [lower-level API](#lower-level-api) is affected:
 
-Everything else — env vars, auto-detection, the public API — is unchanged.
+- `createGitClient` is now **async**: `const git = await createGitClient(cwd)`.
+- `GitClient` is now a live tsgit `Repository` handle, not a `{ run(args) }` shell wrapper. Call `git.dispose()` when you're done with it (or let it be garbage collected after the process exits).
+- `buildDiffPathspecs` is removed. Path filtering is now client-side; use `buildPathFilterPredicate(repoRoot, pathFilter)` to get a `(path: string) => boolean` predicate instead of a git pathspec argument list.
+- `buildDiffShapingGitArgs` is removed — `contextLines` and `ignoreWhitespace` are now consumed directly by the diff renderer instead of being turned into `git diff` flags.
+- `parseDiffSummary` is removed; build `DiffFileSummary` entries from a `DiffChange` + rendered diff via `buildFileSummary`, and aggregate with `mergeFileSummariesByPath` / `summarizeFiles`.
+
+`summarizeGitDiff`, `summarizeGitDiffWithUsage`, and every CLI flag are unchanged.
 
 ## Used By
 

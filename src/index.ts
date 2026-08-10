@@ -37,7 +37,7 @@ export type GitDiffAiSummaryOptions = {
   includeFolders?: string[];
   /**
    * Exclude these paths relative to the repo root, e.g. `node_modules`, `dist`.
-   * Implemented with git `:(exclude)` pathspecs.
+   * Applied client-side to the diff's changed-path list (directory-prefix match).
    */
   excludeFolders?: string[];
   /**
@@ -172,7 +172,7 @@ function shouldFilterByCommits(
 async function prepareSummaryInput(
   options: GitDiffAiSummaryOptions,
 ): Promise<GenerateSummaryInput> {
-  const git = options.git ?? createGitClient(options.cwd);
+  const git = options.git ?? (await createGitClient(options.cwd));
   const from = options.from;
   const to = options.to ?? "HEAD";
 
@@ -301,11 +301,13 @@ export type {
   DiffSummary,
   GitClient,
   GitDiffRangeQuery,
+  PathFilterPredicate,
+  RenderedFileDiff,
   SecretRedactionRule,
 } from "./git/gitDiff.js";
 export {
-  buildDiffPathspecs,
-  buildDiffShapingGitArgs,
+  buildFileSummary,
+  buildPathFilterPredicate,
   createGitClient,
   DEFAULT_NOISE_EXCLUDES,
   DEFAULT_SECRET_PATTERNS,
@@ -315,6 +317,11 @@ export {
   getDiff,
   getDiffSummary,
   getRepoRoot,
+  matchesAnyPath,
+  mergeFileSummariesByPath,
   redactSecrets,
+  renderFileDiff,
+  renderUnifiedDiff,
   shapeUnifiedDiff,
+  summarizeFiles,
 } from "./git/gitDiff.js";

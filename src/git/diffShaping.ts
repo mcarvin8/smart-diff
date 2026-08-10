@@ -11,14 +11,14 @@ import {
  */
 export type DiffShapingOptions = {
   /**
-   * Number of context lines around each change. Passed as `-U<n>` to `git diff`.
-   * Git defaults to 3; lowering to 0 or 1 commonly saves 30–60% of tokens on
-   * modification-heavy diffs with little loss of fidelity.
+   * Number of context lines around each change, fed to the renderer's own hunk
+   * grouping. Defaults to 3 (git's default); lowering to 0 or 1 commonly saves
+   * 30–60% of tokens on modification-heavy diffs with little loss of fidelity.
    */
   contextLines?: number;
   /**
-   * Pass `-w` / `--ignore-all-space` to `git diff`. Pure-whitespace hunks vanish,
-   * which is usually what you want when the model is reasoning about behavior.
+   * Ignore whitespace-only differences when diffing (tsgit's native `ignoreWhitespace: 'all'`
+   * data mode). A file whose only change is whitespace drops out of the diff entirely.
    */
   ignoreWhitespace?: boolean;
   /**
@@ -80,20 +80,6 @@ function normalizeContextLines(raw: number): number {
   // Stryker disable next-line EqualityOperator
   if (!Number.isFinite(raw) || raw < 0) return 0;
   return Math.trunc(raw);
-}
-
-/** Build the leading args for `git diff` implied by shaping options. */
-export function buildDiffShapingGitArgs(
-  shaping?: DiffShapingOptions,
-): string[] {
-  const args: string[] = [];
-  if (shaping?.contextLines !== undefined) {
-    args.push(`-U${normalizeContextLines(shaping.contextLines)}`);
-  }
-  if (shaping?.ignoreWhitespace) {
-    args.push("-w");
-  }
-  return args;
 }
 
 const PREAMBLE_NOISE_PREFIXES = [

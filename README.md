@@ -9,6 +9,21 @@
 
 TypeScript library that turns a **git revision range** into a **Markdown summary** using any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) (OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, and OpenAI-compatible gateways). Ships a bundled git binary via [dugite](https://github.com/desktop/dugite) — no system git required. Supports path includes/excludes and commit message regex filters, and sends commits, file paths, diff stats, and unified diff text to the model.
 
+## Contents
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Provider configuration](#provider-configuration)
+- [Usage](#usage)
+  - [`summarizeGitDiff`](#summarizegitdiff)
+  - [Handling large diffs](#handling-large-diffs)
+  - [Token usage reporting](#token-usage-reporting)
+  - [Injecting your own `LanguageModel`](#injecting-your-own-languagemodel)
+  - [Diff shape: single range vs per-commit](#diff-shape-single-range-vs-per-commit)
+  - [Lower-level API](#lower-level-api)
+- [Migrating from 2.x → 3.x](#migrating-from-2x--3x)
+- [Used By](#used-by)
+
 ## Requirements
 
 - **Node.js** 22+
@@ -148,6 +163,8 @@ const markdown = await summarizeGitDiff({
 });
 ```
 
+**Core**
+
 | Option | Description |
 |--------|-------------|
 | `from` / `to` | Git refs for the range; `to` defaults to `HEAD`. |
@@ -160,19 +177,36 @@ const markdown = await summarizeGitDiff({
 | `systemPrompt` | Replaces the default system prompt. |
 | `provider` | `LlmProviderId` — wins over `LLM_PROVIDER` env and auto-detection. |
 | `model` | Chat model id; overrides `LLM_MODEL` and the provider default. |
-| `maxDiffChars` | Caps unified diff size for the request. |
-| `maxRetries` | Retry count for transient LLM call failures (rate limits, 5xx, network errors); also settable via `LLM_MAX_RETRIES`. Default 2 (matches the Vercel AI SDK's own default). Set to 0 to disable retries. |
-| `mapReduce` | When the diff exceeds `maxDiffChars`, split it into per-file batches, summarize each batch independently (map), then synthesize one final summary from the batch summaries (reduce) instead of hard-truncating the diff. No effect when the diff already fits within `maxDiffChars`. |
+| `llmModelProvider` | `() => Promise<LanguageModel>` — bypass env-based resolution entirely; hand-wire a Vercel AI SDK `LanguageModel` (required in tests or custom setups). |
+
+**Token reduction** — see [Handling large diffs](#handling-large-diffs)
+
+| Option | Description |
+|--------|-------------|
+| `maxDiffChars` | Caps unified diff size for the request; see `LLM_MAX_DIFF_CHARS`. |
+| `mapReduce` | Split an oversized diff into per-file batches instead of hard-truncating it. |
 | `contextLines` | Number of context lines around each change (`git diff -U<n>`). Lower values (1 or 0) are the single biggest token saver on modification-heavy diffs. |
 | `ignoreWhitespace` | Passes `-w` / `--ignore-all-space` to `git diff` so pure-whitespace hunks don't consume tokens. Also applies to `--numstat` / `--name-status` so counts stay consistent. |
 | `stripDiffPreamble` | Removes low-value lines from the unified diff (`diff --git`, `index`, mode changes, `similarity/rename/copy` metadata). `--- a/…`, `+++ b/…`, and `@@` hunk headers are kept. |
 | `maxHunkLines` | Caps the body of each hunk; anything past the limit is replaced with a single elision marker. The `@@` header and `DiffSummary` totals are preserved. |
 | `excludeDefaultNoise` | Merges the built-in `DEFAULT_NOISE_EXCLUDES` list (lockfiles, `dist`, `build`, `out`, `coverage`, `node_modules`, `__snapshots__`) into `excludeFolders`. |
+
+**Reliability**
+
+| Option | Description |
+|--------|-------------|
+| `maxRetries` | Retry count for transient LLM call failures; see `LLM_MAX_RETRIES`. |
+
+**Security**
+
+| Option | Description |
+|--------|-------------|
 | `redactSecrets` | Masks likely secrets/credentials in the diff text before it's sent to the LLM — cloud provider keys, VCS/chat tokens, PEM private key blocks, JWTs, `Bearer` headers, basic-auth URL passwords, and generic `KEY=value` assignments. Uses `DEFAULT_SECRET_PATTERNS` unless `secretPatterns` overrides them. |
 | `secretPatterns` | Overrides the built-in secret-detection rules used when `redactSecrets` is true. |
-| `llmModelProvider` | `() => Promise<LanguageModel>` — bypass env-based resolution entirely; hand-wire a Vercel AI SDK `LanguageModel` (required in tests or custom setups). |
 
-#### Reducing tokens
+#### Handling large diffs
+
+##### Reducing tokens
 
 For most repos, the cheapest wins are:
 
@@ -189,7 +223,7 @@ await summarizeGitDiff({
 
 These options only reshape the *unified diff text* — the structured `DiffSummary` still reports true file counts and line totals, so the model always sees the full change inventory.
 
-#### Map-reduce for oversized diffs
+##### Map-reduce for oversized diffs
 
 By default, a diff over `maxDiffChars` is hard-truncated — only the first N characters are sent, and a notice is prepended to the summary. Set `mapReduce: true` to instead split the diff into per-file batches, summarize each batch independently, then synthesize one final summary from the batch summaries:
 
@@ -203,7 +237,7 @@ await summarizeGitDiff({
 
 This costs one extra LLM call per batch plus one reduce call, so it's slower and more expensive than a single request — use it when losing coverage of the tail of a large diff matters more than latency/cost. `systemPrompt` (if set) applies to the reduce phase only; the map phase always uses `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`.
 
-### Usage reporting
+### Token usage reporting
 
 `summarizeGitDiffWithUsage` returns the same Markdown summary plus token usage aggregated across every LLM call made to produce it — one call by default, or every map-reduce batch plus the reduce call when `mapReduce` is used:
 
@@ -245,7 +279,9 @@ The package also exports helpers for building a custom pipeline on top of the sa
 - **Git**: `createGitClient(cwd?, timeout?)`, `getRepoRoot`, `getCommits`, `getDiff`, `getDiffSummary`, `getChangedFiles`, `filterCommitsByMessageRegexes`, `buildDiffPathspecs`, `buildDiffShapingGitArgs`, `shapeUnifiedDiff`, `redactSecrets`, `DEFAULT_NOISE_EXCLUDES`, `DEFAULT_SECRET_PATTERNS` — `timeout` is in milliseconds; omit for no timeout
 - **AI**: `generateSummary`, `generateSummaryWithUsage`, `resolveLlmMaxDiffChars`, `resolveLlmMaxRetries`, `truncateUnifiedDiffForLlm`, `splitUnifiedDiffIntoFileChunks`, `groupDiffChunksByBudget`
 - **Provider resolution**: `resolveLanguageModel`, `detectLlmProvider`, `isLlmProviderConfigured`, `defaultModelForProvider`, `resolveLlmBaseUrl`, `parseLlmDefaultHeadersFromEnv`
-- **Constants / types**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`, `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `LlmUsageReport`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `SecretRedactionRule` — `DiffFileSummary.binary?: boolean` is set to `true` when git reports `-` for additions/deletions (binary file); absent for text files
+- **Constants**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`
+- **Types**: `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `LlmUsageReport`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `SecretRedactionRule`
+  - `DiffFileSummary.binary?: boolean` is `true` when git reports `-` for additions/deletions (binary file); absent for text files
 
 ## Migrating from 2.x → 3.x
 

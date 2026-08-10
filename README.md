@@ -19,6 +19,7 @@ TypeScript library that turns a **git revision range** into a **Markdown summary
   - [Injecting your own `LanguageModel`](#injecting-your-own-languagemodel)
   - [Diff shape: single range vs per-commit](#diff-shape-single-range-vs-per-commit)
   - [Lower-level API](#lower-level-api)
+- [CLI](#cli)
 - [Migrating from 2.x → 3.x](#migrating-from-2x--3x)
 - [Used By](#used-by)
 
@@ -281,6 +282,22 @@ The package also exports helpers for building a custom pipeline on top of the sa
 - **Constants**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`
 - **Types**: `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `LlmUsageReport`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `SecretRedactionRule`
   - `DiffFileSummary.binary?: boolean` is `true` when git reports `-` for additions/deletions (binary file); absent for text files
+
+## CLI
+
+A `smart-diff` binary ships with the package via the `bin` field — no separate install. Provider configuration is identical to the library; see [Provider configuration](#provider-configuration).
+
+```bash
+npx @mcarvin/smart-diff origin/main HEAD --team Platform --max-diff-chars 20000
+# or, once installed as a project/global dependency:
+smart-diff origin/main HEAD
+```
+
+- `<from>` (required) and `[to]` (default `HEAD`) can be passed positionally or via `--from`/`--to`.
+- Every other [`summarizeGitDiff`](#summarizegitdiff) option is available as a kebab-case flag (`maxDiffChars` → `--max-diff-chars`, `redactSecrets` → `--redact-secrets`, etc.). Repeatable options (`--include`, `--exclude`, `--commit-include`, `--commit-exclude`) accept multiple flags.
+- `--usage` prints the same `LlmUsageReport` as [Token usage reporting](#token-usage-reporting) to stderr, after the Markdown summary on stdout.
+- Run `smart-diff --help` for the full flag reference, or `smart-diff --version` for the installed version.
+- The Markdown summary is printed to stdout; errors go to stderr and exit with code 1.
 
 ## Migrating from 2.x → 3.x
 

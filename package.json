@@ -7,6 +7,9 @@
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "types": "dist/typings/index.d.ts",
+  "bin": {
+    "smart-diff": "dist/cli.cjs"
+  },
   "engines": {
     "node": ">=22"
   },
@@ -81,6 +84,7 @@
     "anthropic",
     "bedrock",
     "claude",
+    "cli",
     "code-review",
     "cohere",
     "deepseek",

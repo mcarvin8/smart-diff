@@ -21,7 +21,6 @@ Use any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) (Op
   - [Injecting your own `LanguageModel`](#injecting-your-own-languagemodel)
   - [Diff shape: single range vs per-commit](#diff-shape-single-range-vs-per-commit)
   - [Lower-level API](#lower-level-api)
-- [CLI](#cli)
 - [Migrating from 2.x → 3.x](#migrating-from-2x--3x)
 - [Used By](#used-by)
 
@@ -144,6 +143,8 @@ $env:LLM_MODEL = "gemini-2.0-flash"
 
 ## Usage
 
+Use smart-diff as a library, or as the `smart-diff` CLI binary that ships with the package via the `bin` field — no separate install. Provider configuration is identical either way; see [Provider configuration](#provider-configuration). Every option below has a library form (a key in the `summarizeGitDiff` object) and, where applicable, an equivalent kebab-case CLI flag.
+
 ### `summarizeGitDiff`
 
 ```ts
@@ -165,46 +166,65 @@ const markdown = await summarizeGitDiff({
 });
 ```
 
+```bash
+npm install @mcarvin/smart-diff
+npx smart-diff origin/main HEAD --team Platform --max-diff-chars 20000
+npx smart-diff --help
+```
+
+- `<from>` (required) and `[to]` (default `HEAD`) can be passed positionally or via `--from`/`--to`.
+- Repeatable options (`--include`, `--exclude`, `--commit-include`, `--commit-exclude`) accept multiple flags.
+- The Markdown summary is printed to stdout; errors go to stderr and exit with code 1.
+- Run `smart-diff --help` for the full flag reference, or `smart-diff --version` for the installed version.
+
 **Core**
 
-| Option | Description |
-|--------|-------------|
-| `from` / `to` | Git refs for the range; `to` defaults to `HEAD`. |
-| `cwd` / `git` | Working directory path, or inject your own `GitClient` instance. |
-| `includeFolders` | Limit diff to these paths relative to repo root (omit for full repo minus excludes). |
-| `excludeFolders` | Excluded paths (git `:(exclude)` pathspecs), e.g. `node_modules`. |
-| `commitMessageIncludeRegexes` | If any pattern is non-empty, only commits whose **full message** matches at least one pattern are kept (after excludes). Case-insensitive. |
-| `commitMessageExcludeRegexes` | Drop commits whose message matches **any** of these patterns. |
-| `teamName` | Adds a `Team:` line to the user payload for the model. |
-| `systemPrompt` | Replaces the default system prompt. |
-| `provider` | `LlmProviderId` — wins over `LLM_PROVIDER` env and auto-detection. |
-| `model` | Chat model id; overrides `LLM_MODEL` and the provider default. |
-| `llmModelProvider` | `() => Promise<LanguageModel>` — bypass env-based resolution entirely; hand-wire a Vercel AI SDK `LanguageModel` (required in tests or custom setups). |
+| Option | CLI flag | Description |
+|--------|----------|-------------|
+| `from` / `to` | `<from>` `[to]` / `--from` / `--to` | Git refs for the range; `to` defaults to `HEAD`. |
+| `cwd` / `git` | `--cwd <path>` | Working directory path, or inject your own `GitClient` instance (library only). |
+| `includeFolders` | `--include <path>` | Limit diff to these paths relative to repo root (omit for full repo minus excludes). |
+| `excludeFolders` | `--exclude <path>` | Excluded paths (git `:(exclude)` pathspecs), e.g. `node_modules`. |
+| `commitMessageIncludeRegexes` | `--commit-include <regex>` | If any pattern is non-empty, only commits whose **full message** matches at least one pattern are kept (after excludes). Case-insensitive. |
+| `commitMessageExcludeRegexes` | `--commit-exclude <regex>` | Drop commits whose message matches **any** of these patterns. |
+| `teamName` | `--team <name>` | Adds a `Team:` line to the user payload for the model. |
+| `systemPrompt` | `--system-prompt <text>` | Replaces the default system prompt. |
+| `provider` | `--provider <id>` | `LlmProviderId` — wins over `LLM_PROVIDER` env and auto-detection. |
+| `model` | `--model <id>` | Chat model id; overrides `LLM_MODEL` and the provider default. |
+| `llmModelProvider` | — (library only) | `() => Promise<LanguageModel>` — bypass env-based resolution entirely; hand-wire a Vercel AI SDK `LanguageModel` (required in tests or custom setups). |
 
 **Token reduction** — see [Handling large diffs](#handling-large-diffs)
 
-| Option | Description |
-|--------|-------------|
-| `maxDiffChars` | Caps unified diff size for the request; see `LLM_MAX_DIFF_CHARS`. |
-| `mapReduce` | Split an oversized diff into per-file batches instead of hard-truncating it. |
-| `contextLines` | Number of context lines around each change (`git diff -U<n>`). Lower values (1 or 0) are the single biggest token saver on modification-heavy diffs. |
-| `ignoreWhitespace` | Passes `-w` / `--ignore-all-space` to `git diff` so pure-whitespace hunks don't consume tokens. Also applies to `--numstat` / `--name-status` so counts stay consistent. |
-| `stripDiffPreamble` | Removes low-value lines from the unified diff (`diff --git`, `index`, mode changes, `similarity/rename/copy` metadata). `--- a/…`, `+++ b/…`, and `@@` hunk headers are kept. |
-| `maxHunkLines` | Caps the body of each hunk; anything past the limit is replaced with a single elision marker. The `@@` header and `DiffSummary` totals are preserved. |
-| `excludeDefaultNoise` | Merges the built-in `DEFAULT_NOISE_EXCLUDES` list (lockfiles, `dist`, `build`, `out`, `coverage`, `node_modules`, `__snapshots__`) into `excludeFolders`. |
+| Option | CLI flag | Description |
+|--------|----------|-------------|
+| `maxDiffChars` | `--max-diff-chars <n>` | Caps unified diff size for the request; see `LLM_MAX_DIFF_CHARS`. |
+| `mapReduce` | `--map-reduce` | Split an oversized diff into per-file batches instead of hard-truncating it. |
+| `contextLines` | `--context-lines <n>` | Number of context lines around each change (`git diff -U<n>`). Lower values (1 or 0) are the single biggest token saver on modification-heavy diffs. |
+| `ignoreWhitespace` | `--ignore-whitespace` | Passes `-w` / `--ignore-all-space` to `git diff` so pure-whitespace hunks don't consume tokens. Also applies to `--numstat` / `--name-status` so counts stay consistent. |
+| `stripDiffPreamble` | `--strip-diff-preamble` | Removes low-value lines from the unified diff (`diff --git`, `index`, mode changes, `similarity/rename/copy` metadata). `--- a/…`, `+++ b/…`, and `@@` hunk headers are kept. |
+| `maxHunkLines` | `--max-hunk-lines <n>` | Caps the body of each hunk; anything past the limit is replaced with a single elision marker. The `@@` header and `DiffSummary` totals are preserved. |
+| `excludeDefaultNoise` | `--exclude-default-noise` | Merges the built-in `DEFAULT_NOISE_EXCLUDES` list (lockfiles, `dist`, `build`, `out`, `coverage`, `node_modules`, `__snapshots__`) into `excludeFolders`. |
 
 **Reliability**
 
-| Option | Description |
-|--------|-------------|
-| `maxRetries` | Retry count for transient LLM call failures; see `LLM_MAX_RETRIES`. |
+| Option | CLI flag | Description |
+|--------|----------|-------------|
+| `maxRetries` | `--max-retries <n>` | Retry count for transient LLM call failures; see `LLM_MAX_RETRIES`. |
 
 **Security**
 
-| Option | Description |
-|--------|-------------|
-| `redactSecrets` | Masks likely secrets/credentials in the diff text before it's sent to the LLM — cloud provider keys, VCS/chat tokens, PEM private key blocks, JWTs, `Bearer` headers, basic-auth URL passwords, and generic `KEY=value` assignments. Uses `DEFAULT_SECRET_PATTERNS` unless `secretPatterns` overrides them. |
-| `secretPatterns` | Overrides the built-in secret-detection rules used when `redactSecrets` is true. |
+| Option | CLI flag | Description |
+|--------|----------|-------------|
+| `redactSecrets` | `--redact-secrets` | Masks likely secrets/credentials in the diff text before it's sent to the LLM — cloud provider keys, VCS/chat tokens, PEM private key blocks, JWTs, `Bearer` headers, basic-auth URL passwords, and generic `KEY=value` assignments. Uses `DEFAULT_SECRET_PATTERNS` unless `secretPatterns` overrides them. |
+| `secretPatterns` | — (library only) | Overrides the built-in secret-detection rules used when `redactSecrets` is true. |
+
+**Other**
+
+| Option | CLI flag | Description |
+|--------|----------|-------------|
+| use `summarizeGitDiffWithUsage` instead | `--usage` | Print the same `LlmUsageReport` as [Token usage reporting](#token-usage-reporting) to stderr, after the Markdown summary on stdout. |
+| — | `-h`, `--help` | Show CLI help. |
+| — | `-v`, `--version` | Print the installed version. |
 
 #### Handling large diffs
 
@@ -284,22 +304,6 @@ The package also exports helpers for building a custom pipeline on top of the sa
 - **Constants**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`
 - **Types**: `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `LlmUsageReport`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `SecretRedactionRule`
   - `DiffFileSummary.binary?: boolean` is `true` when git reports `-` for additions/deletions (binary file); absent for text files
-
-## CLI
-
-A `smart-diff` binary ships with the package via the `bin` field — no separate install. Provider configuration is identical to the library; see [Provider configuration](#provider-configuration).
-
-```bash
-npm install @mcarvin/smart-diff
-npx smart-diff origin/main HEAD --team Platform --max-diff-chars 20000
-npx smart-diff --help
-```
-
-- `<from>` (required) and `[to]` (default `HEAD`) can be passed positionally or via `--from`/`--to`.
-- Every other [`summarizeGitDiff`](#summarizegitdiff) option is available as a kebab-case flag (`maxDiffChars` → `--max-diff-chars`, `redactSecrets` → `--redact-secrets`, etc.). Repeatable options (`--include`, `--exclude`, `--commit-include`, `--commit-exclude`) accept multiple flags.
-- `--usage` prints the same `LlmUsageReport` as [Token usage reporting](#token-usage-reporting) to stderr, after the Markdown summary on stdout.
-- Run `smart-diff --help` for the full flag reference, or `smart-diff --version` for the installed version.
-- The Markdown summary is printed to stdout; errors go to stderr and exit with code 1.
 
 ## Migrating from 2.x → 3.x
 

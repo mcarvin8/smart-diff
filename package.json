@@ -39,7 +39,7 @@
     "@commitlint/cli": "20.5.0",
     "@commitlint/config-conventional": "20.5.0",
     "@rollup/plugin-terser": "1.0.0",
-    "@rollup/plugin-typescript": "12.1.4",
+    "@rollup/plugin-typescript": "12.3.0",
     "@stryker-mutator/core": "9.6.1",
     "@stryker-mutator/vitest-runner": "9.6.1",
     "@types/node": "25.5.0",
@@ -48,8 +48,8 @@
     "knip": "6.32.1",
     "lint-staged": "16.3.3",
     "ls-engines": "0.10.1",
-    "rollup": "4.59.0",
-    "typescript": "5.9.3",
+    "rollup": "4.62.4",
+    "typescript": "6.0.3",
     "vitest": "4.1.5"
   },
   "dependencies": {

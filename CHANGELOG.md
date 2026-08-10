@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0](https://github.com/mcarvin8/smart-diff/compare/v3.3.0...v3.4.0) (2026-08-10)
+
+
+### Features
+
+* add a smart-diff CLI ([#60](https://github.com/mcarvin8/smart-diff/issues/60)) ([feb6033](https://github.com/mcarvin8/smart-diff/commit/feb60330127ac69914cd0d1448d586fdedb5092d))
+
 ## [3.3.0](https://github.com/mcarvin8/smart-diff/compare/v3.2.0...v3.3.0) (2026-08-10)
 
 

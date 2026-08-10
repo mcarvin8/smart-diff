@@ -7,7 +7,9 @@
 [![codecov](https://codecov.io/gh/mcarvin8/smart-diff/graph/badge.svg?token=H3ZWAGG7S9)](https://codecov.io/gh/mcarvin8/smart-diff)
 [![Mutation testing badge](https://img.shields.io/endpoint?style=flat&url=https%3A%2F%2Fbadge-api.stryker-mutator.io%2Fgithub.com%2Fmcarvin8%2Fsmart-diff%2Fmain)](https://dashboard.stryker-mutator.io/reports/github.com/mcarvin8/smart-diff/main)
 
-TypeScript library that turns a **git revision range** into a **Markdown summary** using any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) (OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, and OpenAI-compatible gateways).
+Generate AI-powered natural-language summaries of git diffs for code review in any git repository.
+
+Use any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) (OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, and OpenAI-compatible gateways).
 
 - [Requirements](#requirements)
 - [Installation](#installation)

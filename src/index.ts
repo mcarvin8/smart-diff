@@ -1,5 +1,10 @@
-import { generateSummary } from "./ai/aiSummary.js";
-import type { LlmModelProvider, SummarizeFlags } from "./ai/aiTypes.js";
+import { generateSummary, generateSummaryWithUsage } from "./ai/aiSummary.js";
+import type {
+  GenerateSummaryInput,
+  LlmModelProvider,
+  LlmUsageReport,
+  SummarizeFlags,
+} from "./ai/aiTypes.js";
 import type { LlmProviderId } from "./ai/llmProviders.js";
 import {
   type CommitInfo,
@@ -164,13 +169,9 @@ function shouldFilterByCommits(
   return filtered.length !== allCommits.length;
 }
 
-/**
- * Produce an AI-assisted Markdown summary of the git changes between `from` and `to`,
- * honoring path filters, commit message include/exclude regexes, optional team label, and optional system prompt.
- */
-export async function summarizeGitDiff(
+async function prepareSummaryInput(
   options: GitDiffAiSummaryOptions,
-): Promise<string> {
+): Promise<GenerateSummaryInput> {
   const git = options.git ?? createGitClient(options.cwd);
   const from = options.from;
   const to = options.to ?? "HEAD";
@@ -227,14 +228,34 @@ export async function summarizeGitDiff(
     commitMessageExcludeRegexes: options.commitMessageExcludeRegexes,
   };
 
-  return generateSummary({
+  return {
     diffText,
     fileNames,
     commits: filteredCommits,
     flags: summarizeFlags,
     llmModelProvider: options.llmModelProvider,
     diffSummary,
-  });
+  };
+}
+
+/**
+ * Produce an AI-assisted Markdown summary of the git changes between `from` and `to`,
+ * honoring path filters, commit message include/exclude regexes, optional team label, and optional system prompt.
+ */
+export async function summarizeGitDiff(
+  options: GitDiffAiSummaryOptions,
+): Promise<string> {
+  return generateSummary(await prepareSummaryInput(options));
+}
+
+/**
+ * Same as `summarizeGitDiff`, but also returns token usage aggregated across
+ * every LLM call made to produce the summary. See {@link LlmUsageReport}.
+ */
+export async function summarizeGitDiffWithUsage(
+  options: GitDiffAiSummaryOptions,
+): Promise<{ summary: string; usage: LlmUsageReport }> {
+  return generateSummaryWithUsage(await prepareSummaryInput(options));
 }
 
 export {
@@ -245,6 +266,7 @@ export {
 } from "./ai/aiConstants.js";
 export {
   generateSummary,
+  generateSummaryWithUsage,
   resolveLlmMaxDiffChars,
   resolveLlmMaxRetries,
   truncateUnifiedDiffForLlm,
@@ -252,6 +274,7 @@ export {
 export type {
   GenerateSummaryInput,
   LlmModelProvider,
+  LlmUsageReport,
   SummarizeFlags,
 } from "./ai/aiTypes.js";
 export {

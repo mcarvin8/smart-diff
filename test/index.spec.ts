@@ -2,8 +2,8 @@ import type { LanguageModel } from "ai";
 import type { Mock } from "vitest";
 
 import * as gitDiff from "../src/git/gitDiff";
-import { summarizeGitDiff } from "../src/index";
-import { makeMockModel } from "./helpers/mockLlm";
+import { summarizeGitDiff, summarizeGitDiffWithUsage } from "../src/index";
+import { makeMockModel, makeUsageMockProvider } from "./helpers/mockLlm";
 
 function mockLlmProvider(text: string): () => Promise<LanguageModel> {
   return async () => makeMockModel(text).model;
@@ -71,5 +71,36 @@ describe("summarizeGitDiff integration", () => {
     });
 
     expect(run).toHaveBeenCalledWith(expect.arrayContaining(["1^!"]));
+  });
+
+  it("summarizeGitDiffWithUsage returns the summary alongside aggregated token usage", async () => {
+    const mockGit = {
+      run: vi.fn().mockImplementation(async (args: string[]) => {
+        if (args[0] === "log") return "h1\x1fm\n";
+        if (args[0] === "rev-parse") return "C:\\repo\n";
+        return "";
+      }),
+    };
+    vi.spyOn(gitDiff, "createGitClient").mockReturnValue(mockGit as never);
+
+    const { llmModelProvider } = makeUsageMockProvider([
+      { text: "summary", inputTokens: 42, outputTokens: 8 },
+    ]);
+
+    const { summary, usage } = await summarizeGitDiffWithUsage({
+      from: "a",
+      to: "b",
+      cwd: "C:\\some\\cwd",
+      llmModelProvider,
+    });
+
+    expect(summary).toBe("summary");
+    expect(usage).toEqual({
+      requestCount: 1,
+      inputTokens: 42,
+      outputTokens: 8,
+      totalTokens: 50,
+      cachedInputTokens: 0,
+    });
   });
 });

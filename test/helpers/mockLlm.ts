@@ -108,6 +108,51 @@ export function makeFlakyMockProvider(
   return { llmModelProvider: async () => model, attemptCount: () => attempts };
 }
 
+export type MockUsageResponse = {
+  text: string;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens?: number;
+};
+
+/**
+ * Returns one response per call (in order, repeating the last entry beyond
+ * the list length), each reporting the given token usage. Useful for
+ * asserting that usage is aggregated correctly across multiple LLM calls
+ * (e.g. map-reduce batches).
+ */
+export function makeUsageMockProvider(responses: MockUsageResponse[]): {
+  llmModelProvider: () => Promise<LanguageModel>;
+} {
+  let callIndex = 0;
+  const model = new MockLanguageModelV3({
+    doGenerate: async () => {
+      const r = responses[Math.min(callIndex, responses.length - 1)]!;
+      callIndex += 1;
+      const cacheRead = r.cacheReadTokens ?? 0;
+      return {
+        content: r.text === "" ? [] : [{ type: "text" as const, text: r.text }],
+        finishReason: { unified: "stop" as const, raw: undefined },
+        usage: {
+          inputTokens: {
+            total: r.inputTokens,
+            noCache: r.inputTokens - cacheRead,
+            cacheRead,
+            cacheWrite: 0,
+          },
+          outputTokens: {
+            total: r.outputTokens,
+            text: r.outputTokens,
+            reasoning: 0,
+          },
+        },
+        warnings: [],
+      };
+    },
+  });
+  return { llmModelProvider: async () => model };
+}
+
 export function extractUserText(call: MockDoGenerateCall): string {
   const userMessage = call.prompt.find((m) => m.role === "user");
   if (!userMessage) return "";

@@ -203,6 +203,19 @@ await summarizeGitDiff({
 
 This costs one extra LLM call per batch plus one reduce call, so it's slower and more expensive than a single request — use it when losing coverage of the tail of a large diff matters more than latency/cost. `systemPrompt` (if set) applies to the reduce phase only; the map phase always uses `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`.
 
+### Usage reporting
+
+`summarizeGitDiffWithUsage` returns the same Markdown summary plus token usage aggregated across every LLM call made to produce it — one call by default, or every map-reduce batch plus the reduce call when `mapReduce` is used:
+
+```ts
+import { summarizeGitDiffWithUsage } from '@mcarvin/smart-diff';
+
+const { summary, usage } = await summarizeGitDiffWithUsage({ from: 'origin/main' });
+// usage: { requestCount, inputTokens, outputTokens, totalTokens, cachedInputTokens }
+```
+
+This reports token counts only — no dollar cost estimate, since per-token pricing varies by provider/model and changes over time; a hardcoded price table would drift out of date. Fields are 0 when a provider doesn't report a given figure. `generateSummaryWithUsage` is the lower-level equivalent of `generateSummary`.
+
 ### Injecting your own `LanguageModel`
 
 If you want full control — for example, to configure retries, middlewares, or hit an in-process mock — pass `llmModelProvider`:
@@ -230,9 +243,9 @@ const md = await summarizeGitDiff({
 The package also exports helpers for building a custom pipeline on top of the same git and LLM behavior:
 
 - **Git**: `createGitClient(cwd?, timeout?)`, `getRepoRoot`, `getCommits`, `getDiff`, `getDiffSummary`, `getChangedFiles`, `filterCommitsByMessageRegexes`, `buildDiffPathspecs`, `buildDiffShapingGitArgs`, `shapeUnifiedDiff`, `redactSecrets`, `DEFAULT_NOISE_EXCLUDES`, `DEFAULT_SECRET_PATTERNS` — `timeout` is in milliseconds; omit for no timeout
-- **AI**: `generateSummary`, `resolveLlmMaxDiffChars`, `resolveLlmMaxRetries`, `truncateUnifiedDiffForLlm`, `splitUnifiedDiffIntoFileChunks`, `groupDiffChunksByBudget`
+- **AI**: `generateSummary`, `generateSummaryWithUsage`, `resolveLlmMaxDiffChars`, `resolveLlmMaxRetries`, `truncateUnifiedDiffForLlm`, `splitUnifiedDiffIntoFileChunks`, `groupDiffChunksByBudget`
 - **Provider resolution**: `resolveLanguageModel`, `detectLlmProvider`, `isLlmProviderConfigured`, `defaultModelForProvider`, `resolveLlmBaseUrl`, `parseLlmDefaultHeadersFromEnv`
-- **Constants / types**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`, `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `SecretRedactionRule` — `DiffFileSummary.binary?: boolean` is set to `true` when git reports `-` for additions/deletions (binary file); absent for text files
+- **Constants / types**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`, `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `LlmUsageReport`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `SecretRedactionRule` — `DiffFileSummary.binary?: boolean` is set to `true` when git reports `-` for additions/deletions (binary file); absent for text files
 
 ## Migrating from 2.x → 3.x
 

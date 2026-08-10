@@ -15,7 +15,9 @@ Use any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) (Op
 - [Installation](#installation)
 - [Provider configuration](#provider-configuration)
 - [Usage](#usage)
-  - [`summarizeGitDiff`](#summarizegitdiff)
+  - [Use as a Library - `summarizeGitDiff`](#use-as-a-library---summarizegitdiff)
+  - [Use as a CLI](#use-as-a-cli)
+  - [Options reference](#options-reference)
   - [Handling large diffs](#handling-large-diffs)
   - [Token usage reporting](#token-usage-reporting)
   - [Injecting your own `LanguageModel`](#injecting-your-own-languagemodel)
@@ -145,7 +147,7 @@ $env:LLM_MODEL = "gemini-2.0-flash"
 
 Use smart-diff as a library, or as the `smart-diff` CLI binary that ships with the package via the `bin` field — no separate install. Provider configuration is identical either way; see [Provider configuration](#provider-configuration). Every option below has a library form (a key in the `summarizeGitDiff` object) and, where applicable, an equivalent kebab-case CLI flag.
 
-### `summarizeGitDiff`
+### Use as a Library - `summarizeGitDiff`
 
 ```ts
 import { summarizeGitDiff } from '@mcarvin/smart-diff';
@@ -166,6 +168,8 @@ const markdown = await summarizeGitDiff({
 });
 ```
 
+### Use as a CLI
+
 ```bash
 npm install @mcarvin/smart-diff
 npx smart-diff origin/main HEAD --team Platform --max-diff-chars 20000
@@ -177,7 +181,9 @@ npx smart-diff --help
 - The Markdown summary is printed to stdout; errors go to stderr and exit with code 1.
 - Run `smart-diff --help` for the full flag reference, or `smart-diff --version` for the installed version.
 
-**Core**
+### Options reference
+
+#### Core
 
 | Option | CLI flag | Description |
 |--------|----------|-------------|
@@ -193,7 +199,7 @@ npx smart-diff --help
 | `model` | `--model <id>` | Chat model id; overrides `LLM_MODEL` and the provider default. |
 | `llmModelProvider` | — (library only) | `() => Promise<LanguageModel>` — bypass env-based resolution entirely; hand-wire a Vercel AI SDK `LanguageModel` (required in tests or custom setups). |
 
-**Token reduction** — see [Handling large diffs](#handling-large-diffs)
+#### Token reduction — see [Handling large diffs](#handling-large-diffs)
 
 | Option | CLI flag | Description |
 |--------|----------|-------------|
@@ -205,20 +211,20 @@ npx smart-diff --help
 | `maxHunkLines` | `--max-hunk-lines <n>` | Caps the body of each hunk; anything past the limit is replaced with a single elision marker. The `@@` header and `DiffSummary` totals are preserved. |
 | `excludeDefaultNoise` | `--exclude-default-noise` | Merges the built-in `DEFAULT_NOISE_EXCLUDES` list (lockfiles, `dist`, `build`, `out`, `coverage`, `node_modules`, `__snapshots__`) into `excludeFolders`. |
 
-**Reliability**
+#### Reliability
 
 | Option | CLI flag | Description |
 |--------|----------|-------------|
 | `maxRetries` | `--max-retries <n>` | Retry count for transient LLM call failures; see `LLM_MAX_RETRIES`. |
 
-**Security**
+#### Security
 
 | Option | CLI flag | Description |
 |--------|----------|-------------|
 | `redactSecrets` | `--redact-secrets` | Masks likely secrets/credentials in the diff text before it's sent to the LLM — cloud provider keys, VCS/chat tokens, PEM private key blocks, JWTs, `Bearer` headers, basic-auth URL passwords, and generic `KEY=value` assignments. Uses `DEFAULT_SECRET_PATTERNS` unless `secretPatterns` overrides them. |
 | `secretPatterns` | — (library only) | Overrides the built-in secret-detection rules used when `redactSecrets` is true. |
 
-**Other**
+#### Other
 
 | Option | CLI flag | Description |
 |--------|----------|-------------|
@@ -226,9 +232,9 @@ npx smart-diff --help
 | — | `-h`, `--help` | Show CLI help. |
 | — | `-v`, `--version` | Print the installed version. |
 
-#### Handling large diffs
+### Handling large diffs
 
-##### Reducing tokens
+#### Reducing tokens
 
 For most repos, the cheapest wins are:
 
@@ -245,7 +251,7 @@ await summarizeGitDiff({
 
 These options only reshape the *unified diff text* — the structured `DiffSummary` still reports true file counts and line totals, so the model always sees the full change inventory.
 
-##### Map-reduce for oversized diffs
+#### Map-reduce for oversized diffs
 
 By default, a diff over `maxDiffChars` is hard-truncated — only the first N characters are sent, and a notice is prepended to the summary. Set `mapReduce: true` to instead split the diff into per-file batches, summarize each batch independently, then synthesize one final summary from the batch summaries:
 

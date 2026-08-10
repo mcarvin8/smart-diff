@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.1](https://github.com/mcarvin8/smart-diff/compare/v4.0.0...v4.0.1) (2026-08-10)
+
+
+### Bug Fixes
+
+* **deps:** pin specific dep versions ([#67](https://github.com/mcarvin8/smart-diff/issues/67)) ([4a1f04a](https://github.com/mcarvin8/smart-diff/commit/4a1f04ad8ce6d105e786fb34f73888b261f409e7))
+
 ## [4.0.0](https://github.com/mcarvin8/smart-diff/compare/v3.4.1...v4.0.0) (2026-08-10)
 
 

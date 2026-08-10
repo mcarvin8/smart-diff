@@ -30,7 +30,7 @@ Use any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) (Op
 
 - **Node.js** 22.22.1+
 - An LLM provider credential (see [Provider configuration](#provider-configuration))
-- No git binary required, on any platform — smart-diff reads the repository directly via [`@scolladon/tsgit`](https://github.com/scolladon/tsgit), a pure-TypeScript git implementation with zero native dependencies. Nothing to install, nothing glibc/musl-sensitive.
+- No git binary required, on any platform — smart-diff reads the git repository directly via [`@scolladon/tsgit`](https://github.com/scolladon/tsgit), a pure-TypeScript git implementation with zero native dependencies
 
 ## Installation
 

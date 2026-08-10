@@ -1,11 +1,12 @@
-import { generateSummary, generateSummaryWithUsage } from "./ai/aiSummary.js";
-import type {
-  GenerateSummaryInput,
-  LlmModelProvider,
-  LlmUsageReport,
-  SummarizeFlags,
-} from "./ai/aiTypes.js";
-import type { LlmProviderId } from "./ai/llmProviders.js";
+import {
+  type GenerateSummaryInput,
+  generateSummary,
+  generateSummaryWithUsage,
+  type LlmModelProvider,
+  type LlmProviderId,
+  type LlmUsageReport,
+  type SummarizeFlags,
+} from "./ai/index.js";
 import {
   type CommitInfo,
   createGitClient,
@@ -19,7 +20,7 @@ import {
   getDiff,
   getDiffSummary,
   type SecretRedactionRule,
-} from "./git/gitDiff.js";
+} from "./git/index.js";
 
 export type GitDiffAiSummaryOptions = {
   /** Start ref (older side of the range). */
@@ -258,41 +259,33 @@ export async function summarizeGitDiffWithUsage(
   return generateSummaryWithUsage(await prepareSummaryInput(options));
 }
 
+export type {
+  GenerateSummaryInput,
+  LlmModelProvider,
+  LlmProviderId,
+  LlmUsageReport,
+  ResolveLanguageModelOptions,
+  SummarizeFlags,
+} from "./ai/index.js";
 export {
   DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
   DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT,
   DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT,
-  LLM_GATEWAY_REQUIRED_MESSAGE,
-} from "./ai/aiConstants.js";
-export {
-  generateSummary,
-  generateSummaryWithUsage,
-  resolveLlmMaxDiffChars,
-  resolveLlmMaxRetries,
-  truncateUnifiedDiffForLlm,
-} from "./ai/aiSummary.js";
-export type {
-  GenerateSummaryInput,
-  LlmModelProvider,
-  LlmUsageReport,
-  SummarizeFlags,
-} from "./ai/aiTypes.js";
-export {
-  groupDiffChunksByBudget,
-  splitUnifiedDiffIntoFileChunks,
-} from "./ai/diffChunking.js";
-export type {
-  LlmProviderId,
-  ResolveLanguageModelOptions,
-} from "./ai/llmProviders.js";
-export {
   defaultModelForProvider,
   detectLlmProvider,
+  generateSummary,
+  generateSummaryWithUsage,
+  groupDiffChunksByBudget,
   isLlmProviderConfigured,
+  LLM_GATEWAY_REQUIRED_MESSAGE,
   parseLlmDefaultHeadersFromEnv,
   resolveLanguageModel,
   resolveLlmBaseUrl,
-} from "./ai/llmProviders.js";
+  resolveLlmMaxDiffChars,
+  resolveLlmMaxRetries,
+  splitUnifiedDiffIntoFileChunks,
+  truncateUnifiedDiffForLlm,
+} from "./ai/index.js";
 export type {
   CommitInfo,
   DiffFileSummary,
@@ -304,7 +297,7 @@ export type {
   PathFilterPredicate,
   RenderedFileDiff,
   SecretRedactionRule,
-} from "./git/gitDiff.js";
+} from "./git/index.js";
 export {
   buildFileSummary,
   buildPathFilterPredicate,
@@ -324,4 +317,4 @@ export {
   renderUnifiedDiff,
   shapeUnifiedDiff,
   summarizeFiles,
-} from "./git/gitDiff.js";
+} from "./git/index.js";

@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 
-import type { LlmProviderId } from "./ai/llmProviders.js";
+import type { LlmProviderId } from "./ai/index.js";
 import type { GitDiffAiSummaryOptions } from "./index.js";
 
 /** Thrown for bad CLI input (missing ref, unparsable number). Caught by the entrypoint and printed without a stack trace. */

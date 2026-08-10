@@ -1,6 +1,6 @@
 import type { LanguageModel } from "ai";
 
-import * as gitDiff from "../src/git/gitDiff";
+import * as gitDiff from "../src/git/index";
 import { summarizeGitDiff } from "../src/index";
 import { extractUserText, makeMockModel } from "./helpers/mockLlm";
 import { createFixtureRepo, type FixtureRepo } from "./helpers/tsgitFixture";

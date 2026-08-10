@@ -1,6 +1,6 @@
 import type { LanguageModel } from "ai";
 
-import type { CommitInfo, DiffSummary } from "../git/gitDiff.js";
+import type { CommitInfo, DiffSummary } from "../git/index.js";
 import type { LlmProviderId } from "./llmProviders.js";
 
 export type SummarizeFlags = {

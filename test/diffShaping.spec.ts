@@ -1,4 +1,4 @@
-import { DEFAULT_NOISE_EXCLUDES, shapeUnifiedDiff } from "../src/git/gitDiff";
+import { DEFAULT_NOISE_EXCLUDES, shapeUnifiedDiff } from "../src/git/index";
 
 describe("DEFAULT_NOISE_EXCLUDES", () => {
   it("includes common lockfiles and build outputs", () => {

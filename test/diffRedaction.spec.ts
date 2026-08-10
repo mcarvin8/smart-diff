@@ -1,4 +1,4 @@
-import { DEFAULT_SECRET_PATTERNS, redactSecrets } from "../src/git/gitDiff";
+import { DEFAULT_SECRET_PATTERNS, redactSecrets } from "../src/git/index";
 
 describe("redactSecrets", () => {
   it("returns text unchanged when no patterns match", () => {

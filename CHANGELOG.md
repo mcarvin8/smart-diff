@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.3.0](https://github.com/mcarvin8/smart-diff/compare/v3.2.0...v3.3.0) (2026-08-10)
+
+
+### Features
+
+* add map-reduce summarization for oversized diffs ([#57](https://github.com/mcarvin8/smart-diff/issues/57)) ([9b6c095](https://github.com/mcarvin8/smart-diff/commit/9b6c095f0c6cf1d7dce8abb1aef975fe72a2e558))
+* add redactSecrets diff-shaping option ([#55](https://github.com/mcarvin8/smart-diff/issues/55)) ([b9b380d](https://github.com/mcarvin8/smart-diff/commit/b9b380d19c207f635200d8d66f7f670d57569cc7))
+* add token usage reporting ([#59](https://github.com/mcarvin8/smart-diff/issues/59)) ([575825c](https://github.com/mcarvin8/smart-diff/commit/575825c3d8e2c6ffc6544b49b08b602be06ed5b8))
+* make LLM call retry count configurable ([#58](https://github.com/mcarvin8/smart-diff/issues/58)) ([c62cd6d](https://github.com/mcarvin8/smart-diff/commit/c62cd6d152bde41988973dd454973c5f54158fd0))
+
 ## [3.2.0](https://github.com/mcarvin8/smart-diff/compare/v3.1.0...v3.2.0) (2026-06-30)
 
 

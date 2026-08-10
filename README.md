@@ -290,9 +290,9 @@ The package also exports helpers for building a custom pipeline on top of the sa
 A `smart-diff` binary ships with the package via the `bin` field — no separate install. Provider configuration is identical to the library; see [Provider configuration](#provider-configuration).
 
 ```bash
-npx @mcarvin/smart-diff origin/main HEAD --team Platform --max-diff-chars 20000
-# or, once installed as a project/global dependency:
-smart-diff origin/main HEAD
+npm install @mcarvin/smart-diff
+npx smart-diff origin/main HEAD --team Platform --max-diff-chars 20000
+npx smart-diff --help
 ```
 
 - `<from>` (required) and `[to]` (default `HEAD`) can be passed positionally or via `--from`/`--to`.

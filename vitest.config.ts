@@ -23,6 +23,7 @@ export default defineConfig({
       include: ["src/**/*.{ts,tsx}"],
       exclude: [
         "src/index.ts",
+        "src/cli.ts",
         "src/ai/aiTypes.ts",
         "src/git/diffTypes.ts",
         "src/git/gitDiff.ts",

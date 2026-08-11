@@ -56,6 +56,35 @@ describe("parseCliArgs", () => {
     expect(parsed.options.to).toBe("flag-to");
   });
 
+  it("accepts --from-merge-base in place of <from>", () => {
+    const parsed = parseCliArgs([
+      "--to",
+      "develop",
+      "--from-merge-base",
+      "main",
+    ]);
+    if (parsed.kind !== "run") throw new Error("expected run");
+    expect(parsed.options.from).toBeUndefined();
+    expect(parsed.options.fromMergeBase).toBe("main");
+    expect(parsed.options.to).toBe("develop");
+  });
+
+  it("throws CliUsageError when both <from> and --from-merge-base are passed", () => {
+    expect(() =>
+      parseCliArgs(["origin/main", "--from-merge-base", "main"]),
+    ).toThrow(CliUsageError);
+    expect(() =>
+      parseCliArgs(["origin/main", "--from-merge-base", "main"]),
+    ).toThrow(/mutually exclusive/);
+  });
+
+  it("throws CliUsageError when neither <from> nor --from-merge-base are passed", () => {
+    expect(() => parseCliArgs(["--to", "develop"])).toThrow(CliUsageError);
+    expect(() => parseCliArgs(["--to", "develop"])).toThrow(
+      /Missing required <from> ref/,
+    );
+  });
+
   it("defaults reportUsage to false when --usage is omitted", () => {
     const parsed = parseCliArgs(["origin/main"]);
     if (parsed.kind !== "run") throw new Error("expected run");

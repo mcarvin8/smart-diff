@@ -53,6 +53,26 @@ export async function getCommits(
   }));
 }
 
+/**
+ * Resolve the best common ancestor of `to` and `other`, in-process via tsgit —
+ * the equivalent of `git merge-base <to> <other>` without a local git binary.
+ */
+export async function getMergeBase(
+  git: GitClient,
+  to: string,
+  other: string,
+): Promise<string> {
+  const [toId, otherId] = await Promise.all([
+    git.revParse(to),
+    git.revParse(other),
+  ]);
+  const [base] = await git.primitives.mergeBase([toId, otherId]);
+  if (!base) {
+    throw new Error(`No merge base found between '${to}' and '${other}'`);
+  }
+  return base;
+}
+
 async function resolveRepoRoot(
   git: GitClient,
   repoRootOverride?: string,

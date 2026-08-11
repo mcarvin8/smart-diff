@@ -6,6 +6,7 @@ import {
   getCommits,
   getDiff,
   getDiffSummary,
+  getMergeBase,
   getRepoRoot,
 } from "../src/git/index";
 import { createFixtureRepo, type FixtureRepo } from "./helpers/tsgitFixture";
@@ -371,6 +372,33 @@ describe("gitDiffOps against a real tsgit repo", () => {
       });
 
       expect(files).toEqual(["a.ts", "b.ts"]);
+    });
+  });
+
+  describe("getMergeBase", () => {
+    it("resolves the common ancestor of two diverged branches", async () => {
+      const base = await fx.commit("base", { "a.ts": "1\n" });
+      const { branches } = await fx.repo.branch.list();
+      const mainBranch = branches
+        .find((b) => b.current)!
+        .name.replace(/^refs\/heads\//, "");
+
+      await fx.repo.branch.create({ name: "feature", startPoint: base });
+      await fx.repo.checkout({ rev: "feature" });
+      const featureTip = await fx.commit("feature work", { "a.ts": "2\n" });
+
+      await fx.repo.checkout({ rev: mainBranch });
+      const mainTip = await fx.commit("main work", { "b.ts": "1\n" });
+
+      expect(await getMergeBase(git, mainTip, featureTip)).toBe(base);
+      expect(await getMergeBase(git, featureTip, mainTip)).toBe(base);
+    });
+
+    it("resolves to the ancestor itself when one ref is a descendant of the other", async () => {
+      const base = await fx.commit("base", { "a.ts": "1\n" });
+      const descendant = await fx.commit("descendant", { "a.ts": "2\n" });
+
+      expect(await getMergeBase(git, descendant, base)).toBe(base);
     });
   });
 });

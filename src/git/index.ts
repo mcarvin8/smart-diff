@@ -28,5 +28,6 @@ export {
   getCommits,
   getDiff,
   getDiffSummary,
+  getMergeBase,
   getRepoRoot,
 } from "./gitDiffOps.js";

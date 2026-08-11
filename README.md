@@ -161,6 +161,7 @@ npx smart-diff --help
 ```
 
 - `<from>` (required) and `[to]` (default `HEAD`) can be passed positionally or via `--from`/`--to`.
+- Instead of `<from>`/`--from`, pass `--from-merge-base <ref>` to resolve `from` as the merge base of `to` and `<ref>` — e.g. `--to develop --from-merge-base main` is the tsgit-native equivalent of `--to develop --from $(git merge-base develop main)`, with no local git binary required. Mutually exclusive with `<from>`/`--from`.
 - Repeatable options (`--include`, `--exclude`, `--commit-include`, `--commit-exclude`) accept multiple flags.
 - The Markdown summary is printed to stdout; errors go to stderr and exit with code 1.
 - Run `smart-diff --help` for the full flag reference, or `smart-diff --version` for the installed version.
@@ -172,6 +173,7 @@ npx smart-diff --help
 | Option | CLI flag | Description |
 |--------|----------|-------------|
 | `from` / `to` | `<from>` `[to]` / `--from` / `--to` | Git refs for the range; `to` defaults to `HEAD`. |
+| `fromMergeBase` | `--from-merge-base <ref>` | Resolve `from` as the merge base of `to` and `<ref>`, in-process via tsgit — no local git binary needed. Mutually exclusive with `from`/`--from`. |
 | `cwd` / `git` | `--cwd <path>` | Working directory path, or inject your own `GitClient` instance (library only; see [Lower-level API](#lower-level-api)). |
 | `includeFolders` | `--include <path>` | Limit diff to these paths relative to repo root (omit for full repo minus excludes). |
 | `excludeFolders` | `--exclude <path>` | Excluded paths, applied client-side to the changed-path list (directory-prefix match), e.g. `node_modules`. |

@@ -19,12 +19,22 @@ import {
   getCommits,
   getDiff,
   getDiffSummary,
+  getMergeBase,
   type SecretRedactionRule,
 } from "./git/index.js";
 
 export type GitDiffAiSummaryOptions = {
-  /** Start ref (older side of the range). */
-  from: string;
+  /**
+   * Start ref (older side of the range). Required unless `fromMergeBase` is set.
+   */
+  from?: string;
+  /**
+   * Resolve `from` as the merge base of `to` and this ref, instead of passing
+   * an explicit `from`. Equivalent to `--from $(git merge-base <to> <ref>)`,
+   * resolved in-process via tsgit — no local git binary required. Mutually
+   * exclusive with `from`.
+   */
+  fromMergeBase?: string;
   /** End ref; defaults to `HEAD`. */
   to?: string;
   /** Working directory of the git repository; defaults to `process.cwd()`. */
@@ -170,12 +180,31 @@ function shouldFilterByCommits(
   return filtered.length !== allCommits.length;
 }
 
+async function resolveFromRef(
+  git: GitClient,
+  options: GitDiffAiSummaryOptions,
+  to: string,
+): Promise<string> {
+  if (options.from && options.fromMergeBase) {
+    throw new Error(
+      "`from` and `fromMergeBase` are mutually exclusive — pass one or the other.",
+    );
+  }
+  if (options.fromMergeBase) {
+    return getMergeBase(git, to, options.fromMergeBase);
+  }
+  if (!options.from) {
+    throw new Error("Either `from` or `fromMergeBase` must be provided.");
+  }
+  return options.from;
+}
+
 async function prepareSummaryInput(
   options: GitDiffAiSummaryOptions,
 ): Promise<GenerateSummaryInput> {
   const git = options.git ?? (await createGitClient(options.cwd));
-  const from = options.from;
   const to = options.to ?? "HEAD";
+  const from = await resolveFromRef(git, options, to);
 
   const effectiveExcludeFolders = buildEffectiveExcludeFolders(options);
   const pathFilter: DiffPathFilter | undefined =

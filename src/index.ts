@@ -338,6 +338,7 @@ export {
   getCommits,
   getDiff,
   getDiffSummary,
+  getMergeBase,
   getRepoRoot,
   matchesAnyPath,
   mergeFileSummariesByPath,

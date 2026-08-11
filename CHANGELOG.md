@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.1](https://github.com/mcarvin8/smart-diff/compare/v4.1.0...v4.1.1) (2026-08-11)
+
+
+### Bug Fixes
+
+* export getMergeBase from package root ([#71](https://github.com/mcarvin8/smart-diff/issues/71)) ([c90c676](https://github.com/mcarvin8/smart-diff/commit/c90c67627048bd5414ae82fc8a5abce6ef08e6fb))
+
 ## [4.1.0](https://github.com/mcarvin8/smart-diff/compare/v4.0.1...v4.1.0) (2026-08-11)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.0](https://github.com/mcarvin8/smart-diff/compare/v4.0.1...v4.1.0) (2026-08-11)
+
+
+### Features
+
+* add --from-merge-base flag for git-binary-free merge-base resolution ([#69](https://github.com/mcarvin8/smart-diff/issues/69)) ([00b1955](https://github.com/mcarvin8/smart-diff/commit/00b195573e266493ab7c60d8a648fac5c2da1759))
+
 ## [4.0.1](https://github.com/mcarvin8/smart-diff/compare/v4.0.0...v4.0.1) (2026-08-10)
 
 

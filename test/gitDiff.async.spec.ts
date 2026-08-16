@@ -415,5 +415,23 @@ describe("gitDiffOps against a real tsgit repo", () => {
       expect(await getMergeBase(git, descendant, "v1.0.0")).toBe(base);
       expect(await getMergeBase(git, "v1.0.0", descendant)).toBe(base);
     });
+
+    it("throws when the two refs share no common ancestor", async () => {
+      const base = await fx.commit("base", { "a.ts": "1\n" });
+      const descendant = await fx.commit("descendant", { "a.ts": "2\n" });
+      const noMergeBaseGit = {
+        revParse: git.revParse.bind(git),
+        primitives: {
+          ...git.primitives,
+          mergeBase: async () => [],
+        },
+      } as unknown as GitClient;
+
+      await expect(
+        getMergeBase(noMergeBaseGit, descendant, base),
+      ).rejects.toThrow(
+        `No merge base found between '${descendant}' and '${base}'`,
+      );
+    });
   });
 });

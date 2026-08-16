@@ -1,6 +1,5 @@
 import {
   type GenerateSummaryInput,
-  generateSummary,
   generateSummaryWithUsage,
   type LlmModelProvider,
   type LlmProviderId,
@@ -24,17 +23,14 @@ import {
 } from "./git/index.js";
 
 export type GitDiffAiSummaryOptions = {
+  /** Start ref (older side of the range). Required. */
+  from: string;
   /**
-   * Start ref (older side of the range). Required unless `fromMergeBase` is set.
+   * Resolve the effective `from` as the merge base of `to` and `from`, instead
+   * of using `from` directly. Equivalent to `--from $(git merge-base <to>
+   * <from>)`, resolved in-process via tsgit — no local git binary required.
    */
-  from?: string;
-  /**
-   * Resolve `from` as the merge base of `to` and this ref, instead of passing
-   * an explicit `from`. Equivalent to `--from $(git merge-base <to> <ref>)`,
-   * resolved in-process via tsgit — no local git binary required. Mutually
-   * exclusive with `from`.
-   */
-  fromMergeBase?: string;
+  mergeBase?: boolean;
   /** End ref; defaults to `HEAD`. */
   to?: string;
   /** Working directory of the git repository; defaults to `process.cwd()`. */
@@ -185,16 +181,11 @@ async function resolveFromRef(
   options: GitDiffAiSummaryOptions,
   to: string,
 ): Promise<string> {
-  if (options.from && options.fromMergeBase) {
-    throw new Error(
-      "`from` and `fromMergeBase` are mutually exclusive — pass one or the other.",
-    );
-  }
-  if (options.fromMergeBase) {
-    return getMergeBase(git, to, options.fromMergeBase);
-  }
   if (!options.from) {
-    throw new Error("Either `from` or `fromMergeBase` must be provided.");
+    throw new Error("`from` must be provided.");
+  }
+  if (options.mergeBase) {
+    return getMergeBase(git, to, options.from);
   }
   return options.from;
 }
@@ -270,19 +261,12 @@ async function prepareSummaryInput(
 
 /**
  * Produce an AI-assisted Markdown summary of the git changes between `from` and `to`,
- * honoring path filters, commit message include/exclude regexes, optional team label, and optional system prompt.
+ * honoring path filters, commit message include/exclude regexes, optional team label, and
+ * optional system prompt. Also returns token usage aggregated across every LLM call made
+ * to produce the summary (one call, or every map-reduce batch plus the reduce call). See
+ * {@link LlmUsageReport}.
  */
 export async function summarizeGitDiff(
-  options: GitDiffAiSummaryOptions,
-): Promise<string> {
-  return generateSummary(await prepareSummaryInput(options));
-}
-
-/**
- * Same as `summarizeGitDiff`, but also returns token usage aggregated across
- * every LLM call made to produce the summary. See {@link LlmUsageReport}.
- */
-export async function summarizeGitDiffWithUsage(
   options: GitDiffAiSummaryOptions,
 ): Promise<{ summary: string; usage: LlmUsageReport }> {
   return generateSummaryWithUsage(await prepareSummaryInput(options));

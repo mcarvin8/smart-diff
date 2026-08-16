@@ -1,7 +1,7 @@
 import type { LanguageModel } from "ai";
 
 import * as gitDiff from "../src/git/index";
-import { summarizeGitDiff, summarizeGitDiffWithUsage } from "../src/index";
+import { summarizeGitDiff } from "../src/index";
 import { makeMockModel, makeUsageMockProvider } from "./helpers/mockLlm";
 import { createFixtureRepo, type FixtureRepo } from "./helpers/tsgitFixture";
 
@@ -27,7 +27,7 @@ describe("summarizeGitDiff integration", () => {
 
     const createSpy = vi.spyOn(gitDiff, "createGitClient");
 
-    const md = await summarizeGitDiff({
+    const { summary } = await summarizeGitDiff({
       from: c1,
       to: c2,
       cwd: fx.dir,
@@ -35,7 +35,7 @@ describe("summarizeGitDiff integration", () => {
     });
 
     expect(createSpy).toHaveBeenCalledWith(fx.dir);
-    expect(md).toBe("summary");
+    expect(summary).toBe("summary");
   });
 
   it("uses per-commit diff shape when filtered commits differ without regex options", async () => {
@@ -61,7 +61,7 @@ describe("summarizeGitDiff integration", () => {
     );
   });
 
-  it("summarizeGitDiffWithUsage returns the summary alongside aggregated token usage", async () => {
+  it("summarizeGitDiff returns the summary alongside aggregated token usage", async () => {
     const c1 = await fx.commit("root", { "a.ts": "1\n" });
     const c2 = await fx.commit("edit", { "a.ts": "2\n" });
 
@@ -69,7 +69,7 @@ describe("summarizeGitDiff integration", () => {
       { text: "summary", inputTokens: 42, outputTokens: 8 },
     ]);
 
-    const { summary, usage } = await summarizeGitDiffWithUsage({
+    const { summary, usage } = await summarizeGitDiff({
       from: c1,
       to: c2,
       git: fx.repo,

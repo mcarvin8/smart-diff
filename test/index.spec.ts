@@ -31,7 +31,7 @@ describe("summarizeGitDiff", () => {
       "node_modules/pkg.js": "vendored2\n",
     });
 
-    const md = await summarizeGitDiff({
+    const { summary } = await summarizeGitDiff({
       from: c1,
       to: c2,
       git: fx.repo,
@@ -41,7 +41,7 @@ describe("summarizeGitDiff", () => {
       llmModelProvider: mockLlmProvider("# Infra Summary\nBody from model"),
     });
 
-    expect(md).toBe("# Infra Summary\nBody from model");
+    expect(summary).toBe("# Infra Summary\nBody from model");
   });
 
   it("uses per-commit diff shape when include regexes are set even if all match", async () => {

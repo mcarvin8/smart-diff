@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { CliUsageError, HELP_TEXT, parseCliArgs } from "./cliOptions.js";
-import { summarizeGitDiff, summarizeGitDiffWithUsage } from "./index.js";
+import { summarizeGitDiff } from "./index.js";
 
 function readPackageVersion(): string {
   const packageJsonUrl = new URL("../package.json", import.meta.url);
@@ -27,15 +27,11 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (parsed.reportUsage) {
-    const { summary, usage } = await summarizeGitDiffWithUsage(parsed.options);
-    process.stdout.write(`${summary}\n`);
-    process.stderr.write(`\n[usage] ${JSON.stringify(usage)}\n`);
-    return;
-  }
-
-  const summary = await summarizeGitDiff(parsed.options);
+  const { summary, usage } = await summarizeGitDiff(parsed.options);
   process.stdout.write(`${summary}\n`);
+  if (parsed.reportUsage) {
+    process.stderr.write(`\n[usage] ${JSON.stringify(usage)}\n`);
+  }
 }
 
 main().catch((err: unknown) => {

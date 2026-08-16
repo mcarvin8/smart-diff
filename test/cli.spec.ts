@@ -83,7 +83,16 @@ describe("cli entrypoint", () => {
       (mod) => {
         summarizeGitDiffSpy = vi
           .spyOn(mod, "summarizeGitDiff")
-          .mockResolvedValue("## Summary\n\nchanges");
+          .mockResolvedValue({
+            summary: "## Summary\n\nchanges",
+            usage: {
+              requestCount: 1,
+              inputTokens: 0,
+              outputTokens: 0,
+              totalTokens: 0,
+              cachedInputTokens: 0,
+            },
+          });
       },
     );
 
@@ -94,11 +103,11 @@ describe("cli entrypoint", () => {
     expect(exitCode).toBeUndefined();
   });
 
-  it("uses summarizeGitDiffWithUsage and reports usage on stderr when --usage is set", async () => {
+  it("reports usage on stderr when --usage is set", async () => {
     const { stdout, stderr, exitCode } = await runCli(
       ["origin/main", "--usage"],
       (mod) => {
-        vi.spyOn(mod, "summarizeGitDiffWithUsage").mockResolvedValue({
+        vi.spyOn(mod, "summarizeGitDiff").mockResolvedValue({
           summary: "## Summary",
           usage: {
             requestCount: 1,

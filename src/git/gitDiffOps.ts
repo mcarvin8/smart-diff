@@ -54,6 +54,22 @@ export async function getCommits(
 }
 
 /**
+ * Peel an object id down to the commit it (transitively) points at.
+ * `revParse` on an annotated tag returns the tag object's own oid, not the
+ * commit it targets, and tsgit's `mergeBase` primitive doesn't peel — so
+ * feeding a tag oid straight in would report no common ancestor even for a
+ * perfectly valid ref.
+ */
+async function peelToCommit(git: GitClient, id: ObjectId): Promise<ObjectId> {
+  let current = id;
+  for (;;) {
+    const object = await git.primitives.readObject(current);
+    if (object.type !== "tag") return current;
+    current = object.data.object;
+  }
+}
+
+/**
  * Resolve the best common ancestor of `to` and `other`, in-process via tsgit —
  * the equivalent of `git merge-base <to> <other>` without a local git binary.
  */
@@ -66,7 +82,11 @@ export async function getMergeBase(
     git.revParse(to),
     git.revParse(other),
   ]);
-  const [base] = await git.primitives.mergeBase([toId, otherId]);
+  const [peeledTo, peeledOther] = await Promise.all([
+    peelToCommit(git, toId),
+    peelToCommit(git, otherId),
+  ]);
+  const [base] = await git.primitives.mergeBase([peeledTo, peeledOther]);
   if (!base) {
     throw new Error(`No merge base found between '${to}' and '${other}'`);
   }

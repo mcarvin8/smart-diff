@@ -56,31 +56,25 @@ describe("parseCliArgs", () => {
     expect(parsed.options.to).toBe("flag-to");
   });
 
-  it("accepts --from-merge-base in place of <from>", () => {
-    const parsed = parseCliArgs([
-      "--to",
-      "develop",
-      "--from-merge-base",
-      "main",
-    ]);
+  it("accepts --merge-base alongside <from> to resolve it as a merge base", () => {
+    const parsed = parseCliArgs(["main", "--to", "develop", "--merge-base"]);
     if (parsed.kind !== "run") throw new Error("expected run");
-    expect(parsed.options.from).toBeUndefined();
-    expect(parsed.options.fromMergeBase).toBe("main");
+    expect(parsed.options.from).toBe("main");
+    expect(parsed.options.mergeBase).toBe(true);
     expect(parsed.options.to).toBe("develop");
   });
 
-  it("throws CliUsageError when both <from> and --from-merge-base are passed", () => {
-    expect(() =>
-      parseCliArgs(["origin/main", "--from-merge-base", "main"]),
-    ).toThrow(CliUsageError);
-    expect(() =>
-      parseCliArgs(["origin/main", "--from-merge-base", "main"]),
-    ).toThrow(/mutually exclusive/);
+  it("accepts -b as a shorthand for --merge-base", () => {
+    const parsed = parseCliArgs(["main", "-b"]);
+    if (parsed.kind !== "run") throw new Error("expected run");
+    expect(parsed.options.mergeBase).toBe(true);
   });
 
-  it("throws CliUsageError when neither <from> nor --from-merge-base are passed", () => {
-    expect(() => parseCliArgs(["--to", "develop"])).toThrow(CliUsageError);
-    expect(() => parseCliArgs(["--to", "develop"])).toThrow(
+  it("throws CliUsageError when <from> is missing even if --merge-base is passed", () => {
+    expect(() => parseCliArgs(["--to", "develop", "--merge-base"])).toThrow(
+      CliUsageError,
+    );
+    expect(() => parseCliArgs(["--to", "develop", "--merge-base"])).toThrow(
       /Missing required <from> ref/,
     );
   });

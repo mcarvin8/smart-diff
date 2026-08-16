@@ -136,7 +136,7 @@ Use smart-diff as a library, or as the `smart-diff` CLI binary that ships with t
 ```ts
 import { summarizeGitDiff } from '@mcarvin/smart-diff';
 
-const markdown = await summarizeGitDiff({
+const { summary, usage } = await summarizeGitDiff({
   from: 'origin/main',
   to: 'HEAD',
   cwd: '/path/to/repo', // optional; default process.cwd()
@@ -150,6 +150,8 @@ const markdown = await summarizeGitDiff({
   model: 'claude-3-5-sonnet-latest', // optional
   maxDiffChars: 120_000,     // optional; also see LLM_MAX_DIFF_CHARS
 });
+// summary: Markdown string
+// usage: LlmUsageReport aggregated across every LLM call — see Token usage reporting below
 ```
 
 ### Use as a CLI
@@ -161,7 +163,7 @@ npx smart-diff --help
 ```
 
 - `<from>` (required) and `[to]` (default `HEAD`) can be passed positionally or via `--from`/`--to`.
-- Instead of `<from>`/`--from`, pass `--from-merge-base <ref>` to resolve `from` as the merge base of `to` and `<ref>` — e.g. `--to develop --from-merge-base main` is the tsgit-native equivalent of `--to develop --from $(git merge-base develop main)`, with no local git binary required. Mutually exclusive with `<from>`/`--from`.
+- Pass `--merge-base` / `-b` alongside `<from>`/`--from` to resolve it as the merge base of `to` and `from` instead of using it directly — e.g. `--to develop --from main --merge-base` is the tsgit-native equivalent of `--to develop --from $(git merge-base develop main)`, with no local git binary required.
 - Repeatable options (`--include`, `--exclude`, `--commit-include`, `--commit-exclude`) accept multiple flags.
 - The Markdown summary is printed to stdout; errors go to stderr and exit with code 1.
 - Run `smart-diff --help` for the full flag reference, or `smart-diff --version` for the installed version.
@@ -173,7 +175,7 @@ npx smart-diff --help
 | Option | CLI flag | Description |
 |--------|----------|-------------|
 | `from` / `to` | `<from>` `[to]` / `--from` / `--to` | Git refs for the range; `to` defaults to `HEAD`. |
-| `fromMergeBase` | `--from-merge-base <ref>` | Resolve `from` as the merge base of `to` and `<ref>`, in-process via tsgit — no local git binary needed. Mutually exclusive with `from`/`--from`. |
+| `mergeBase` | `--merge-base`, `-b` | Resolve `from` as the merge base of `to` and `from`, in-process via tsgit — no local git binary needed. |
 | `cwd` / `git` | `--cwd <path>` | Working directory path, or inject your own `GitClient` instance (library only; see [Lower-level API](#lower-level-api)). |
 | `includeFolders` | `--include <path>` | Limit diff to these paths relative to repo root (omit for full repo minus excludes). |
 | `excludeFolders` | `--exclude <path>` | Excluded paths, applied client-side to the changed-path list (directory-prefix match), e.g. `node_modules`. |
@@ -214,7 +216,7 @@ npx smart-diff --help
 
 | Option | CLI flag | Description |
 |--------|----------|-------------|
-| use `summarizeGitDiffWithUsage` instead | `--usage` | Print the same `LlmUsageReport` as [Token usage reporting](#token-usage-reporting) to stderr, after the Markdown summary on stdout. |
+| — (`summarizeGitDiff` always returns `usage`) | `--usage` | Print the same `LlmUsageReport` as [Token usage reporting](#token-usage-reporting) to stderr, after the Markdown summary on stdout. |
 | — | `-h`, `--help` | Show CLI help. |
 | — | `-v`, `--version` | Print the installed version. |
 
@@ -253,12 +255,12 @@ This costs one extra LLM call per batch plus one reduce call, so it's slower and
 
 ### Token usage reporting
 
-`summarizeGitDiffWithUsage` returns the same Markdown summary plus token usage aggregated across every LLM call made to produce it — one call by default, or every map-reduce batch plus the reduce call when `mapReduce` is used:
+`summarizeGitDiff` returns the Markdown summary plus token usage aggregated across every LLM call made to produce it — one call by default, or every map-reduce batch plus the reduce call when `mapReduce` is used:
 
 ```ts
-import { summarizeGitDiffWithUsage } from '@mcarvin/smart-diff';
+import { summarizeGitDiff } from '@mcarvin/smart-diff';
 
-const { summary, usage } = await summarizeGitDiffWithUsage({ from: 'origin/main' });
+const { summary, usage } = await summarizeGitDiff({ from: 'origin/main' });
 // usage: { requestCount, inputTokens, outputTokens, totalTokens, cachedInputTokens }
 ```
 
@@ -272,7 +274,7 @@ If you want full control — for example, to configure retries, middlewares, or 
 import { summarizeGitDiff } from '@mcarvin/smart-diff';
 import { createAnthropic } from '@ai-sdk/anthropic';
 
-const md = await summarizeGitDiff({
+const { summary } = await summarizeGitDiff({
   from: 'origin/main',
   llmModelProvider: async () =>
     createAnthropic({ apiKey: process.env.MY_ANTHROPIC_KEY })(
@@ -309,7 +311,7 @@ Only the [lower-level API](#lower-level-api) is affected:
 - `buildDiffShapingGitArgs` is removed — `contextLines` and `ignoreWhitespace` are now consumed directly by the diff renderer instead of being turned into `git diff` flags.
 - `parseDiffSummary` is removed; build `DiffFileSummary` entries from a `DiffChange` + rendered diff via `buildFileSummary`, and aggregate with `mergeFileSummariesByPath` / `summarizeFiles`.
 
-`summarizeGitDiff`, `summarizeGitDiffWithUsage`, and every CLI flag are unchanged.
+Every CLI flag is unchanged. (`summarizeGitDiff`'s return shape changed separately — see [Token usage reporting](#token-usage-reporting).)
 
 ## Used By
 

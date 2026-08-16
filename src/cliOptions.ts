@@ -16,14 +16,14 @@ export const HELP_TEXT = `smart-diff <from> [to] [options]
 Summarizes a git diff between two refs using an LLM, printed as Markdown to stdout.
 
 Arguments:
-  <from>                    Start ref (required unless --from-merge-base is set; also settable via --from)
+  <from>                    Start ref (required; also settable via --from)
   [to]                      End ref (default: HEAD; also settable via --to)
 
 Core:
-  --from-merge-base <ref>   Resolve <from> as the merge base of --to and <ref>, e.g.
-                            --to develop --from-merge-base main (no local git binary
-                            needed — resolved in-process via tsgit). Mutually
-                            exclusive with <from>/--from.
+  -b, --merge-base          Resolve <from> as the merge base of --to and <from>, e.g.
+                            --to develop --from main --merge-base is the tsgit-native
+                            equivalent of --to develop --from $(git merge-base develop main)
+                            (no local git binary needed — resolved in-process via tsgit).
   --cwd <path>              Repo working directory (default: process.cwd())
   --include <path>          Only include this path (repeatable)
   --exclude <path>          Exclude this path (repeatable)
@@ -78,7 +78,7 @@ export function parseCliArgs(argv: string[]): ParsedCli {
     allowPositionals: true,
     options: {
       from: { type: "string" },
-      "from-merge-base": { type: "string" },
+      "merge-base": { type: "boolean", short: "b" },
       to: { type: "string" },
       cwd: { type: "string" },
       include: { type: "string", multiple: true },
@@ -108,22 +108,16 @@ export function parseCliArgs(argv: string[]): ParsedCli {
   if (values.version) return { kind: "version" };
 
   const from = values.from ?? positionals[0];
-  const fromMergeBase = values["from-merge-base"];
-  if (from && fromMergeBase) {
+  if (!from) {
     throw new CliUsageError(
-      "<from>/--from and --from-merge-base are mutually exclusive.",
-    );
-  }
-  if (!from && !fromMergeBase) {
-    throw new CliUsageError(
-      "Missing required <from> ref. Usage: smart-diff <from> [to] [options]\nRun with --help for details.\nAlternatively, pass --from-merge-base <ref> to resolve <from> as the merge base of --to and <ref>.",
+      "Missing required <from> ref. Usage: smart-diff <from> [to] [options]\nRun with --help for details.",
     );
   }
   const to = values.to ?? positionals[1];
 
   const options: GitDiffAiSummaryOptions = {
     from,
-    fromMergeBase,
+    mergeBase: values["merge-base"],
     to,
     cwd: values.cwd,
     includeFolders: values.include,

@@ -1,5 +1,16 @@
 # Changelog
 
+## [5.0.0](https://github.com/mcarvin8/smart-diff/compare/v4.1.1...v5.0.0) (2026-08-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* summarizeGitDiffWithUsage is removed; summarizeGitDiff's return type changes from string to { summary, usage }. --from-merge-base is removed in favor of --from/<from> plus --merge-base/-b (mergeBase option replaces fromMergeBase).
+
+### Features
+
+* merge usage into summarizeGitDiff, peel tags in merge-base, boolean --merge-base flag ([#73](https://github.com/mcarvin8/smart-diff/issues/73)) ([26ba851](https://github.com/mcarvin8/smart-diff/commit/26ba85153fb2763bca77b8c4926ff1d9e23a8325))
+
 ## [4.1.1](https://github.com/mcarvin8/smart-diff/compare/v4.1.0...v4.1.1) (2026-08-11)
 
 

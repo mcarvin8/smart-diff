@@ -23,7 +23,6 @@ Use any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) (Op
   - [Injecting your own `LanguageModel`](#injecting-your-own-languagemodel)
   - [Diff shape: single range vs per-commit](#diff-shape-single-range-vs-per-commit)
   - [Lower-level API](#lower-level-api)
-- [Migrating from 3.x → 4.x](#migrating-from-3x--4x)
 - [Used By](#used-by)
 
 ## Requirements
@@ -298,20 +297,6 @@ The package also exports helpers for building a custom pipeline on top of the sa
 - **Constants**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`
 - **Types**: `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `LlmUsageReport`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `PathFilterPredicate`, `RenderedFileDiff`, `SecretRedactionRule`
   - `DiffFileSummary.binary?: boolean` is `true` when either blob sniffs as binary; absent for text files
-
-## Migrating from 3.x → 4.x
-
-The git backend moved from shelling out to a bundled [dugite](https://github.com/desktop/dugite) git binary to reading the repository directly via the pure-TypeScript [`@scolladon/tsgit`](https://github.com/scolladon/tsgit) — no git binary, no native dependency, on any platform.
-
-Only the [lower-level API](#lower-level-api) is affected:
-
-- `createGitClient` is now **async**: `const git = await createGitClient(cwd)`.
-- `GitClient` is now a live tsgit `Repository` handle, not a `{ run(args) }` shell wrapper. Call `git.dispose()` when you're done with it (or let it be garbage collected after the process exits).
-- `buildDiffPathspecs` is removed. Path filtering is now client-side; use `buildPathFilterPredicate(repoRoot, pathFilter)` to get a `(path: string) => boolean` predicate instead of a git pathspec argument list.
-- `buildDiffShapingGitArgs` is removed — `contextLines` and `ignoreWhitespace` are now consumed directly by the diff renderer instead of being turned into `git diff` flags.
-- `parseDiffSummary` is removed; build `DiffFileSummary` entries from a `DiffChange` + rendered diff via `buildFileSummary`, and aggregate with `mergeFileSummariesByPath` / `summarizeFiles`.
-
-Every CLI flag is unchanged. (`summarizeGitDiff`'s return shape changed separately — see [Token usage reporting](#token-usage-reporting).)
 
 ## Used By
 

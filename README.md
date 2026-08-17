@@ -24,6 +24,7 @@ Use any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) (Op
   - [Diff shape: single range vs per-commit](#diff-shape-single-range-vs-per-commit)
   - [Lower-level API](#lower-level-api)
 - [Used By](#used-by)
+- [License](#license)
 
 ## Requirements
 

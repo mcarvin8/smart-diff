@@ -1,5 +1,16 @@
 # Changelog
 
+## [6.0.0](https://github.com/mcarvin8/smart-diff/compare/v5.0.0...v6.0.0) (2026-08-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* llmModelProvider now returns a ChatModel (this package's own minimal interface) instead of a Vercel AI SDK LanguageModel. Bedrock no longer supports SSO, instance-role, or container credentials. optionalDependencies on @ai-sdk/* packages are removed entirely.
+
+### Features
+
+* replace ai/ai-sdk deps with in-house provider clients ([#75](https://github.com/mcarvin8/smart-diff/issues/75)) ([e57ea03](https://github.com/mcarvin8/smart-diff/commit/e57ea0328047ebafb1ad38247af6b81f5c778e46))
+
 ## [5.0.0](https://github.com/mcarvin8/smart-diff/compare/v4.1.1...v5.0.0) (2026-08-16)
 
 

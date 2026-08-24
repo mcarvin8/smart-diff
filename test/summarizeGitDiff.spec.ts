@@ -1,11 +1,10 @@
-import type { LanguageModel } from "ai";
-
+import type { ChatModel } from "../src/ai/llmClient";
 import * as gitDiff from "../src/git/index";
 import { summarizeGitDiff } from "../src/index";
 import { makeMockModel, makeUsageMockProvider } from "./helpers/mockLlm";
 import { createFixtureRepo, type FixtureRepo } from "./helpers/tsgitFixture";
 
-function mockLlmProvider(text: string): () => Promise<LanguageModel> {
+function mockLlmProvider(text: string): () => Promise<ChatModel> {
   return async () => makeMockModel(text).model;
 }
 

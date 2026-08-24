@@ -57,20 +57,7 @@
   },
   "dependencies": {
     "@scolladon/tsgit": "3.4.0",
-    "ai": "7.0.58",
     "diff": "9.0.0"
-  },
-  "optionalDependencies": {
-    "@ai-sdk/amazon-bedrock": "5.0.50",
-    "@ai-sdk/anthropic": "4.0.36",
-    "@ai-sdk/cohere": "4.0.25",
-    "@ai-sdk/deepseek": "3.0.26",
-    "@ai-sdk/google": "4.0.39",
-    "@ai-sdk/groq": "4.0.26",
-    "@ai-sdk/mistral": "4.0.27",
-    "@ai-sdk/openai": "4.0.36",
-    "@ai-sdk/openai-compatible": "3.0.28",
-    "@ai-sdk/xai": "4.0.33"
   },
   "repository": {
     "type": "git",
@@ -102,7 +89,6 @@
     "openai-compatible",
     "pull-request",
     "summary",
-    "vercel-ai-sdk",
     "xai"
   ]
 }

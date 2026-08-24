@@ -1,23 +1,33 @@
 /**
- * Resolves a Vercel AI SDK `LanguageModel` for the configured provider, using
- * lazy dynamic imports so optional provider SDKs are only loaded when requested.
+ * Resolves an in-house `ChatModel` (see `llmClient.ts`) for the configured
+ * provider. Every provider talks to its API directly over `fetch` — no
+ * provider SDKs, no dynamic imports, no optional dependencies.
  *
  * Providers:
- *   - `openai`             — `@ai-sdk/openai` (default when only OpenAI creds are set)
- *   - `openai-compatible`  — `@ai-sdk/openai-compatible` (default when `LLM_BASE_URL`/`OPENAI_BASE_URL` is set; works with Groq, Together, Fireworks, Azure OpenAI, DeepSeek, xAI, OpenRouter, Ollama, vLLM, LocalAI, Perplexity, corporate gateways, etc.)
- *   - `anthropic`          — `@ai-sdk/anthropic`
- *   - `google`             — `@ai-sdk/google` (Gemini)
- *   - `bedrock`            — `@ai-sdk/amazon-bedrock`
- *   - `mistral`            — `@ai-sdk/mistral` (native API)
- *   - `cohere`             — `@ai-sdk/cohere`
- *   - `groq`               — `@ai-sdk/groq`
- *   - `xai`                — `@ai-sdk/xai`
- *   - `deepseek`           — `@ai-sdk/deepseek`
+ *   - `openai`             — OpenAI Chat Completions API (default when only OpenAI creds are set)
+ *   - `openai-compatible`  — OpenAI-compatible Chat Completions API (default when `LLM_BASE_URL`/`OPENAI_BASE_URL` is set; works with Groq, Together, Fireworks, Azure OpenAI, DeepSeek, xAI, OpenRouter, Ollama, vLLM, LocalAI, Perplexity, corporate gateways, etc.)
+ *   - `anthropic`          — Anthropic Messages API
+ *   - `google`             — Google Generative Language API (Gemini)
+ *   - `bedrock`            — Amazon Bedrock Converse API (signed with an in-house SigV4 implementation)
+ *   - `mistral`            — Mistral Chat Completions API (OpenAI-compatible shape)
+ *   - `cohere`             — Cohere Chat API (v2)
+ *   - `groq`               — Groq's OpenAI-compatible Chat Completions API
+ *   - `xai`                — xAI's OpenAI-compatible Chat Completions API
+ *   - `deepseek`           — DeepSeek's OpenAI-compatible Chat Completions API
  *
  * `LLM_PROVIDER` selects explicitly; otherwise the resolver auto-detects based on the set env vars.
  */
 
-import type { LanguageModel } from "ai";
+import type { ChatModel } from "./llmClient.js";
+import { createAnthropicChatModel } from "./providers/anthropic.js";
+import {
+  resolveAwsCredentials,
+  resolveAwsRegion,
+} from "./providers/awsCredentials.js";
+import { createBedrockChatModel } from "./providers/bedrock.js";
+import { createCohereChatModel } from "./providers/cohere.js";
+import { createGoogleChatModel } from "./providers/google.js";
+import { createOpenAiChatModel } from "./providers/openaiChat.js";
 
 export type LlmProviderId =
   | "openai"
@@ -156,215 +166,91 @@ export function defaultModelForProvider(provider: LlmProviderId): string {
   return DEFAULT_MODEL_BY_PROVIDER[provider];
 }
 
-async function createOpenAiModel(modelId: string): Promise<LanguageModel> {
-  const mod = await importOptional(
-    "openai",
-    "@ai-sdk/openai",
-    () =>
-      import("@ai-sdk/openai") as unknown as Promise<{
-        createOpenAI: (options?: {
-          apiKey?: string;
-          headers?: Record<string, string>;
-        }) => (modelId: string) => LanguageModel;
-      }>,
-  );
-  const apiKey = resolveOpenAiApiKey();
-  const headers = parseLlmDefaultHeadersFromEnv();
-  const provider = mod.createOpenAI({
-    ...(apiKey ? { apiKey } : {}),
-    ...(headers ? { headers } : {}),
+function createOpenAiModel(modelId: string): ChatModel {
+  return createOpenAiChatModel({
+    baseURL: "https://api.openai.com/v1",
+    modelId,
+    apiKey: resolveOpenAiApiKey(),
+    headers: parseLlmDefaultHeadersFromEnv(),
+    label: "OpenAI",
   });
-  return provider(modelId);
 }
 
-async function createOpenAiCompatibleModel(
-  modelId: string,
-): Promise<LanguageModel> {
-  const { createOpenAICompatible } = await importOptional(
-    "openai-compatible",
-    "@ai-sdk/openai-compatible",
-    () =>
-      import("@ai-sdk/openai-compatible") as unknown as Promise<{
-        createOpenAICompatible: (options: {
-          name: string;
-          baseURL: string;
-          apiKey?: string;
-          headers?: Record<string, string>;
-        }) => (modelId: string) => LanguageModel;
-      }>,
-  );
+function createOpenAiCompatibleModel(modelId: string): ChatModel {
   const baseURL = resolveLlmBaseUrl();
   if (!baseURL) {
     throw new Error(
       "openai-compatible provider requires LLM_BASE_URL or OPENAI_BASE_URL to be set.",
     );
   }
-  const apiKey = resolveOpenAiApiKey();
-  const headers = parseLlmDefaultHeadersFromEnv();
-  const provider = createOpenAICompatible({
-    name: readEnv("LLM_PROVIDER_NAME") ?? "openai-compatible",
+  return createOpenAiChatModel({
     baseURL,
-    ...(apiKey ? { apiKey } : {}),
-    ...(headers ? { headers } : {}),
+    modelId,
+    apiKey: resolveOpenAiApiKey(),
+    headers: parseLlmDefaultHeadersFromEnv(),
+    label: readEnv("LLM_PROVIDER_NAME") ?? "openai-compatible",
   });
-  return provider(modelId);
 }
 
-type ImportFailure = {
-  provider: LlmProviderId;
-  pkg: string;
-  cause: unknown;
-};
-
-function wrapMissingPeer(failure: ImportFailure): Error {
-  const err = new Error(
-    `Failed to load optional provider package "${failure.pkg}" for LLM_PROVIDER="${failure.provider}". ` +
-      `Install it with \`npm install ${failure.pkg}\`.`,
-  );
-  (err as Error & { cause?: unknown }).cause = failure.cause;
-  return err;
+function createAnthropicModel(modelId: string): ChatModel {
+  return createAnthropicChatModel({
+    modelId,
+    apiKey: readEnv("ANTHROPIC_API_KEY"),
+  });
 }
 
-async function importOptional<T>(
-  provider: LlmProviderId,
-  pkg: string,
-  loader: () => Promise<T>,
-): Promise<T> {
-  try {
-    return await loader();
-  } catch (cause) {
-    throw wrapMissingPeer({ provider, pkg, cause });
-  }
-}
-
-async function createAnthropicModel(modelId: string): Promise<LanguageModel> {
-  const mod = await importOptional(
-    "anthropic",
-    "@ai-sdk/anthropic",
-    () =>
-      import("@ai-sdk/anthropic") as unknown as Promise<{
-        createAnthropic: (options?: {
-          apiKey?: string;
-        }) => (modelId: string) => LanguageModel;
-      }>,
-  );
-  const apiKey = readEnv("ANTHROPIC_API_KEY");
-  const provider = mod.createAnthropic(apiKey ? { apiKey } : undefined);
-  return provider(modelId);
-}
-
-async function createGoogleModel(modelId: string): Promise<LanguageModel> {
-  const mod = await importOptional(
-    "google",
-    "@ai-sdk/google",
-    () =>
-      import("@ai-sdk/google") as unknown as Promise<{
-        createGoogleGenerativeAI: (options?: {
-          apiKey?: string;
-        }) => (modelId: string) => LanguageModel;
-      }>,
-  );
+function createGoogleModel(modelId: string): ChatModel {
   const apiKey =
     readEnv("GOOGLE_GENERATIVE_AI_API_KEY") ?? readEnv("GOOGLE_API_KEY");
-  const provider = mod.createGoogleGenerativeAI(
-    apiKey ? { apiKey } : undefined,
-  );
-  return provider(modelId);
+  return createGoogleChatModel({ modelId, apiKey });
 }
 
-async function createBedrockModel(modelId: string): Promise<LanguageModel> {
-  const mod = await importOptional(
-    "bedrock",
-    "@ai-sdk/amazon-bedrock",
-    () =>
-      import("@ai-sdk/amazon-bedrock") as unknown as Promise<{
-        createAmazonBedrock: (
-          options?: Record<string, unknown>,
-        ) => (modelId: string) => LanguageModel;
-      }>,
-  );
-  const provider = mod.createAmazonBedrock();
-  return provider(modelId);
+function createBedrockModel(modelId: string): ChatModel {
+  return createBedrockChatModel({
+    modelId,
+    region: resolveAwsRegion(),
+    getCredentials: resolveAwsCredentials,
+  });
 }
 
-async function createMistralModel(modelId: string): Promise<LanguageModel> {
-  const mod = await importOptional(
-    "mistral",
-    "@ai-sdk/mistral",
-    () =>
-      import("@ai-sdk/mistral") as unknown as Promise<{
-        createMistral: (options?: {
-          apiKey?: string;
-        }) => (modelId: string) => LanguageModel;
-      }>,
-  );
-  const apiKey = readEnv("MISTRAL_API_KEY");
-  const provider = mod.createMistral(apiKey ? { apiKey } : undefined);
-  return provider(modelId);
+function createMistralModel(modelId: string): ChatModel {
+  return createOpenAiChatModel({
+    baseURL: "https://api.mistral.ai/v1",
+    modelId,
+    apiKey: readEnv("MISTRAL_API_KEY"),
+    label: "Mistral",
+  });
 }
 
-async function createCohereModel(modelId: string): Promise<LanguageModel> {
-  const mod = await importOptional(
-    "cohere",
-    "@ai-sdk/cohere",
-    () =>
-      import("@ai-sdk/cohere") as unknown as Promise<{
-        createCohere: (options?: {
-          apiKey?: string;
-        }) => (modelId: string) => LanguageModel;
-      }>,
-  );
-  const apiKey = readEnv("COHERE_API_KEY");
-  const provider = mod.createCohere(apiKey ? { apiKey } : undefined);
-  return provider(modelId);
+function createCohereModel(modelId: string): ChatModel {
+  return createCohereChatModel({ modelId, apiKey: readEnv("COHERE_API_KEY") });
 }
 
-async function createGroqModel(modelId: string): Promise<LanguageModel> {
-  const mod = await importOptional(
-    "groq",
-    "@ai-sdk/groq",
-    () =>
-      import("@ai-sdk/groq") as unknown as Promise<{
-        createGroq: (options?: {
-          apiKey?: string;
-        }) => (modelId: string) => LanguageModel;
-      }>,
-  );
-  const apiKey = readEnv("GROQ_API_KEY");
-  const provider = mod.createGroq(apiKey ? { apiKey } : undefined);
-  return provider(modelId);
+function createGroqModel(modelId: string): ChatModel {
+  return createOpenAiChatModel({
+    baseURL: "https://api.groq.com/openai/v1",
+    modelId,
+    apiKey: readEnv("GROQ_API_KEY"),
+    label: "Groq",
+  });
 }
 
-async function createXaiModel(modelId: string): Promise<LanguageModel> {
-  const mod = await importOptional(
-    "xai",
-    "@ai-sdk/xai",
-    () =>
-      import("@ai-sdk/xai") as unknown as Promise<{
-        createXai: (options?: {
-          apiKey?: string;
-        }) => (modelId: string) => LanguageModel;
-      }>,
-  );
-  const apiKey = readEnv("XAI_API_KEY");
-  const provider = mod.createXai(apiKey ? { apiKey } : undefined);
-  return provider(modelId);
+function createXaiModel(modelId: string): ChatModel {
+  return createOpenAiChatModel({
+    baseURL: "https://api.x.ai/v1",
+    modelId,
+    apiKey: readEnv("XAI_API_KEY"),
+    label: "xAI",
+  });
 }
 
-async function createDeepseekModel(modelId: string): Promise<LanguageModel> {
-  const mod = await importOptional(
-    "deepseek",
-    "@ai-sdk/deepseek",
-    () =>
-      import("@ai-sdk/deepseek") as unknown as Promise<{
-        createDeepSeek: (options?: {
-          apiKey?: string;
-        }) => (modelId: string) => LanguageModel;
-      }>,
-  );
-  const apiKey = readEnv("DEEPSEEK_API_KEY");
-  const provider = mod.createDeepSeek(apiKey ? { apiKey } : undefined);
-  return provider(modelId);
+function createDeepseekModel(modelId: string): ChatModel {
+  return createOpenAiChatModel({
+    baseURL: "https://api.deepseek.com/v1",
+    modelId,
+    apiKey: readEnv("DEEPSEEK_API_KEY"),
+    label: "DeepSeek",
+  });
 }
 
 export type ResolveLanguageModelOptions = {
@@ -373,7 +259,7 @@ export type ResolveLanguageModelOptions = {
 };
 
 /**
- * Resolve a Vercel AI SDK `LanguageModel` for the requested provider and model.
+ * Resolve an in-house `ChatModel` for the requested provider and model.
  *
  * Resolution order for the provider:
  *   1. `options.provider`
@@ -387,7 +273,7 @@ export type ResolveLanguageModelOptions = {
  */
 export async function resolveLanguageModel(
   options: ResolveLanguageModelOptions = {},
-): Promise<LanguageModel> {
+): Promise<ChatModel> {
   const provider = options.provider ?? detectLlmProvider();
   if (!provider) {
     throw new Error(

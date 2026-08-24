@@ -1,41 +1,32 @@
-import { APICallError, type LanguageModel } from "ai";
-import { MockLanguageModelV3 } from "ai/test";
+import {
+  type ChatCallOptions,
+  type ChatModel,
+  type ChatResult,
+  LlmApiError,
+} from "../../src/ai/llmClient";
 
-export type MockDoGenerateCall = Parameters<
-  MockLanguageModelV3["doGenerate"]
->[0];
+export type MockDoGenerateCall = ChatCallOptions;
 
-const ZERO_USAGE = {
-  inputTokens: {
-    total: 0 as number | undefined,
-    noCache: 0 as number | undefined,
-    cacheRead: 0 as number | undefined,
-    cacheWrite: 0 as number | undefined,
-  },
-  outputTokens: {
-    total: 0 as number | undefined,
-    text: 0 as number | undefined,
-    reasoning: 0 as number | undefined,
-  },
-};
+function toResult(text: string): ChatResult {
+  return { text, usage: {} };
+}
 
 export function makeMockModel(text: string): {
-  model: LanguageModel;
+  model: ChatModel;
   calls: () => MockDoGenerateCall[];
 } {
-  const mock = new MockLanguageModelV3({
-    doGenerate: async () => ({
-      content: text === "" ? [] : [{ type: "text" as const, text }],
-      finishReason: { unified: "stop" as const, raw: undefined },
-      usage: ZERO_USAGE,
-      warnings: [],
-    }),
-  });
-  return { model: mock, calls: () => mock.doGenerateCalls };
+  const calls: MockDoGenerateCall[] = [];
+  const model: ChatModel = {
+    async generate(call) {
+      calls.push(call);
+      return toResult(text);
+    },
+  };
+  return { model, calls: () => calls };
 }
 
 export function makeMockProvider(text: string): {
-  llmModelProvider: () => Promise<LanguageModel>;
+  llmModelProvider: () => Promise<ChatModel>;
   calls: () => MockDoGenerateCall[];
 } {
   const { model, calls } = makeMockModel(text);
@@ -48,63 +39,47 @@ export function makeMockProvider(text: string): {
  * where the map calls and the final reduce call need to return different text.
  */
 export function makeSequentialMockProvider(texts: string[]): {
-  llmModelProvider: () => Promise<LanguageModel>;
+  llmModelProvider: () => Promise<ChatModel>;
   calls: () => MockDoGenerateCall[];
 } {
   const seenCalls: MockDoGenerateCall[] = [];
   let callIndex = 0;
-  const model = new MockLanguageModelV3({
-    doGenerate: async (call) => {
+  const model: ChatModel = {
+    async generate(call) {
       seenCalls.push(call);
       const text = texts[Math.min(callIndex, texts.length - 1)] ?? "";
       callIndex += 1;
-      return {
-        content: text === "" ? [] : [{ type: "text" as const, text }],
-        finishReason: { unified: "stop" as const, raw: undefined },
-        usage: ZERO_USAGE,
-        warnings: [],
-      };
+      return toResult(text);
     },
-  });
+  };
   return { llmModelProvider: async () => model, calls: () => seenCalls };
 }
 
 /**
- * Fails with a retryable APICallError the first `failTimes` calls, then
+ * Fails with a retryable `LlmApiError` the first `failTimes` calls, then
  * succeeds with `successText`. Useful for asserting maxRetries is actually
- * threaded through to the Vercel AI SDK's own retry behavior.
+ * threaded through to `generateText`'s own retry behavior.
  */
 export function makeFlakyMockProvider(
   failTimes: number,
   successText: string,
 ): {
-  llmModelProvider: () => Promise<LanguageModel>;
+  llmModelProvider: () => Promise<ChatModel>;
   attemptCount: () => number;
 } {
   let attempts = 0;
-  const model = new MockLanguageModelV3({
-    doGenerate: async () => {
+  const model: ChatModel = {
+    async generate() {
       attempts += 1;
       if (attempts <= failTimes) {
-        throw new APICallError({
-          message: "rate limited",
-          url: "https://example.test/v1/chat",
-          requestBodyValues: {},
+        throw new LlmApiError("rate limited", {
           statusCode: 429,
-          isRetryable: true,
+          retryable: true,
         });
       }
-      return {
-        content:
-          successText === ""
-            ? []
-            : [{ type: "text" as const, text: successText }],
-        finishReason: { unified: "stop" as const, raw: undefined },
-        usage: ZERO_USAGE,
-        warnings: [],
-      };
+      return toResult(successText);
     },
-  });
+  };
   return { llmModelProvider: async () => model, attemptCount: () => attempts };
 }
 
@@ -122,52 +97,31 @@ export type MockUsageResponse = {
  * (e.g. map-reduce batches).
  */
 export function makeUsageMockProvider(responses: MockUsageResponse[]): {
-  llmModelProvider: () => Promise<LanguageModel>;
+  llmModelProvider: () => Promise<ChatModel>;
 } {
   let callIndex = 0;
-  const model = new MockLanguageModelV3({
-    doGenerate: async () => {
+  const model: ChatModel = {
+    async generate() {
       const r = responses[Math.min(callIndex, responses.length - 1)]!;
       callIndex += 1;
-      const cacheRead = r.cacheReadTokens ?? 0;
       return {
-        content: r.text === "" ? [] : [{ type: "text" as const, text: r.text }],
-        finishReason: { unified: "stop" as const, raw: undefined },
+        text: r.text,
         usage: {
-          inputTokens: {
-            total: r.inputTokens,
-            noCache: r.inputTokens - cacheRead,
-            cacheRead,
-            cacheWrite: 0,
-          },
-          outputTokens: {
-            total: r.outputTokens,
-            text: r.outputTokens,
-            reasoning: 0,
-          },
+          inputTokens: r.inputTokens,
+          outputTokens: r.outputTokens,
+          totalTokens: r.inputTokens + r.outputTokens,
+          cachedInputTokens: r.cacheReadTokens ?? 0,
         },
-        warnings: [],
       };
     },
-  });
+  };
   return { llmModelProvider: async () => model };
 }
 
 export function extractUserText(call: MockDoGenerateCall): string {
-  const userMessage = call.prompt.find((m) => m.role === "user");
-  if (!userMessage) return "";
-  const content = userMessage.content;
-  if (typeof content === "string") return content;
-  return content
-    .map((part) =>
-      "text" in part && typeof part.text === "string" ? part.text : "",
-    )
-    .join("");
+  return call.prompt;
 }
 
 export function extractSystemText(call: MockDoGenerateCall): string {
-  const systemMessage = call.prompt.find((m) => m.role === "system");
-  if (!systemMessage) return "";
-  const content = systemMessage.content;
-  return typeof content === "string" ? content : "";
+  return call.system;
 }

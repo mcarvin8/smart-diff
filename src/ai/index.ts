@@ -22,6 +22,12 @@ export {
   splitUnifiedDiffIntoFileChunks,
 } from "./diffChunking.js";
 export type {
+  ChatCallOptions,
+  ChatModel,
+  ChatResult,
+  ChatUsage,
+} from "./llmClient.js";
+export type {
   LlmProviderId,
   ResolveLanguageModelOptions,
 } from "./llmProviders.js";

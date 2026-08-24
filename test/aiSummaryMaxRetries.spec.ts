@@ -1,20 +1,12 @@
-import type { LanguageModel } from "ai";
-
-// `vi.spyOn` can't intercept a real ESM package's exports (its module
-// namespace object is non-configurable), so this file mocks "ai" wholesale
-// to assert generateText is called with the resolved maxRetries value.
-// aiSummary.ts only uses `generateText` from "ai" at runtime (the other "ai"
-// imports across the codebase are type-only), so this is safe to stub bare.
-vi.mock("ai", () => ({
-  generateText: vi.fn(),
-}));
-
-import * as aiSdk from "ai";
 import { generateSummary } from "../src/ai/aiSummary";
+import type { ChatModel } from "../src/ai/llmClient";
+import * as llmClient from "../src/ai/llmClient";
 import type { CommitInfo } from "../src/git/index";
 
-const generateTextMock = vi.mocked(aiSdk.generateText);
-const dummyProvider = async () => ({}) as LanguageModel;
+const generateTextSpy = vi.spyOn(llmClient, "generateText");
+const dummyProvider = async (): Promise<ChatModel> => ({
+  generate: async () => ({ text: "unused", usage: {} }),
+});
 
 describe("generateSummary maxRetries wiring", () => {
   const commits: CommitInfo[] = [
@@ -24,11 +16,12 @@ describe("generateSummary maxRetries wiring", () => {
   const prevEnv = process.env.LLM_MAX_RETRIES;
 
   beforeEach(() => {
-    generateTextMock.mockReset();
-    generateTextMock.mockResolvedValue({ text: "ok" } as any);
+    generateTextSpy.mockReset();
+    generateTextSpy.mockResolvedValue({ text: "ok", usage: {} });
   });
 
-  afterEach(() => {
+  afterAll(() => {
+    generateTextSpy.mockRestore();
     if (prevEnv === undefined) delete process.env.LLM_MAX_RETRIES;
     else process.env.LLM_MAX_RETRIES = prevEnv;
   });
@@ -44,7 +37,7 @@ describe("generateSummary maxRetries wiring", () => {
       llmModelProvider: dummyProvider,
     });
 
-    expect(generateTextMock).toHaveBeenCalledWith(
+    expect(generateTextSpy).toHaveBeenCalledWith(
       expect.objectContaining({ maxRetries: 2 }),
     );
   });
@@ -58,7 +51,7 @@ describe("generateSummary maxRetries wiring", () => {
       llmModelProvider: dummyProvider,
     });
 
-    expect(generateTextMock).toHaveBeenCalledWith(
+    expect(generateTextSpy).toHaveBeenCalledWith(
       expect.objectContaining({ maxRetries: 5 }),
     );
   });
@@ -74,7 +67,7 @@ describe("generateSummary maxRetries wiring", () => {
       llmModelProvider: dummyProvider,
     });
 
-    expect(generateTextMock).toHaveBeenCalledWith(
+    expect(generateTextSpy).toHaveBeenCalledWith(
       expect.objectContaining({ maxRetries: 6 }),
     );
   });
@@ -105,8 +98,8 @@ describe("generateSummary maxRetries wiring", () => {
       llmModelProvider: dummyProvider,
     });
 
-    expect(generateTextMock).toHaveBeenCalledTimes(3); // 2 map batches + 1 reduce
-    for (const call of generateTextMock.mock.calls) {
+    expect(generateTextSpy).toHaveBeenCalledTimes(3); // 2 map batches + 1 reduce
+    for (const call of generateTextSpy.mock.calls) {
       expect(call[0]).toEqual(expect.objectContaining({ maxRetries: 9 }));
     }
   });

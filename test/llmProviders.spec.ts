@@ -1,96 +1,3 @@
-vi.mock("@ai-sdk/openai", () => ({
-  __esModule: true,
-  createOpenAI: vi.fn(() => (modelId: string) => ({
-    providerName: "openai",
-    modelId,
-  })),
-}));
-
-vi.mock("@ai-sdk/openai-compatible", () => ({
-  __esModule: true,
-  createOpenAICompatible: vi.fn((settings: Record<string, unknown>) => {
-    return (modelId: string) => ({
-      providerName: "openai-compatible",
-      modelId,
-      settings,
-    });
-  }),
-}));
-
-vi.mock("@ai-sdk/anthropic", () => ({
-  __esModule: true,
-  createAnthropic: vi.fn(() => (modelId: string) => ({
-    providerName: "anthropic",
-    modelId,
-  })),
-}));
-
-vi.mock("@ai-sdk/google", () => ({
-  __esModule: true,
-  createGoogleGenerativeAI: vi.fn(() => (modelId: string) => ({
-    providerName: "google",
-    modelId,
-  })),
-}));
-
-vi.mock("@ai-sdk/amazon-bedrock", () => ({
-  __esModule: true,
-  createAmazonBedrock: vi.fn(() => (modelId: string) => ({
-    providerName: "bedrock",
-    modelId,
-  })),
-}));
-
-vi.mock("@ai-sdk/mistral", () => ({
-  __esModule: true,
-  createMistral: vi.fn(() => (modelId: string) => ({
-    providerName: "mistral",
-    modelId,
-  })),
-}));
-
-vi.mock("@ai-sdk/cohere", () => ({
-  __esModule: true,
-  createCohere: vi.fn(() => (modelId: string) => ({
-    providerName: "cohere",
-    modelId,
-  })),
-}));
-
-vi.mock("@ai-sdk/groq", () => ({
-  __esModule: true,
-  createGroq: vi.fn(() => (modelId: string) => ({
-    providerName: "groq",
-    modelId,
-  })),
-}));
-
-vi.mock("@ai-sdk/xai", () => ({
-  __esModule: true,
-  createXai: vi.fn(() => (modelId: string) => ({
-    providerName: "xai",
-    modelId,
-  })),
-}));
-
-vi.mock("@ai-sdk/deepseek", () => ({
-  __esModule: true,
-  createDeepSeek: vi.fn(() => (modelId: string) => ({
-    providerName: "deepseek",
-    modelId,
-  })),
-}));
-
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { createCohere } from "@ai-sdk/cohere";
-import { createDeepSeek } from "@ai-sdk/deepseek";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { createGroq } from "@ai-sdk/groq";
-import { createMistral } from "@ai-sdk/mistral";
-import { createOpenAI } from "@ai-sdk/openai";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { createXai } from "@ai-sdk/xai";
-
 import {
   defaultModelForProvider,
   detectLlmProvider,
@@ -120,11 +27,35 @@ const ENV_KEYS = [
   "XAI_API_KEY",
   "DEEPSEEK_API_KEY",
   "AWS_ACCESS_KEY_ID",
+  "AWS_SECRET_ACCESS_KEY",
+  "AWS_SESSION_TOKEN",
+  "AWS_REGION",
+  "AWS_DEFAULT_REGION",
   "AWS_PROFILE",
 ];
 
 function clearProviderEnv(): void {
   for (const key of ENV_KEYS) delete process.env[key];
+}
+
+const CALL_OPTIONS = {
+  system: "sys prompt",
+  prompt: "user prompt",
+  temperature: 0.3,
+  maxOutputTokens: 512,
+};
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+}
+
+function mockFetchOnce(response: Response) {
+  const fetchMock = vi.fn(async (_url: unknown, _init?: unknown) => response);
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
 }
 
 describe("llmProviders env helpers", () => {
@@ -336,11 +267,12 @@ describe("resolveLanguageModel", () => {
   beforeEach(() => {
     process.env = { ...originalEnv };
     clearProviderEnv();
-    vi.clearAllMocks();
+    vi.unstubAllGlobals();
   });
 
   afterAll(() => {
     process.env = originalEnv;
+    vi.unstubAllGlobals();
   });
 
   it("throws when no provider is resolvable", async () => {
@@ -349,150 +281,11 @@ describe("resolveLanguageModel", () => {
     );
   });
 
-  it("uses openai provider with API key and optional headers", async () => {
-    process.env.OPENAI_API_KEY = "sk-real";
-    process.env.OPENAI_DEFAULT_HEADERS = JSON.stringify({ "X-Custom": "1" });
-    const model = (await resolveLanguageModel({
-      model: "gpt-test",
-    })) as unknown as {
-      providerName: string;
-      modelId: string;
-    };
-    expect(model.modelId).toBe("gpt-test");
-    expect(model.providerName).toBe("openai");
-    expect(createOpenAI).toHaveBeenCalledWith({
-      apiKey: "sk-real",
-      headers: { "X-Custom": "1" },
-    });
-  });
-
-  it("uses openai provider with no init when only env var present", async () => {
-    process.env.LLM_PROVIDER = "openai";
-    const model = (await resolveLanguageModel()) as unknown as {
-      providerName: string;
-      modelId: string;
-    };
-    expect(model.providerName).toBe("openai");
-    expect(model.modelId).toBe(defaultModelForProvider("openai"));
-    expect(createOpenAI).toHaveBeenCalledWith({});
-  });
-
-  it("uses openai-compatible provider with baseURL, apiKey, and headers", async () => {
-    process.env.LLM_BASE_URL = "https://gateway.example/v1";
-    process.env.LLM_API_KEY = "sk-llm";
-    process.env.LLM_DEFAULT_HEADERS = JSON.stringify({
-      "x-company-rbac": "token",
-    });
-    process.env.LLM_PROVIDER_NAME = "corp-gateway";
-
-    const model = (await resolveLanguageModel({
-      model: "router/gpt",
-    })) as unknown as {
-      providerName: string;
-      modelId: string;
-    };
-    expect(model.modelId).toBe("router/gpt");
-    expect(createOpenAICompatible).toHaveBeenCalledWith({
-      name: "corp-gateway",
-      baseURL: "https://gateway.example/v1",
-      apiKey: "sk-llm",
-      headers: { "x-company-rbac": "token" },
-    });
-  });
-
-  it("uses LLM_MODEL env when options.model is absent", async () => {
-    process.env.OPENAI_API_KEY = "sk-k";
-    process.env.LLM_MODEL = "gpt-4.1-mini";
-    const model = (await resolveLanguageModel()) as unknown as {
-      modelId: string;
-    };
-    expect(model.modelId).toBe("gpt-4.1-mini");
-  });
-
   it("throws when openai-compatible is selected without a base URL", async () => {
     process.env.LLM_PROVIDER = "openai-compatible";
     await expect(resolveLanguageModel()).rejects.toThrow(
       /requires LLM_BASE_URL/,
     );
-  });
-
-  it("dispatches to each optional provider", async () => {
-    const cases: Array<[LlmProviderId, string]> = [
-      ["anthropic", "ANTHROPIC_API_KEY"],
-      ["google", "GOOGLE_GENERATIVE_AI_API_KEY"],
-      ["mistral", "MISTRAL_API_KEY"],
-      ["cohere", "COHERE_API_KEY"],
-      ["groq", "GROQ_API_KEY"],
-      ["xai", "XAI_API_KEY"],
-      ["deepseek", "DEEPSEEK_API_KEY"],
-    ];
-    for (const [provider, envKey] of cases) {
-      clearProviderEnv();
-      process.env[envKey] = "secret";
-      const model = (await resolveLanguageModel({ provider })) as unknown as {
-        providerName: string;
-        modelId: string;
-      };
-      expect(model.providerName).toBe(provider);
-      expect(model.modelId).toBe(defaultModelForProvider(provider));
-    }
-  });
-
-  it("dispatches to bedrock without requiring an api key env", async () => {
-    process.env.LLM_PROVIDER = "bedrock";
-    const model = (await resolveLanguageModel()) as unknown as {
-      providerName: string;
-      modelId: string;
-    };
-    expect(model.providerName).toBe("bedrock");
-    expect(model.modelId).toBe(defaultModelForProvider("bedrock"));
-  });
-
-  it("uses openai-compatible with baseURL only and no name/apiKey/headers", async () => {
-    process.env.LLM_BASE_URL = "https://plain-gateway.example/v1";
-    const model = (await resolveLanguageModel({
-      model: "router/plain",
-    })) as unknown as { providerName: string; modelId: string };
-    expect(model.modelId).toBe("router/plain");
-    expect(createOpenAICompatible).toHaveBeenCalledWith({
-      name: "openai-compatible",
-      baseURL: "https://plain-gateway.example/v1",
-    });
-  });
-
-  it("constructs openai without apiKey or headers when unset", async () => {
-    process.env.LLM_PROVIDER = "openai";
-    await resolveLanguageModel();
-    expect(createOpenAI).toHaveBeenCalledWith({});
-  });
-
-  it("dispatches to each optional provider without an API key env var", async () => {
-    const providers: LlmProviderId[] = [
-      "anthropic",
-      "google",
-      "mistral",
-      "cohere",
-      "groq",
-      "xai",
-      "deepseek",
-    ];
-    for (const provider of providers) {
-      clearProviderEnv();
-      const model = (await resolveLanguageModel({ provider })) as unknown as {
-        providerName: string;
-        modelId: string;
-      };
-      expect(model.providerName).toBe(provider);
-      expect(model.modelId).toBe(defaultModelForProvider(provider));
-    }
-  });
-
-  it("resolves google provider using GOOGLE_API_KEY fallback", async () => {
-    process.env.GOOGLE_API_KEY = "ga-key";
-    const model = (await resolveLanguageModel({
-      provider: "google",
-    })) as unknown as { providerName: string; modelId: string };
-    expect(model.providerName).toBe("google");
   });
 
   it("error message includes all provider env var names", async () => {
@@ -511,96 +304,255 @@ describe("resolveLanguageModel", () => {
     await expect(resolveLanguageModel()).rejects.toThrow(/LLM_BASE_URL/);
   });
 
-  it("passes ANTHROPIC_API_KEY to createAnthropic factory", async () => {
-    process.env.ANTHROPIC_API_KEY = "ant-key";
-    await resolveLanguageModel({ provider: "anthropic" });
-    expect(createAnthropic).toHaveBeenCalledWith({ apiKey: "ant-key" });
-  });
-
-  it("passes GOOGLE_GENERATIVE_AI_API_KEY to createGoogleGenerativeAI factory", async () => {
-    process.env.GOOGLE_GENERATIVE_AI_API_KEY = "gai-key";
-    await resolveLanguageModel({ provider: "google" });
-    expect(createGoogleGenerativeAI).toHaveBeenCalledWith({
-      apiKey: "gai-key",
-    });
-  });
-
-  it("passes GOOGLE_API_KEY to createGoogleGenerativeAI when primary key absent", async () => {
-    process.env.GOOGLE_API_KEY = "gfb-key";
-    await resolveLanguageModel({ provider: "google" });
-    expect(createGoogleGenerativeAI).toHaveBeenCalledWith({
-      apiKey: "gfb-key",
-    });
-  });
-
-  it("passes MISTRAL_API_KEY to createMistral factory", async () => {
-    process.env.MISTRAL_API_KEY = "mist-key";
-    await resolveLanguageModel({ provider: "mistral" });
-    expect(createMistral).toHaveBeenCalledWith({ apiKey: "mist-key" });
-  });
-
-  it("passes COHERE_API_KEY to createCohere factory", async () => {
-    process.env.COHERE_API_KEY = "coh-key";
-    await resolveLanguageModel({ provider: "cohere" });
-    expect(createCohere).toHaveBeenCalledWith({ apiKey: "coh-key" });
-  });
-
-  it("passes GROQ_API_KEY to createGroq factory", async () => {
-    process.env.GROQ_API_KEY = "groq-key";
-    await resolveLanguageModel({ provider: "groq" });
-    expect(createGroq).toHaveBeenCalledWith({ apiKey: "groq-key" });
-  });
-
-  it("passes XAI_API_KEY to createXai factory", async () => {
-    process.env.XAI_API_KEY = "xai-key";
-    await resolveLanguageModel({ provider: "xai" });
-    expect(createXai).toHaveBeenCalledWith({ apiKey: "xai-key" });
-  });
-
-  it("passes DEEPSEEK_API_KEY to createDeepSeek factory", async () => {
-    process.env.DEEPSEEK_API_KEY = "ds-key";
-    await resolveLanguageModel({ provider: "deepseek" });
-    expect(createDeepSeek).toHaveBeenCalledWith({ apiKey: "ds-key" });
-  });
-
-  it("wraps missing optional provider package with helpful message", async () => {
-    vi.resetModules();
-    vi.doMock("@ai-sdk/anthropic", () => {
-      throw new Error("Cannot find module '@ai-sdk/anthropic'");
-    });
-    const { resolveLanguageModel: resolveAgain } = await import(
-      "../src/ai/llmProviders"
-    );
-    process.env.LLM_PROVIDER = "anthropic";
-    await expect(resolveAgain()).rejects.toThrow(
-      /Failed to load optional provider package "@ai-sdk\/anthropic" for LLM_PROVIDER="anthropic".*Install it with/,
+  it("uses LLM_MODEL env when options.model is absent", async () => {
+    process.env.OPENAI_API_KEY = "sk-k";
+    process.env.LLM_MODEL = "gpt-4.1-mini";
+    const fetchMock = mockFetchOnce(jsonResponse({ choices: [] }));
+    const model = await resolveLanguageModel();
+    await model.generate(CALL_OPTIONS);
+    const [, init] = fetchMock.mock.calls[0]!;
+    expect(JSON.parse((init as RequestInit).body as string).model).toBe(
+      "gpt-4.1-mini",
     );
   });
 
-  const missingPeerCases: [LlmProviderId, string][] = [
-    ["openai", "@ai-sdk/openai"],
-    ["openai-compatible", "@ai-sdk/openai-compatible"],
-    ["google", "@ai-sdk/google"],
-    ["bedrock", "@ai-sdk/amazon-bedrock"],
-    ["mistral", "@ai-sdk/mistral"],
-    ["cohere", "@ai-sdk/cohere"],
-    ["groq", "@ai-sdk/groq"],
-    ["xai", "@ai-sdk/xai"],
-    ["deepseek", "@ai-sdk/deepseek"],
-  ];
+  describe("openai", () => {
+    it("sends the API key, merged default headers, and call options", async () => {
+      process.env.OPENAI_API_KEY = "sk-real";
+      process.env.OPENAI_DEFAULT_HEADERS = JSON.stringify({ "X-Custom": "1" });
+      const fetchMock = mockFetchOnce(
+        jsonResponse({
+          choices: [{ message: { content: "hello" } }],
+          usage: { prompt_tokens: 5, completion_tokens: 7, total_tokens: 12 },
+        }),
+      );
 
-  it.each(
-    missingPeerCases,
-  )("wraps missing %s package with provider id and install instruction", async (provider, pkg) => {
-    vi.resetModules();
-    vi.doMock(pkg, () => {
-      throw new Error("Module not found");
+      const model = await resolveLanguageModel({ model: "gpt-test" });
+      const result = await model.generate(CALL_OPTIONS);
+
+      expect(result).toEqual({
+        text: "hello",
+        usage: {
+          inputTokens: 5,
+          outputTokens: 7,
+          totalTokens: 12,
+          cachedInputTokens: undefined,
+        },
+      });
+
+      const [url, init] = fetchMock.mock.calls[0]!;
+      expect(url).toBe("https://api.openai.com/v1/chat/completions");
+      const headers = (init as RequestInit).headers as Record<string, string>;
+      expect(headers.authorization).toBe("Bearer sk-real");
+      expect(headers["X-Custom"]).toBe("1");
+      const body = JSON.parse((init as RequestInit).body as string);
+      expect(body).toEqual({
+        model: "gpt-test",
+        messages: [
+          { role: "system", content: CALL_OPTIONS.system },
+          { role: "user", content: CALL_OPTIONS.prompt },
+        ],
+        temperature: CALL_OPTIONS.temperature,
+        max_tokens: CALL_OPTIONS.maxOutputTokens,
+      });
     });
-    const { resolveLanguageModel: r } = await import("../src/ai/llmProviders");
-    await expect(r({ provider })).rejects.toThrow(
-      new RegExp(
-        `package "${pkg.replace(/\//g, "\\/")}.*LLM_PROVIDER="${provider}".*Install it with`,
-      ),
-    );
+
+    it("omits the authorization header when no API key is set", async () => {
+      process.env.LLM_PROVIDER = "openai";
+      const fetchMock = mockFetchOnce(jsonResponse({ choices: [] }));
+      const model = await resolveLanguageModel();
+      await model.generate(CALL_OPTIONS);
+      const [, init] = fetchMock.mock.calls[0]!;
+      const headers = (init as RequestInit).headers as Record<string, string>;
+      expect(headers.authorization).toBeUndefined();
+    });
+  });
+
+  describe("openai-compatible", () => {
+    it("posts to baseURL/chat/completions with apiKey and headers", async () => {
+      process.env.LLM_BASE_URL = "https://gateway.example/v1/";
+      process.env.LLM_API_KEY = "sk-llm";
+      process.env.LLM_DEFAULT_HEADERS = JSON.stringify({
+        "x-company-rbac": "token",
+      });
+
+      const fetchMock = mockFetchOnce(
+        jsonResponse({ choices: [{ message: { content: "ok" } }] }),
+      );
+      const model = await resolveLanguageModel({ model: "router/gpt" });
+      await model.generate(CALL_OPTIONS);
+
+      const [url, init] = fetchMock.mock.calls[0]!;
+      expect(url).toBe("https://gateway.example/v1/chat/completions");
+      const headers = (init as RequestInit).headers as Record<string, string>;
+      expect(headers.authorization).toBe("Bearer sk-llm");
+      expect(headers["x-company-rbac"]).toBe("token");
+    });
+  });
+
+  describe("anthropic", () => {
+    it("posts to the messages API with x-api-key and anthropic-version", async () => {
+      process.env.ANTHROPIC_API_KEY = "ant-key";
+      const fetchMock = mockFetchOnce(
+        jsonResponse({
+          content: [{ type: "text", text: "hi" }],
+          usage: { input_tokens: 3, output_tokens: 4 },
+        }),
+      );
+
+      const model = await resolveLanguageModel({ provider: "anthropic" });
+      const result = await model.generate(CALL_OPTIONS);
+
+      expect(result.text).toBe("hi");
+      expect(result.usage).toEqual({
+        inputTokens: 3,
+        outputTokens: 4,
+        totalTokens: 7,
+        cachedInputTokens: undefined,
+      });
+
+      const [url, init] = fetchMock.mock.calls[0]!;
+      expect(url).toBe("https://api.anthropic.com/v1/messages");
+      const headers = (init as RequestInit).headers as Record<string, string>;
+      expect(headers["x-api-key"]).toBe("ant-key");
+      expect(headers["anthropic-version"]).toBe("2023-06-01");
+      const body = JSON.parse((init as RequestInit).body as string);
+      expect(body.system).toBe(CALL_OPTIONS.system);
+      expect(body.messages).toEqual([
+        { role: "user", content: CALL_OPTIONS.prompt },
+      ]);
+    });
+
+    it("dispatches without requiring an API key env var", async () => {
+      const model = await resolveLanguageModel({ provider: "anthropic" });
+      expect(model).toBeDefined();
+    });
+  });
+
+  describe("google", () => {
+    it("posts to generateContent with x-goog-api-key, using GOOGLE_API_KEY fallback", async () => {
+      process.env.GOOGLE_API_KEY = "ga-key";
+      const fetchMock = mockFetchOnce(
+        jsonResponse({
+          candidates: [{ content: { parts: [{ text: "gemini says hi" }] } }],
+          usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 2 },
+        }),
+      );
+
+      const model = await resolveLanguageModel({
+        provider: "google",
+        model: "gemini-test",
+      });
+      const result = await model.generate(CALL_OPTIONS);
+
+      expect(result.text).toBe("gemini says hi");
+      const [url, init] = fetchMock.mock.calls[0]!;
+      expect(url).toBe(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-test:generateContent",
+      );
+      const headers = (init as RequestInit).headers as Record<string, string>;
+      expect(headers["x-goog-api-key"]).toBe("ga-key");
+    });
+  });
+
+  describe("cohere", () => {
+    it("posts to the v2 chat API with a bearer token", async () => {
+      process.env.COHERE_API_KEY = "coh-key";
+      const fetchMock = mockFetchOnce(
+        jsonResponse({
+          message: { content: [{ type: "text", text: "cohere reply" }] },
+          usage: { tokens: { input_tokens: 9, output_tokens: 1 } },
+        }),
+      );
+
+      const model = await resolveLanguageModel({ provider: "cohere" });
+      const result = await model.generate(CALL_OPTIONS);
+
+      expect(result.text).toBe("cohere reply");
+      const [url, init] = fetchMock.mock.calls[0]!;
+      expect(url).toBe("https://api.cohere.com/v2/chat");
+      const headers = (init as RequestInit).headers as Record<string, string>;
+      expect(headers.authorization).toBe("Bearer coh-key");
+    });
+  });
+
+  describe.each([
+    [
+      "mistral",
+      "MISTRAL_API_KEY",
+      "https://api.mistral.ai/v1/chat/completions",
+    ],
+    ["groq", "GROQ_API_KEY", "https://api.groq.com/openai/v1/chat/completions"],
+    ["xai", "XAI_API_KEY", "https://api.x.ai/v1/chat/completions"],
+    [
+      "deepseek",
+      "DEEPSEEK_API_KEY",
+      "https://api.deepseek.com/v1/chat/completions",
+    ],
+  ] as const)("%s (OpenAI-compatible)", (provider, envKey, expectedUrl) => {
+    it(`posts to ${expectedUrl} with a bearer token`, async () => {
+      process.env[envKey] = "secret";
+      const fetchMock = mockFetchOnce(
+        jsonResponse({ choices: [{ message: { content: "ok" } }] }),
+      );
+
+      const model = await resolveLanguageModel({ provider });
+      expect(model).toBeDefined();
+      await model.generate(CALL_OPTIONS);
+
+      const [url, init] = fetchMock.mock.calls[0]!;
+      expect(url).toBe(expectedUrl);
+      const headers = (init as RequestInit).headers as Record<string, string>;
+      expect(headers.authorization).toBe("Bearer secret");
+    });
+
+    it("dispatches without requiring an API key env var", async () => {
+      const model = await resolveLanguageModel({ provider });
+      expect(model).toBeDefined();
+    });
+  });
+
+  describe("bedrock", () => {
+    it("dispatches without requiring AWS credentials at resolve time", async () => {
+      process.env.LLM_PROVIDER = "bedrock";
+      const model = await resolveLanguageModel();
+      expect(model).toBeDefined();
+    });
+
+    it("throws a clear error from generate() when no credentials are available", async () => {
+      const model = await resolveLanguageModel({ provider: "bedrock" });
+      await expect(model.generate(CALL_OPTIONS)).rejects.toThrow(
+        /requires AWS credentials/,
+      );
+    });
+
+    it("signs the Converse API request with SigV4 when credentials are set", async () => {
+      process.env.AWS_ACCESS_KEY_ID = "AKIAFAKE";
+      process.env.AWS_SECRET_ACCESS_KEY = "fake-secret";
+      process.env.AWS_REGION = "us-west-2";
+
+      const fetchMock = mockFetchOnce(
+        jsonResponse({
+          output: { message: { content: [{ text: "bedrock reply" }] } },
+          usage: { inputTokens: 2, outputTokens: 3, totalTokens: 5 },
+        }),
+      );
+
+      const model = await resolveLanguageModel({
+        provider: "bedrock",
+        model: "anthropic.claude-3-5-haiku-20241022-v1:0",
+      });
+      const result = await model.generate(CALL_OPTIONS);
+
+      expect(result.text).toBe("bedrock reply");
+      const [url, init] = fetchMock.mock.calls[0]!;
+      expect(String(url)).toBe(
+        "https://bedrock-runtime.us-west-2.amazonaws.com/model/anthropic.claude-3-5-haiku-20241022-v1%3A0/converse",
+      );
+      const headers = (init as RequestInit).headers as Record<string, string>;
+      expect(headers.authorization).toMatch(
+        /^AWS4-HMAC-SHA256 Credential=AKIAFAKE\//,
+      );
+    });
   });
 });

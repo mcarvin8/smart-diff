@@ -9,7 +9,7 @@
 
 Generate AI-powered natural-language summaries of git diffs for code review in any git repository.
 
-Talks directly to OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, or any OpenAI-compatible gateway — no LLM SDK dependency; each provider is a small in-house `fetch`-based client (Bedrock's request signing is a from-scratch SigV4 implementation), so there's nothing extra to install and no third-party SDK in the dependency tree.
+Supports OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, or any OpenAI-compatible gateway.
 
 - [Requirements](#requirements)
 - [Installation](#installation)
@@ -37,8 +37,6 @@ Talks directly to OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Coh
 ```bash
 npm install @mcarvin/smart-diff
 ```
-
-That's it — every provider is built in. There's nothing extra to install; just set the credential env var(s) for the provider you want (see below).
 
 ## Provider configuration
 

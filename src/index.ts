@@ -112,8 +112,8 @@ export type GitDiffAiSummaryOptions = {
    */
   secretPatterns?: readonly SecretRedactionRule[];
   /**
-   * Optional factory returning a Vercel AI SDK `LanguageModel` — bypass env-based
-   * provider resolution (useful in tests and bespoke setups).
+   * Optional factory returning a `ChatModel` — bypass env-based provider
+   * resolution (useful in tests and bespoke setups).
    */
   llmModelProvider?: LlmModelProvider;
 };
@@ -273,6 +273,10 @@ export async function summarizeGitDiff(
 }
 
 export type {
+  ChatCallOptions,
+  ChatModel,
+  ChatResult,
+  ChatUsage,
   GenerateSummaryInput,
   LlmModelProvider,
   LlmProviderId,

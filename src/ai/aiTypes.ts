@@ -1,6 +1,5 @@
-import type { LanguageModel } from "ai";
-
 import type { CommitInfo, DiffSummary } from "../git/index.js";
+import type { ChatModel } from "./llmClient.js";
 import type { LlmProviderId } from "./llmProviders.js";
 
 export type SummarizeFlags = {
@@ -35,10 +34,10 @@ export type SummarizeFlags = {
 };
 
 /**
- * Factory returning a Vercel AI SDK `LanguageModel`. Use this for tests or when you
- * want to hand-wire a provider instead of relying on env-based resolution.
+ * Factory returning a `ChatModel`. Use this for tests or when you want to
+ * hand-wire a provider instead of relying on env-based resolution.
  */
-export type LlmModelProvider = () => Promise<LanguageModel>;
+export type LlmModelProvider = () => Promise<ChatModel>;
 
 /** Input object for `generateSummary` (see `aiSummary.ts`). */
 export type GenerateSummaryInput = {
@@ -46,7 +45,7 @@ export type GenerateSummaryInput = {
   fileNames: string[];
   commits: CommitInfo[];
   flags: SummarizeFlags;
-  /** Returns a Vercel AI SDK `LanguageModel` — bypasses env-based provider resolution. */
+  /** Returns a `ChatModel` — bypasses env-based provider resolution. */
   llmModelProvider?: LlmModelProvider;
   diffSummary?: DiffSummary;
 };

@@ -1,5 +1,3 @@
-import { generateText, type LanguageModelUsage } from "ai";
-
 import type { CommitInfo, DiffSummary } from "../git/index.js";
 import {
   DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
@@ -19,6 +17,7 @@ import {
   groupDiffChunksByBudget,
   splitUnifiedDiffIntoFileChunks,
 } from "./diffChunking.js";
+import { type ChatUsage, generateText } from "./llmClient.js";
 import {
   isLlmProviderConfigured,
   resolveLanguageModel,
@@ -122,15 +121,12 @@ function emptyUsageReport(): LlmUsageReport {
   };
 }
 
-function addUsage(
-  report: LlmUsageReport,
-  usage: LanguageModelUsage | undefined,
-): void {
+function addUsage(report: LlmUsageReport, usage: ChatUsage | undefined): void {
   report.requestCount += 1;
   report.inputTokens += usage?.inputTokens ?? 0;
   report.outputTokens += usage?.outputTokens ?? 0;
   report.totalTokens += usage?.totalTokens ?? 0;
-  report.cachedInputTokens += usage?.inputTokenDetails?.cacheReadTokens ?? 0;
+  report.cachedInputTokens += usage?.cachedInputTokens ?? 0;
 }
 
 export async function generateSummary(

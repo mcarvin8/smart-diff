@@ -9,7 +9,7 @@
 
 Generate AI-powered natural-language summaries of git diffs for code review in any git repository.
 
-Use any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) (OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, and OpenAI-compatible gateways).
+Supports OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, or any OpenAI-compatible gateway.
 
 - [Requirements](#requirements)
 - [Installation](#installation)
@@ -20,7 +20,7 @@ Use any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) (Op
   - [Options reference](#options-reference)
   - [Handling large diffs](#handling-large-diffs)
   - [Token usage reporting](#token-usage-reporting)
-  - [Injecting your own `LanguageModel`](#injecting-your-own-languagemodel)
+  - [Injecting your own `ChatModel`](#injecting-your-own-chatmodel)
   - [Diff shape: single range vs per-commit](#diff-shape-single-range-vs-per-commit)
   - [Lower-level API](#lower-level-api)
 - [Used By](#used-by)
@@ -38,29 +38,6 @@ Use any LLM provider supported by the [Vercel AI SDK](https://sdk.vercel.ai) (Op
 npm install @mcarvin/smart-diff
 ```
 
-All provider packages are **optional** — only install the one(s) you need:
-
-```bash
-# OpenAI
-npm install @ai-sdk/openai
-
-# Anthropic
-npm install @ai-sdk/anthropic
-
-# Google Gemini
-npm install @ai-sdk/google
-
-# Amazon Bedrock
-npm install @ai-sdk/amazon-bedrock
-
-# OpenAI-compatible gateway (Azure, Ollama, Together, etc.)
-npm install @ai-sdk/openai-compatible
-
-# Others: @ai-sdk/mistral  @ai-sdk/cohere  @ai-sdk/groq  @ai-sdk/xai  @ai-sdk/deepseek
-```
-
-If the package for the selected provider is missing at runtime, smart-diff throws a clear error telling you which one to install.
-
 ## Provider configuration
 
 smart-diff is "configured" when [`isLlmProviderConfigured()`](#lower-level-api) returns true — i.e. at least one supported provider can be resolved from env vars — **or** you pass your own `llmModelProvider` factory. Otherwise `summarizeGitDiff` / `generateSummary` throw with `LLM_GATEWAY_REQUIRED_MESSAGE`.
@@ -69,18 +46,18 @@ smart-diff is "configured" when [`isLlmProviderConfigured()`](#lower-level-api) 
 
 `LLM_PROVIDER` explicitly selects a provider. When unset, the resolver auto-detects in this order: `LLM_BASE_URL`/`OPENAI_BASE_URL` → `openai-compatible`, `OPENAI_API_KEY`/`LLM_API_KEY` → `openai`, then `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` (or `GOOGLE_API_KEY`), `MISTRAL_API_KEY`, `COHERE_API_KEY`, `GROQ_API_KEY`, `XAI_API_KEY`, `DEEPSEEK_API_KEY`, `AWS_ACCESS_KEY_ID`/`AWS_PROFILE` → `bedrock`, and finally `OPENAI_DEFAULT_HEADERS`/`LLM_DEFAULT_HEADERS` → `openai`.
 
-| Provider (`LLM_PROVIDER`) | Package | Credential env vars | Default model |
+| Provider (`LLM_PROVIDER`) | Endpoint | Credential env vars | Default model |
 |---|---|---|---|
-| `openai` | `@ai-sdk/openai` | `OPENAI_API_KEY` or `LLM_API_KEY` | `gpt-4o-mini` |
-| `openai-compatible` | `@ai-sdk/openai-compatible` | `LLM_BASE_URL` or `OPENAI_BASE_URL` (required); `OPENAI_API_KEY`/`LLM_API_KEY` or custom headers | `gpt-4o-mini` |
-| `anthropic` | `@ai-sdk/anthropic` | `ANTHROPIC_API_KEY` | `claude-haiku-4-5-20251001` |
-| `google` | `@ai-sdk/google` | `GOOGLE_GENERATIVE_AI_API_KEY` or `GOOGLE_API_KEY` | `gemini-2.0-flash` |
-| `bedrock` | `@ai-sdk/amazon-bedrock` | `AWS_ACCESS_KEY_ID` / `AWS_PROFILE` (auto-detects); full AWS credential chain supported | `anthropic.claude-3-5-haiku-20241022-v1:0` |
-| `mistral` | `@ai-sdk/mistral` | `MISTRAL_API_KEY` | `mistral-small-latest` |
-| `cohere` | `@ai-sdk/cohere` | `COHERE_API_KEY` | `command-r-08-2024` |
-| `groq` | `@ai-sdk/groq` | `GROQ_API_KEY` | `llama-3.1-8b-instant` |
-| `xai` | `@ai-sdk/xai` | `XAI_API_KEY` | `grok-2-latest` |
-| `deepseek` | `@ai-sdk/deepseek` | `DEEPSEEK_API_KEY` | `deepseek-chat` |
+| `openai` | OpenAI Chat Completions | `OPENAI_API_KEY` or `LLM_API_KEY` | `gpt-4o-mini` |
+| `openai-compatible` | Chat Completions at `LLM_BASE_URL`/`OPENAI_BASE_URL` | `LLM_BASE_URL` or `OPENAI_BASE_URL` (required); `OPENAI_API_KEY`/`LLM_API_KEY` or custom headers | `gpt-4o-mini` |
+| `anthropic` | Anthropic Messages API | `ANTHROPIC_API_KEY` | `claude-haiku-4-5-20251001` |
+| `google` | Gemini Generative Language API | `GOOGLE_GENERATIVE_AI_API_KEY` or `GOOGLE_API_KEY` | `gemini-2.0-flash` |
+| `bedrock` | Bedrock Converse API (in-house SigV4 signing) | `AWS_ACCESS_KEY_ID`+`AWS_SECRET_ACCESS_KEY` (+ optional `AWS_SESSION_TOKEN`), or `AWS_PROFILE` pointing at a profile in `~/.aws/credentials`; region from `AWS_REGION`/`AWS_DEFAULT_REGION`/`~/.aws/config` (default `us-east-1`). SSO, instance-role, and container credentials are **not** supported — static credentials only. | `anthropic.claude-3-5-haiku-20241022-v1:0` |
+| `mistral` | Mistral Chat Completions API | `MISTRAL_API_KEY` | `mistral-small-latest` |
+| `cohere` | Cohere Chat API (v2) | `COHERE_API_KEY` | `command-r-08-2024` |
+| `groq` | Groq Chat Completions API | `GROQ_API_KEY` | `llama-3.1-8b-instant` |
+| `xai` | xAI Chat Completions API | `XAI_API_KEY` | `grok-2-latest` |
+| `deepseek` | DeepSeek Chat Completions API | `DEEPSEEK_API_KEY` | `deepseek-chat` |
 
 > `LLM_*` wins over `OPENAI_*` where both exist.
 
@@ -96,7 +73,7 @@ smart-diff is "configured" when [`isLlmProviderConfigured()`](#lower-level-api) 
 | `OPENAI_MAX_DIFF_CHARS` / `LLM_MAX_DIFF_CHARS` | Max size of unified diff text sent to the model (default ~120k characters). |
 | `OPENAI_MAX_TOKENS` / `LLM_MAX_TOKENS` | Max completion tokens (default 4000). |
 | `LLM_TEMPERATURE` | Sampling temperature, clamped to 0–2 (default 0.2). Lower = more deterministic; higher = more varied prose. |
-| `LLM_MAX_RETRIES` | Retry count for transient LLM call failures — rate limits, 5xx, network errors (default 2, matching the Vercel AI SDK's own default). Set to 0 to disable retries. |
+| `LLM_MAX_RETRIES` | Retry count for transient LLM call failures — rate limits, 5xx, network errors (default 2). Set to 0 to disable retries. |
 
 ### Example: native OpenAI
 
@@ -185,7 +162,7 @@ npx smart-diff --help
 | `systemPrompt` | `--system-prompt <text>` | Replaces the default system prompt. |
 | `provider` | `--provider <id>` | `LlmProviderId` — wins over `LLM_PROVIDER` env and auto-detection. |
 | `model` | `--model <id>` | Chat model id; overrides `LLM_MODEL` and the provider default. |
-| `llmModelProvider` | — (library only) | `() => Promise<LanguageModel>` — bypass env-based resolution entirely; hand-wire a Vercel AI SDK `LanguageModel` (required in tests or custom setups). |
+| `llmModelProvider` | — (library only) | `() => Promise<ChatModel>` — bypass env-based resolution entirely; hand-wire your own `ChatModel` (required in tests or custom setups). |
 
 #### Token reduction — see [Handling large diffs](#handling-large-diffs)
 
@@ -266,20 +243,28 @@ const { summary, usage } = await summarizeGitDiff({ from: 'origin/main' });
 
 This reports token counts only — no dollar cost estimate, since per-token pricing varies by provider/model and changes over time; a hardcoded price table would drift out of date. Fields are 0 when a provider doesn't report a given figure. `generateSummaryWithUsage` is the lower-level equivalent of `generateSummary`.
 
-### Injecting your own `LanguageModel`
+### Injecting your own `ChatModel`
 
-If you want full control — for example, to configure retries, middlewares, or hit an in-process mock — pass `llmModelProvider`:
+If you want full control — for example, to hit an in-process mock, add your own middleware/logging, or talk to a provider smart-diff doesn't support directly — pass `llmModelProvider`. A `ChatModel` is just an object with a `generate` method:
 
 ```ts
-import { summarizeGitDiff } from '@mcarvin/smart-diff';
-import { createAnthropic } from '@ai-sdk/anthropic';
+import { summarizeGitDiff, type ChatModel } from '@mcarvin/smart-diff';
+
+const myModel: ChatModel = {
+  async generate({ system, prompt, temperature, maxOutputTokens }) {
+    const res = await fetch('https://my-llm-gateway.example.com/v1/chat', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${process.env.MY_GATEWAY_KEY}` },
+      body: JSON.stringify({ system, prompt, temperature, maxOutputTokens }),
+    });
+    const data = await res.json();
+    return { text: data.text, usage: { inputTokens: data.inputTokens, outputTokens: data.outputTokens } };
+  },
+};
 
 const { summary } = await summarizeGitDiff({
   from: 'origin/main',
-  llmModelProvider: async () =>
-    createAnthropic({ apiKey: process.env.MY_ANTHROPIC_KEY })(
-      'claude-3-5-sonnet-latest',
-    ),
+  llmModelProvider: async () => myModel,
 });
 ```
 
@@ -296,7 +281,7 @@ The package also exports helpers for building a custom pipeline on top of the sa
 - **AI**: `generateSummary`, `generateSummaryWithUsage`, `resolveLlmMaxDiffChars`, `resolveLlmMaxRetries`, `truncateUnifiedDiffForLlm`, `splitUnifiedDiffIntoFileChunks`, `groupDiffChunksByBudget`
 - **Provider resolution**: `resolveLanguageModel`, `detectLlmProvider`, `isLlmProviderConfigured`, `defaultModelForProvider`, `resolveLlmBaseUrl`, `parseLlmDefaultHeadersFromEnv`
 - **Constants**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`
-- **Types**: `LlmProviderId`, `LlmModelProvider`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `LlmUsageReport`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `PathFilterPredicate`, `RenderedFileDiff`, `SecretRedactionRule`
+- **Types**: `LlmProviderId`, `LlmModelProvider`, `ChatModel`, `ChatCallOptions`, `ChatResult`, `ChatUsage`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `LlmUsageReport`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `PathFilterPredicate`, `RenderedFileDiff`, `SecretRedactionRule`
   - `DiffFileSummary.binary?: boolean` is `true` when either blob sniffs as binary; absent for text files
 
 ## Used By

@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.2.0](https://github.com/mcarvin8/smart-diff/compare/v6.1.0...v6.2.0) (2026-08-25)
+
+
+### Features
+
+* publish smart-diff as a GitHub Action (smart-diff-ai) ([#79](https://github.com/mcarvin8/smart-diff/issues/79)) ([6323dad](https://github.com/mcarvin8/smart-diff/commit/6323dad5882ba28221093cb41e74aa594a599a52))
+
 ## [6.1.0](https://github.com/mcarvin8/smart-diff/compare/v6.0.0...v6.1.0) (2026-08-25)
 
 

@@ -1,6 +1,7 @@
 node_modules
 .vscode
-dist
+dist/*
+!dist/action
 coverage
 src/**/*.js
 test/**/*.js

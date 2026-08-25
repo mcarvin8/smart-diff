@@ -284,6 +284,70 @@ The package also exports helpers for building a custom pipeline on top of the sa
 - **Types**: `LlmProviderId`, `LlmModelProvider`, `ChatModel`, `ChatCallOptions`, `ChatResult`, `ChatUsage`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `LlmUsageReport`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `PathFilterPredicate`, `RenderedFileDiff`, `SecretRedactionRule`
   - `DiffFileSummary.binary?: boolean` is `true` when either blob sniffs as binary; absent for text files
 
+## GitHub Action
+
+smart-diff is also published as a GitHub Action (marketplace name `smart-diff-ai`) — no git binary or Node install needed on the runner, since it runs on `node24` from a pre-bundled executable.
+
+```yaml
+- uses: actions/checkout@v7
+  with:
+    fetch-depth: 0 # full history so `from`/`to` refs resolve
+
+- name: Summarize diff
+  id: smart-diff
+  uses: mcarvin8/smart-diff@v6
+  with:
+    from: ${{ github.event.pull_request.base.sha }}
+    to: ${{ github.event.pull_request.head.sha }}
+  env:
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+- name: Comment summary on PR
+  uses: peter-evans/create-or-update-comment@v5
+  with:
+    issue-number: ${{ github.event.pull_request.number }}
+    body: ${{ steps.smart-diff.outputs.summary }}
+```
+
+Provider credentials are read from the environment exactly as they are for the CLI — set the relevant secret(s) (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.; see [Provider configuration](#provider-configuration)) via the step's `env:` block. Set `provider` explicitly if more than one provider's credentials are present in the environment.
+
+### Inputs
+
+| Input | Description | Default |
+| --- | --- | --- |
+| `from` | Start ref (older side of the range). **Required.** | |
+| `to` | End ref. | `HEAD` |
+| `merge-base` | Resolve `from` as the merge base of `to` and `from`. | `false` |
+| `working-directory` | Working directory of the git repository. | runner checkout dir |
+| `include` | Only include these paths (newline-separated). | |
+| `exclude` | Exclude these paths (newline-separated). | |
+| `commit-include` | Only keep commits matching these regexes (newline-separated, OR). | |
+| `commit-exclude` | Drop commits matching these regexes (newline-separated). | |
+| `team` | Team label added to the LLM prompt. | |
+| `system-prompt` | Overrides the default system prompt. | |
+| `provider` | LLM provider id. | auto-detected |
+| `model` | Model id override. | provider default |
+| `max-diff-chars` | Caps unified diff size sent to the model. | |
+| `max-retries` | Retry count for transient LLM call failures. | `2` |
+| `map-reduce` | Batch an oversized diff instead of hard-truncating it. | `false` |
+| `context-lines` | Context lines per hunk (git diff `-U<n>`). | `3` |
+| `ignore-whitespace` | Drop pure-whitespace hunks. | `false` |
+| `strip-diff-preamble` | Strip `diff --git`/index/mode noise lines. | `false` |
+| `max-hunk-lines` | Elide hunk bodies longer than this many lines. | |
+| `exclude-default-noise` | Skip lockfiles/dist/build/coverage/node_modules. | `false` |
+| `redact-secrets` | Mask likely secrets/credentials before sending the diff to the LLM. | `false` |
+
+### Outputs
+
+| Output | Description |
+| --- | --- |
+| `summary` | Markdown summary of the diff. |
+| `request-count` | Number of LLM calls made to produce the summary. |
+| `input-tokens` | Sum of input (prompt) tokens across all calls. |
+| `output-tokens` | Sum of output (completion) tokens across all calls. |
+| `total-tokens` | Sum of total tokens across all calls, as reported by the provider. |
+| `cached-input-tokens` | Sum of cached input tokens read across all calls (0 if unsupported/unreported). |
+
 ## Used By
 
 This package is used downstream by:

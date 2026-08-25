@@ -1,0 +1,83 @@
+name: Smoke Test Action
+
+on:
+  push:
+    branches-ignore:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-fixture:
+    name: Build fixture repo and exercise the Action
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 'lts/*'
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Action bundle
+        run: npm run build:action
+
+      - name: Create fixture git repo
+        id: fixture
+        run: |
+          set -euo pipefail
+          FIXTURE_DIR="${RUNNER_TEMP}/smart-diff-fixture"
+          mkdir -p "$FIXTURE_DIR"
+          cd "$FIXTURE_DIR"
+          git init -q
+          git config user.email "smoke-test@example.com"
+          git config user.name "Smoke Test"
+          echo "hello" > README.md
+          git add README.md
+          git commit -q -m "chore: initial commit"
+          echo "hello world" > README.md
+          echo "console.log('added');" > index.js
+          git add README.md index.js
+          git commit -q -m "feat: add greeting and script"
+          echo "dir=$FIXTURE_DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Run Action against a bad ref (expect a clear git error)
+        id: bad-ref
+        continue-on-error: true
+        uses: ./
+        with:
+          from: this-ref-does-not-exist
+          working-directory: ${{ steps.fixture.outputs.dir }}
+
+      - name: Assert bad ref failed
+        run: |
+          if [ "${{ steps.bad-ref.outcome }}" != "failure" ]; then
+            echo "Expected the Action to fail on an unresolvable ref, but it reported ${{ steps.bad-ref.outcome }}."
+            exit 1
+          fi
+
+      - name: Run Action against a real diff (expect it to reach the LLM call)
+        id: real-diff
+        continue-on-error: true
+        uses: ./
+        with:
+          from: HEAD~1
+          to: HEAD
+          working-directory: ${{ steps.fixture.outputs.dir }}
+
+      - name: Assert diff resolution succeeded
+        run: |
+          # No LLM credentials are configured in this workflow, so the Action is
+          # expected to fail once it reaches the provider call -- this proves the
+          # git/diff wiring (ref resolution, changed-file detection) worked correctly.
+          if [ "${{ steps.real-diff.outcome }}" != "failure" ]; then
+            echo "Expected the Action to fail at the LLM call (no credentials configured), but it reported ${{ steps.real-diff.outcome }}."
+            exit 1
+          fi

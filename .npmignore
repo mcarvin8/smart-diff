@@ -1,7 +1,9 @@
 .github
 .husky
 .vscode
+action.yml
 coverage
+dist/action
 src
 node_modules
 test

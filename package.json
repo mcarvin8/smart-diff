@@ -21,6 +21,7 @@
   },
   "scripts": {
     "build": "npx rollup -c",
+    "build:action": "esbuild src/action/index.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/action/index.cjs",
     "start": "node dist/index.cjs",
     "test": "vitest run --coverage",
     "lint": "biome lint .",
@@ -38,6 +39,7 @@
     ]
   },
   "devDependencies": {
+    "@actions/core": "1.11.1",
     "@biomejs/biome": "2.5.1",
     "@commitlint/cli": "20.5.0",
     "@commitlint/config-conventional": "20.5.0",
@@ -47,6 +49,7 @@
     "@stryker-mutator/vitest-runner": "9.6.1",
     "@types/node": "25.5.0",
     "@vitest/coverage-v8": "4.1.5",
+    "esbuild": "0.28.2",
     "husky": "9.1.7",
     "knip": "6.32.1",
     "lint-staged": "16.3.3",
@@ -80,6 +83,7 @@
     "gemini",
     "git",
     "git-diff",
+    "github-action",
     "google",
     "groq",
     "grok",
@@ -90,5 +94,8 @@
     "pull-request",
     "summary",
     "xai"
-  ]
+  ],
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
 }

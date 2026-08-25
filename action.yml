@@ -1,0 +1,96 @@
+name: smart-diff-ai
+description: Generate AI-powered natural-language summaries of a git diff for code review.
+author: Matt Carvin
+
+branding:
+  icon: git-pull-request
+  color: purple
+
+inputs:
+  from:
+    description: Start ref (older side of the range). Required.
+    required: true
+  to:
+    description: End ref. Defaults to HEAD.
+    required: false
+  merge-base:
+    description: Resolve `from` as the merge base of `to` and `from` instead of using `from` directly.
+    required: false
+    default: 'false'
+  working-directory:
+    description: Working directory of the git repository. Defaults to the runner's checkout directory.
+    required: false
+  include:
+    description: Only include these directories/files relative to the repo root (newline-separated, repeatable).
+    required: false
+  exclude:
+    description: Exclude these directories/files relative to the repo root (newline-separated, repeatable).
+    required: false
+  commit-include:
+    description: Only keep commits whose message matches at least one of these regexes (newline-separated, OR).
+    required: false
+  commit-exclude:
+    description: Drop commits whose message matches any of these regexes (newline-separated).
+    required: false
+  team:
+    description: Team label added to the LLM prompt.
+    required: false
+  system-prompt:
+    description: Overrides the default LLM system prompt.
+    required: false
+  provider:
+    description: LLM provider id (openai, anthropic, google, bedrock, mistral, cohere, groq, xai, deepseek, openai-compatible). Falls back to LLM_PROVIDER env var or auto-detection based on which provider credentials are present.
+    required: false
+  model:
+    description: Model id override.
+    required: false
+  max-diff-chars:
+    description: Caps unified diff size sent to the model.
+    required: false
+  max-retries:
+    description: Retry count for transient LLM call failures. Default 2.
+    required: false
+  map-reduce:
+    description: Batch an oversized diff (per-file map, then reduce) instead of hard-truncating it.
+    required: false
+    default: 'false'
+  context-lines:
+    description: Context lines per hunk (git diff -U<n>).
+    required: false
+  ignore-whitespace:
+    description: Drop pure-whitespace hunks.
+    required: false
+    default: 'false'
+  strip-diff-preamble:
+    description: Strip diff --git/index/mode noise lines.
+    required: false
+    default: 'false'
+  max-hunk-lines:
+    description: Elide hunk bodies longer than this many lines.
+    required: false
+  exclude-default-noise:
+    description: Skip lockfiles/dist/build/coverage/node_modules.
+    required: false
+    default: 'false'
+  redact-secrets:
+    description: Mask likely secrets/credentials before sending the diff to the LLM.
+    required: false
+    default: 'false'
+
+outputs:
+  summary:
+    description: Markdown summary of the diff.
+  request-count:
+    description: Number of LLM calls made to produce the summary.
+  input-tokens:
+    description: Sum of input (prompt) tokens across all calls.
+  output-tokens:
+    description: Sum of output (completion) tokens across all calls.
+  total-tokens:
+    description: Sum of total tokens across all calls, as reported by the provider.
+  cached-input-tokens:
+    description: Sum of cached input tokens read across all calls (0 if unsupported/unreported).
+
+runs:
+  using: node24
+  main: dist/action/index.cjs

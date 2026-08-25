@@ -24,6 +24,7 @@ export default defineConfig({
       exclude: [
         "src/index.ts",
         "src/cli.ts",
+        "src/action/index.ts",
         "src/ai/index.ts",
         "src/ai/aiTypes.ts",
         "src/git/index.ts",

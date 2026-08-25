@@ -286,7 +286,7 @@ The package also exports helpers for building a custom pipeline on top of the sa
 
 ## GitHub Action
 
-smart-diff is also published as a GitHub Action (marketplace name `smart-diff-ai`) — no Salesforce/git binary or Node install needed on the runner, since it runs on `node24` from a pre-bundled executable.
+smart-diff is also published as a GitHub Action (marketplace name `smart-diff-ai`) — no git binary or Node install needed on the runner, since it runs on `node24` from a pre-bundled executable.
 
 ```yaml
 - uses: actions/checkout@v7

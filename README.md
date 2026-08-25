@@ -24,6 +24,7 @@ Supports OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq
   - [Injecting your own `ChatModel`](#injecting-your-own-chatmodel)
   - [Diff shape: single range vs per-commit](#diff-shape-single-range-vs-per-commit)
   - [Lower-level API](#lower-level-api)
+- [GitHub Action](#github-action)
 - [Used By](#used-by)
 - [License](#license)
 

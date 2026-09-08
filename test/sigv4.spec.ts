@@ -45,4 +45,9 @@ describe("signRequest", () => {
     const second = signRequest({ ...base, body: '{"changed":true}' });
     expect(first.authorization).not.toBe(second.authorization);
   });
+
+  it("falls back to '/' when the URL has no pathname", () => {
+    const headers = signRequest({ ...base, url: new URL("foo://bar") });
+    expect(headers.authorization).toMatch(/^AWS4-HMAC-SHA256 /);
+  });
 });

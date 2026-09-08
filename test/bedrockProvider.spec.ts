@@ -93,6 +93,29 @@ describe("createBedrockChatModel", () => {
     });
   });
 
+  it("treats a content part with no text field as an empty string", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            output: { message: { content: [{ text: "hi" }, {}] } },
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+
+    const model = createBedrockChatModel({
+      modelId: "m",
+      region: "us-east-1",
+      getCredentials: () => credentials,
+    });
+    const result = await model.generate(callOptions);
+
+    expect(result.text).toBe("hi");
+  });
+
   it("returns empty text and undefined usage fields when the response omits them", async () => {
     vi.stubGlobal(
       "fetch",

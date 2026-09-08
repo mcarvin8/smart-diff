@@ -64,6 +64,25 @@ describe("createCohereChatModel", () => {
     });
   });
 
+  it("treats a text block with no text field as an empty string", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ message: { content: [{ type: "text" }] } }),
+            { status: 200 },
+          ),
+        ),
+    );
+
+    const model = createCohereChatModel({ modelId: "command" });
+    const result = await model.generate(callOptions);
+
+    expect(result.text).toBe("");
+  });
+
   it("returns empty text and undefined totalTokens when message/usage are absent", async () => {
     vi.stubGlobal(
       "fetch",

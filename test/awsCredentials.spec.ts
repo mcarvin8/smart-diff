@@ -121,6 +121,26 @@ describe("resolveAwsCredentials / resolveAwsRegion", () => {
       expect(resolveAwsCredentials()).toBeUndefined();
     });
 
+    it("ignores key-value lines that appear before any section header", () => {
+      const file = join(dir, "credentials");
+      writeFileSync(
+        file,
+        [
+          "orphan_key = orphan_value",
+          "[default]",
+          "aws_access_key_id = AKIADEFAULT",
+          "aws_secret_access_key = default-secret",
+        ].join("\n"),
+      );
+      process.env.AWS_SHARED_CREDENTIALS_FILE = file;
+
+      expect(resolveAwsCredentials()).toEqual({
+        accessKeyId: "AKIADEFAULT",
+        secretAccessKey: "default-secret",
+        sessionToken: undefined,
+      });
+    });
+
     it("returns undefined for a profile that doesn't exist in the file", () => {
       const file = join(dir, "credentials");
       writeFileSync(

@@ -63,6 +63,36 @@ describe("createAnthropicChatModel", () => {
     expect(result.usage.totalTokens).toBeUndefined();
   });
 
+  it("returns empty text when the content field is absent entirely", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 })),
+    );
+
+    const model = createAnthropicChatModel({ modelId: "claude" });
+    const result = await model.generate(callOptions);
+
+    expect(result.text).toBe("");
+  });
+
+  it("treats a text block with no text field as an empty string", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ content: [{ type: "text" }] }), {
+          status: 200,
+        }),
+      ),
+    );
+
+    const model = createAnthropicChatModel({ modelId: "claude" });
+    const result = await model.generate(callOptions);
+
+    expect(result.text).toBe("");
+  });
+
   it("omits the x-api-key header when no apiKey is set", async () => {
     const fetchMock = vi
       .fn()

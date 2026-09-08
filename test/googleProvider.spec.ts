@@ -45,6 +45,25 @@ describe("createGoogleChatModel", () => {
     });
   });
 
+  it("treats a part with no text field as an empty string", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            candidates: [{ content: { parts: [{ text: "hello" }, {}] } }],
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+
+    const model = createGoogleChatModel({ modelId: "gemini" });
+    const result = await model.generate(callOptions);
+
+    expect(result.text).toBe("hello");
+  });
+
   it("returns empty text and undefined usage when candidates/usageMetadata are absent", async () => {
     vi.stubGlobal(
       "fetch",

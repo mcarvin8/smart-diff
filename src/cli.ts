@@ -1,15 +1,13 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 
 import { CliUsageError, HELP_TEXT, parseCliArgs } from "./cliOptions.js";
 import { summarizeGitDiff } from "./index.js";
 
 function readPackageVersion(): string {
-  const packageJsonUrl = new URL("../package.json", import.meta.url);
-  const pkg = JSON.parse(
-    readFileSync(fileURLToPath(packageJsonUrl), "utf8"),
-  ) as {
+  const packageJsonPath = join(__dirname, "../package.json");
+  const pkg = JSON.parse(readFileSync(packageJsonPath, "utf8")) as {
     version: string;
   };
   return pkg.version;

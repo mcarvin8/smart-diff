@@ -1,8 +1,8 @@
 name: Smoke Test Action
 
 on:
-  push:
-    branches-ignore:
+  pull_request:
+    branches:
       - main
   workflow_dispatch:
 

@@ -4,7 +4,6 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://raw.githubusercontent.com/mcarvin8/smart-diff/main/LICENSE.md)
 [![GitHub Marketplace](https://img.shields.io/badge/marketplace-smart--diff--ai-blue?logo=github)](https://github.com/marketplace/actions/smart-diff-ai)
 [![Downloads/week](https://img.shields.io/npm/dw/@mcarvin/smart-diff.svg)](https://npmjs.org/package/@mcarvin/smart-diff)
-[![Maintainability](https://qlty.sh/gh/mcarvin8/projects/smart-diff/maintainability.svg)](https://qlty.sh/gh/mcarvin8/projects/smart-diff)
 [![codecov](https://codecov.io/gh/mcarvin8/smart-diff/graph/badge.svg?token=H3ZWAGG7S9)](https://codecov.io/gh/mcarvin8/smart-diff)
 [![Mutation testing badge](https://img.shields.io/endpoint?style=flat&url=https%3A%2F%2Fbadge-api.stryker-mutator.io%2Fgithub.com%2Fmcarvin8%2Fsmart-diff%2Fmain)](https://dashboard.stryker-mutator.io/reports/github.com/mcarvin8/smart-diff/main)
 

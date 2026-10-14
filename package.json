@@ -56,7 +56,7 @@
     "vitest": "5.0.0"
   },
   "dependencies": {
-    "@scolladon/tsgit": "4.0.0",
+    "@scolladon/tsgit": "5.0.0",
     "diff": "9.0.0"
   },
   "repository": {

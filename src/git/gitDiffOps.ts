@@ -70,6 +70,19 @@ async function peelToCommit(git: GitClient, id: ObjectId): Promise<ObjectId> {
 }
 
 /**
+ * Resolve `rev` to the single object it names. tsgit's `revParse` returns
+ * every line `git rev-parse` would print, so pick the lone non-negated object.
+ */
+async function resolveObjectId(git: GitClient, rev: string): Promise<ObjectId> {
+  const entries = await git.revParse(rev);
+  const [entry] = entries;
+  if (entries.length !== 1 || entry?.kind !== "object" || entry.negated) {
+    throw new Error(`'${rev}' does not name a single revision`);
+  }
+  return entry.id;
+}
+
+/**
  * Resolve the best common ancestor of `to` and `other`, in-process via tsgit —
  * the equivalent of `git merge-base <to> <other>` without a local git binary.
  */
@@ -79,8 +92,8 @@ export async function getMergeBase(
   other: string,
 ): Promise<string> {
   const [toId, otherId] = await Promise.all([
-    git.revParse(to),
-    git.revParse(other),
+    resolveObjectId(git, to),
+    resolveObjectId(git, other),
   ]);
   const [peeledTo, peeledOther] = await Promise.all([
     peelToCommit(git, toId),

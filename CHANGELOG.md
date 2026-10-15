@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.4.0](https://github.com/mcarvin8/smart-diff/compare/v6.3.0...v6.4.0) (2026-10-15)
+
+
+### Features
+
+* **tsgit:** bump @scolladon/tsgit from 4.0.0 to 5.0.0 ([#84](https://github.com/mcarvin8/smart-diff/issues/84)) ([7ce0809](https://github.com/mcarvin8/smart-diff/commit/7ce080957951751666439bad030955344f64329d))
+
 ## [6.3.0](https://github.com/mcarvin8/smart-diff/compare/v6.2.0...v6.3.0) (2026-09-11)
 
 

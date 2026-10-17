@@ -60,6 +60,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Install documentation example dependencies
+        run: npm ci --prefix examples/parallel-docs
+
+      - name: Check documentation example
+        run: npm test --prefix examples/parallel-docs
+
       - name: Test
         run: npm test
 

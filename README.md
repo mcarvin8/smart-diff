@@ -269,6 +269,11 @@ const { summary } = await summarizeGitDiff({
 });
 ```
 
+For a dependency migration, see the optional
+[documentation-context example](examples/parallel-docs/README.md). It fetches
+excerpts from a public documentation URL with Parallel Search MCP and supplies
+them to your existing LLM provider through a `ChatModel` wrapper.
+
 ### Diff shape: single range vs per-commit
 
 - **Single unified diff** for `from..to` when no commit-message filters apply and the filtered commit list matches the full log for that range.

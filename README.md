@@ -26,6 +26,7 @@ Supports OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq
 - [GitHub Action](#github-action)
 - [Used By](#used-by)
 - [License](#license)
+- [Optional structural diff context](#optional-structural-diff-context)
 
 ## Requirements
 
@@ -365,7 +366,7 @@ This package is used downstream by:
 
 [MIT](LICENSE.md)
 
-### Optional structural diff context
+## Optional structural diff context
 
 See the [Sem example](examples/sem/README.md) to attach entity-level changes to
 a summary through the existing model-provider hook.

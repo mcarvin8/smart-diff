@@ -24,9 +24,9 @@ Supports OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq
   - [Diff shape: single range vs per-commit](#diff-shape-single-range-vs-per-commit)
   - [Lower-level API](#lower-level-api)
 - [GitHub Action](#github-action)
+- [Examples](#examples)
 - [Used By](#used-by)
 - [License](#license)
-- [Optional structural diff context](#optional-structural-diff-context)
 
 ## Requirements
 
@@ -270,10 +270,7 @@ const { summary } = await summarizeGitDiff({
 });
 ```
 
-For a dependency migration, see the optional
-[documentation-context example](examples/parallel-docs/README.md). It fetches
-excerpts from a public documentation URL with Parallel Search MCP and supplies
-them to your existing LLM provider through a `ChatModel` wrapper.
+See [Examples](#examples) for `ChatModel` wrappers that add extra context to the request.
 
 ### Diff shape: single range vs per-commit
 
@@ -355,6 +352,17 @@ Provider credentials are read from the environment exactly as they are for the C
 | `total-tokens` | Sum of total tokens across all calls, as reported by the provider. |
 | `cached-input-tokens` | Sum of cached input tokens read across all calls (0 if unsupported/unreported). |
 
+## Examples
+
+Optional examples in [`examples/`](examples/) wrap your configured provider with `llmModelProvider` to give the model extra context alongside the regular diff. Both keep your existing provider and send the added context to it, so expect more input tokens.
+
+| Example | Adds | Requires |
+|---------|------|----------|
+| [Documentation context](examples/parallel-docs/README.md) | Excerpts from a public documentation URL, fetched with Parallel Search MCP — useful for dependency migrations | `npm run build` in this repo, then `npm ci` in `examples/parallel-docs` |
+| [Structural diff context](examples/sem/README.md) | Entity-level changes from [Sem](https://github.com/Ataraxy-Labs/sem)'s structural diff for the same commit range | `sem` on `PATH` and `npm run build` in this repo |
+
+See each example's README for setup and usage.
+
 ## Used By
 
 This package is used downstream by:
@@ -365,8 +373,3 @@ This package is used downstream by:
 ## License
 
 [MIT](LICENSE.md)
-
-## Optional structural diff context
-
-See the [Sem example](examples/sem/README.md) to attach entity-level changes to
-a summary through the existing model-provider hook.

@@ -364,3 +364,8 @@ This package is used downstream by:
 ## License
 
 [MIT](LICENSE.md)
+
+### Optional structural diff context
+
+See the [Sem example](examples/sem/README.md) to attach entity-level changes to
+a summary through the existing model-provider hook.

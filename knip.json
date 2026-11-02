@@ -1,7 +1,13 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
-    "examples/parallel-docs": {},
-    "examples/sem": {},
+    ".": {
+      "entry": ["scripts/*.mjs", "examples/sem/*.mjs"],
+      "project": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.mjs", "examples/sem/**/*.mjs"]
+    },
+    "examples/parallel-docs": {
+      "entry": ["*.mjs"],
+      "project": ["**/*.mjs"]
+    }
   }
 }

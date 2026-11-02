@@ -21,6 +21,29 @@ Husky hooks install automatically via `prepare`.
 - **Test:** `npm test`
 - **Lint:** `npm run lint`
 - **Format:** `npm run format`
+- **Unused files/dependencies:** `npm run lint:dependencies` ([knip](https://knip.dev))
+
+## Adding Examples
+
+Examples live under `examples/<name>/`. If you add one, update [knip.json](knip.json) so knip doesn't report its files as unused:
+
+- **Example with its own `package.json`** (e.g. `examples/parallel-docs`): add it as a workspace.
+
+  ```json
+  "examples/<name>": {
+    "entry": ["*.mjs"],
+    "project": ["**/*.mjs"]
+  }
+  ```
+
+- **Example without a `package.json`** (e.g. `examples/sem`): do **not** add a workspace. Knip only treats folders with a `package.json` as workspaces. Instead, add the example's files to the root (`"."`) workspace's `entry` and `project` arrays:
+
+  ```json
+  "entry": ["scripts/*.mjs", "examples/sem/*.mjs", "examples/<name>/*.mjs"],
+  "project": [..., "examples/<name>/**/*.mjs"]
+  ```
+
+Then run `npm run lint:dependencies` and confirm it reports nothing, including configuration hints.
 
 ## Hooks
 

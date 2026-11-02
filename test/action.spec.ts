@@ -1,6 +1,13 @@
 type IndexModule = typeof import("../src/index");
 type CoreModule = typeof import("@actions/core");
 
+// @actions/core is ESM-only, so its namespace exports can't be spied on directly.
+vi.mock("@actions/core", async (importOriginal) => ({
+  ...(await importOriginal<CoreModule>()),
+  setOutput: vi.fn(),
+  setFailed: vi.fn(),
+}));
+
 const BOOLEAN_INPUT_DEFAULTS: Record<string, string> = {
   "merge-base": "false",
   "map-reduce": "false",
@@ -33,8 +40,6 @@ async function runAction(
 
   const freshIndexModule = await import("../src/index");
   const freshCoreModule = await import("@actions/core");
-  vi.spyOn(freshCoreModule, "setOutput").mockImplementation(() => undefined);
-  vi.spyOn(freshCoreModule, "setFailed").mockImplementation(() => undefined);
   vi.spyOn(freshCoreModule.summary, "write").mockRejectedValue(
     new Error("GITHUB_STEP_SUMMARY not set"),
   );

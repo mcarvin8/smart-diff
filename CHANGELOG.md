@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.4.1](https://github.com/mcarvin8/smart-diff/compare/v6.4.0...v6.4.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* **deps:** bump all deps, including tsgit to v6 ([#89](https://github.com/mcarvin8/smart-diff/issues/89)) ([95d04b0](https://github.com/mcarvin8/smart-diff/commit/95d04b0b7ba4179d8d9d0e1a4bccfb3caac35b96))
+
 ## [6.4.0](https://github.com/mcarvin8/smart-diff/compare/v6.3.0...v6.4.0) (2026-10-15)
 
 

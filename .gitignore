@@ -10,3 +10,4 @@ test/**/*.js
 **/*.log
 .stryker-tmp
 reports
+*.zip

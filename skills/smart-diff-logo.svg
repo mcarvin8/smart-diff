@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">smart-diff</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e1b4b"/>
+      <stop offset="1" stop-color="#3730a3"/>
+    </linearGradient>
+    <linearGradient id="spark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fde68a"/>
+      <stop offset="1" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Tile -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- Removed line -->
+  <rect x="88" y="120" width="56" height="56" rx="14" fill="#ef4444"/>
+  <rect x="102" y="144" width="28" height="8" rx="4" fill="#fff"/>
+  <rect x="164" y="134" width="164" height="28" rx="14" fill="#fca5a5" opacity="0.9"/>
+
+  <!-- Added line -->
+  <rect x="88" y="204" width="56" height="56" rx="14" fill="#22c55e"/>
+  <rect x="102" y="228" width="28" height="8" rx="4" fill="#fff"/>
+  <rect x="112" y="218" width="8" height="28" rx="4" fill="#fff"/>
+  <rect x="164" y="218" width="212" height="28" rx="14" fill="#86efac" opacity="0.9"/>
+
+  <!-- Divider -->
+  <rect x="88" y="294" width="336" height="6" rx="3" fill="#a5b4fc" opacity="0.45"/>
+
+  <!-- Summary lines -->
+  <rect x="88" y="330" width="336" height="24" rx="12" fill="#e0e7ff"/>
+  <rect x="88" y="372" width="248" height="24" rx="12" fill="#e0e7ff" opacity="0.75"/>
+
+  <!-- AI sparkle -->
+  <path d="M396 92 C402 132 412 142 452 148 C412 154 402 164 396 204 C390 164 380 154 340 148 C380 142 390 132 396 92 Z" fill="url(#spark)"/>
+  <path d="M448 208 C450 222 454 226 468 228 C454 230 450 234 448 248 C446 234 442 230 428 228 C442 226 446 222 448 208 Z" fill="#fde68a"/>
+</svg>

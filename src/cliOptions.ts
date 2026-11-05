@@ -9,7 +9,13 @@ export class CliUsageError extends Error {}
 export type ParsedCli =
   | { kind: "help" }
   | { kind: "version" }
-  | { kind: "run"; options: GitDiffAiSummaryOptions; reportUsage: boolean };
+  | {
+      kind: "run";
+      options: GitDiffAiSummaryOptions;
+      reportUsage: boolean;
+      /** Paths from `--prompt-file`; read by the entrypoint into `systemPromptAppend`. */
+      promptFiles: string[];
+    };
 
 export const HELP_TEXT = `smart-diff <from> [to] [options]
 
@@ -31,6 +37,8 @@ Core:
   --commit-exclude <regex>  Drop commits whose message matches (repeatable)
   --team <name>             Team label added to the LLM prompt
   --system-prompt <text>    Overrides the default system prompt
+  --prompt-file <path>      Append this file's contents to every system prompt,
+                            including map-reduce batches (repeatable)
   --provider <id>           LLM provider id (openai, anthropic, google, bedrock, mistral, cohere, groq, xai, deepseek, openai-compatible)
   --model <id>              Model id override
 
@@ -86,6 +94,7 @@ export function parseCliArgs(argv: string[]): ParsedCli {
       "commit-include": { type: "string", multiple: true },
       "commit-exclude": { type: "string", multiple: true },
       "system-prompt": { type: "string" },
+      "prompt-file": { type: "string", multiple: true },
       team: { type: "string" },
       model: { type: "string" },
       provider: { type: "string" },
@@ -139,5 +148,10 @@ export function parseCliArgs(argv: string[]): ParsedCli {
     redactSecrets: values["redact-secrets"],
   };
 
-  return { kind: "run", options, reportUsage: values.usage ?? false };
+  return {
+    kind: "run",
+    options,
+    reportUsage: values.usage ?? false,
+    promptFiles: values["prompt-file"] ?? [],
+  };
 }

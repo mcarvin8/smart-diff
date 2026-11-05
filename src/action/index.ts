@@ -2,6 +2,7 @@ import * as core from "@actions/core";
 
 import type { GitDiffAiSummaryOptions, LlmProviderId } from "../index.js";
 import { summarizeGitDiff } from "../index.js";
+import { readPromptFiles } from "../promptFiles.js";
 
 function optionalInt(name: string): number | undefined {
   const raw = core.getInput(name).trim();
@@ -39,6 +40,7 @@ function buildOptions(): GitDiffAiSummaryOptions {
     commitMessageExcludeRegexes: optionalMultiline("commit-exclude"),
     teamName: optionalString("team"),
     systemPrompt: optionalString("system-prompt"),
+    systemPromptAppend: readPromptFiles(optionalMultiline("prompt-file")),
     provider: optionalString("provider") as LlmProviderId | undefined,
     model: optionalString("model"),
     maxDiffChars: optionalInt("max-diff-chars"),

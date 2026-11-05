@@ -127,6 +127,7 @@ const { summary, usage } = await summarizeGitDiff({
   commitMessageIncludeRegexes: ["^feat:"], // optional; OR across patterns
   teamName: "Platform",
   systemPrompt: undefined, // optional; overrides DEFAULT_GIT_DIFF_SYSTEM_PROMPT
+  systemPromptAppend: undefined, // optional; appended to every system prompt, incl. map-reduce
   provider: "anthropic", // optional; overrides LLM_PROVIDER env + auto-detection
   model: "claude-3-5-sonnet-latest", // optional
   maxDiffChars: 120_000, // optional; also see LLM_MAX_DIFF_CHARS
@@ -164,6 +165,7 @@ npx smart-diff --help
 | `commitMessageExcludeRegexes` | `--commit-exclude <regex>`          | Drop commits whose message matches **any** of these patterns.                                                                              |
 | `teamName`                    | `--team <name>`                     | Adds a `Team:` line to the user payload for the model.                                                                                     |
 | `systemPrompt`                | `--system-prompt <text>`            | Replaces the default system prompt.                                                                                                        |
+| `systemPromptAppend`          | `--prompt-file <path>` (repeatable) | Extra instructions appended to every system prompt (single-call, map, and reduce). The CLI reads and joins the files.                      |
 | `provider`                    | `--provider <id>`                   | `LlmProviderId` — wins over `LLM_PROVIDER` env and auto-detection.                                                                         |
 | `model`                       | `--model <id>`                      | Chat model id; overrides `LLM_MODEL` and the provider default.                                                                             |
 | `llmModelProvider`            | — (library only)                    | `() => Promise<ChatModel>` — bypass env-based resolution entirely; hand-wire your own `ChatModel` (required in tests or custom setups).    |
@@ -232,7 +234,7 @@ await summarizeGitDiff({
 });
 ```
 
-This costs one extra LLM call per batch plus one reduce call, so it's slower and more expensive than a single request — use it when losing coverage of the tail of a large diff matters more than latency/cost. `systemPrompt` (if set) applies to the reduce phase only; the map phase always uses `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`.
+This costs one extra LLM call per batch plus one reduce call, so it's slower and more expensive than a single request — use it when losing coverage of the tail of a large diff matters more than latency/cost. `systemPrompt` (if set) applies to the reduce phase only; the map phase always uses `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`. `systemPromptAppend` / `--prompt-file` is appended to both phases, so domain rules reach every batch.
 
 ### Token usage reporting
 
@@ -334,6 +336,7 @@ Provider credentials are read from the environment exactly as they are for the C
 | `commit-exclude`        | Drop commits matching these regexes (newline-separated).            |                     |
 | `team`                  | Team label added to the LLM prompt.                                 |                     |
 | `system-prompt`         | Overrides the default system prompt.                                |                     |
+| `prompt-file`           | Files appended to every system prompt (newline-separated paths).    |                     |
 | `provider`              | LLM provider id.                                                    | auto-detected       |
 | `model`                 | Model id override.                                                  | provider default    |
 | `max-diff-chars`        | Caps unified diff size sent to the model.                           |                     |

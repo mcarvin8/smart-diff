@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 import { CliUsageError, HELP_TEXT, parseCliArgs } from "./cliOptions.js";
 import { summarizeGitDiff } from "./index.js";
+import { readPromptFiles } from "./promptFiles.js";
 
 function readPackageVersion(): string {
   const packageJsonPath = join(__dirname, "../package.json");
@@ -25,7 +26,11 @@ async function main(): Promise<void> {
     return;
   }
 
-  const { summary, usage } = await summarizeGitDiff(parsed.options);
+  const systemPromptAppend = readPromptFiles(parsed.promptFiles);
+  const options = systemPromptAppend
+    ? { ...parsed.options, systemPromptAppend }
+    : parsed.options;
+  const { summary, usage } = await summarizeGitDiff(options);
   process.stdout.write(`${summary}\n`);
   if (parsed.reportUsage) {
     process.stderr.write(`\n[usage] ${JSON.stringify(usage)}\n`);

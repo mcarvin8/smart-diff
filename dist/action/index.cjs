@@ -2154,9 +2154,9 @@ var require_dispatcher_base = __commonJS({
       }
       close(callback) {
         if (callback === void 0) {
-          return new Promise((resolve4, reject) => {
+          return new Promise((resolve5, reject) => {
             this.close((err, data) => {
-              return err ? reject(err) : resolve4(data);
+              return err ? reject(err) : resolve5(data);
             });
           });
         }
@@ -2194,12 +2194,12 @@ var require_dispatcher_base = __commonJS({
           err = null;
         }
         if (callback === void 0) {
-          return new Promise((resolve4, reject) => {
+          return new Promise((resolve5, reject) => {
             this.destroy(err, (err2, data) => {
               return err2 ? (
                 /* istanbul ignore next: should never error */
                 reject(err2)
-              ) : resolve4(data);
+              ) : resolve5(data);
             });
           });
         }
@@ -4466,8 +4466,8 @@ var require_util2 = __commonJS({
     function createDeferredPromise() {
       let res;
       let rej;
-      const promise = new Promise((resolve4, reject) => {
-        res = resolve4;
+      const promise = new Promise((resolve5, reject) => {
+        res = resolve5;
         rej = reject;
       });
       return { promise, resolve: res, reject: rej };
@@ -6718,12 +6718,12 @@ upgrade: ${upgrade}\r
           cb4();
         }
       }
-      const waitForDrain = () => new Promise((resolve4, reject) => {
+      const waitForDrain = () => new Promise((resolve5, reject) => {
         assert(callback === null);
         if (socket[kError]) {
           reject(socket[kError]);
         } else {
-          callback = resolve4;
+          callback = resolve5;
         }
       });
       socket.on("close", onDrain).on("drain", onDrain);
@@ -7393,12 +7393,12 @@ var require_client_h2 = __commonJS({
           cb4();
         }
       }
-      const waitForDrain = () => new Promise((resolve4, reject) => {
+      const waitForDrain = () => new Promise((resolve5, reject) => {
         assert(callback === null);
         if (socket[kError]) {
           reject(socket[kError]);
         } else {
-          callback = resolve4;
+          callback = resolve5;
         }
       });
       h2stream.on("close", onDrain).on("drain", onDrain);
@@ -7877,16 +7877,16 @@ var require_client = __commonJS({
         return this[kNeedDrain] < 2;
       }
       async [kClose]() {
-        return new Promise((resolve4) => {
+        return new Promise((resolve5) => {
           if (this[kSize]) {
-            this[kClosedResolve] = resolve4;
+            this[kClosedResolve] = resolve5;
           } else {
-            resolve4(null);
+            resolve5(null);
           }
         });
       }
       async [kDestroy](err) {
-        return new Promise((resolve4) => {
+        return new Promise((resolve5) => {
           const requests = this[kQueue].splice(this[kPendingIdx]);
           for (let i7 = 0; i7 < requests.length; i7++) {
             const request = requests[i7];
@@ -7897,7 +7897,7 @@ var require_client = __commonJS({
               this[kClosedResolve]();
               this[kClosedResolve] = null;
             }
-            resolve4(null);
+            resolve5(null);
           };
           if (this[kHTTPContext]) {
             this[kHTTPContext].destroy(err, callback);
@@ -7948,7 +7948,7 @@ var require_client = __commonJS({
         });
       }
       try {
-        const socket = await new Promise((resolve4, reject) => {
+        const socket = await new Promise((resolve5, reject) => {
           client[kConnector]({
             host,
             hostname,
@@ -7960,7 +7960,7 @@ var require_client = __commonJS({
             if (err) {
               reject(err);
             } else {
-              resolve4(socket2);
+              resolve5(socket2);
             }
           });
         });
@@ -8296,8 +8296,8 @@ var require_pool_base = __commonJS({
         if (this[kQueue].isEmpty()) {
           await Promise.all(this[kClients].map((c5) => c5.close()));
         } else {
-          await new Promise((resolve4) => {
-            this[kClosedResolve] = resolve4;
+          await new Promise((resolve5) => {
+            this[kClosedResolve] = resolve5;
           });
         }
       }
@@ -9566,7 +9566,7 @@ var require_readable = __commonJS({
         if (this._readableState.closeEmitted) {
           return null;
         }
-        return await new Promise((resolve4, reject) => {
+        return await new Promise((resolve5, reject) => {
           if (this[kContentLength] > limit) {
             this.destroy(new AbortError());
           }
@@ -9579,7 +9579,7 @@ var require_readable = __commonJS({
             if (signal?.aborted) {
               reject(signal.reason ?? new AbortError());
             } else {
-              resolve4(null);
+              resolve5(null);
             }
           }).on("error", noop).on("data", function(chunk) {
             limit -= chunk.length;
@@ -9598,7 +9598,7 @@ var require_readable = __commonJS({
     }
     async function consume(stream, type) {
       assert(!stream[kConsume]);
-      return new Promise((resolve4, reject) => {
+      return new Promise((resolve5, reject) => {
         if (isUnusable(stream)) {
           const rState = stream._readableState;
           if (rState.destroyed && rState.closeEmitted === false) {
@@ -9615,7 +9615,7 @@ var require_readable = __commonJS({
             stream[kConsume] = {
               type,
               stream,
-              resolve: resolve4,
+              resolve: resolve5,
               reject,
               length: 0,
               body: []
@@ -9685,18 +9685,18 @@ var require_readable = __commonJS({
       return buffer;
     }
     function consumeEnd(consume2) {
-      const { type, body, resolve: resolve4, stream, length } = consume2;
+      const { type, body, resolve: resolve5, stream, length } = consume2;
       try {
         if (type === "text") {
-          resolve4(chunksDecode(body, length));
+          resolve5(chunksDecode(body, length));
         } else if (type === "json") {
-          resolve4(JSON.parse(chunksDecode(body, length)));
+          resolve5(JSON.parse(chunksDecode(body, length)));
         } else if (type === "arrayBuffer") {
-          resolve4(chunksConcat(body, length).buffer);
+          resolve5(chunksConcat(body, length).buffer);
         } else if (type === "blob") {
-          resolve4(new Blob(body, { type: stream[kContentType] }));
+          resolve5(new Blob(body, { type: stream[kContentType] }));
         } else if (type === "bytes") {
-          resolve4(chunksConcat(body, length));
+          resolve5(chunksConcat(body, length));
         }
         consumeFinish(consume2);
       } catch (err) {
@@ -9953,9 +9953,9 @@ var require_api_request = __commonJS({
     };
     function request(opts, callback) {
       if (callback === void 0) {
-        return new Promise((resolve4, reject) => {
+        return new Promise((resolve5, reject) => {
           request.call(this, opts, (err, data) => {
-            return err ? reject(err) : resolve4(data);
+            return err ? reject(err) : resolve5(data);
           });
         });
       }
@@ -10178,9 +10178,9 @@ var require_api_stream = __commonJS({
     };
     function stream(opts, factory, callback) {
       if (callback === void 0) {
-        return new Promise((resolve4, reject) => {
+        return new Promise((resolve5, reject) => {
           stream.call(this, opts, factory, (err, data) => {
-            return err ? reject(err) : resolve4(data);
+            return err ? reject(err) : resolve5(data);
           });
         });
       }
@@ -10465,9 +10465,9 @@ var require_api_upgrade = __commonJS({
     };
     function upgrade(opts, callback) {
       if (callback === void 0) {
-        return new Promise((resolve4, reject) => {
+        return new Promise((resolve5, reject) => {
           upgrade.call(this, opts, (err, data) => {
-            return err ? reject(err) : resolve4(data);
+            return err ? reject(err) : resolve5(data);
           });
         });
       }
@@ -10559,9 +10559,9 @@ var require_api_connect = __commonJS({
     };
     function connect(opts, callback) {
       if (callback === void 0) {
-        return new Promise((resolve4, reject) => {
+        return new Promise((resolve5, reject) => {
           connect.call(this, opts, (err, data) => {
-            return err ? reject(err) : resolve4(data);
+            return err ? reject(err) : resolve5(data);
           });
         });
       }
@@ -14424,7 +14424,7 @@ var require_fetch = __commonJS({
       function dispatch({ body }) {
         const url = requestCurrentURL(request);
         const agent = fetchParams.controller.dispatcher;
-        return new Promise((resolve4, reject) => agent.dispatch(
+        return new Promise((resolve5, reject) => agent.dispatch(
           {
             path: url.pathname + url.search,
             origin: url.origin,
@@ -14500,7 +14500,7 @@ var require_fetch = __commonJS({
               }
               this.body = new Readable({ read: resume });
               const onError = this.onError.bind(this);
-              resolve4({
+              resolve5({
                 status,
                 statusText,
                 headersList,
@@ -14543,7 +14543,7 @@ var require_fetch = __commonJS({
               for (let i7 = 0; i7 < rawHeaders.length; i7 += 2) {
                 headersList.append(bufferToLowerCasedHeaderName(rawHeaders[i7]), rawHeaders[i7 + 1].toString("latin1"), true);
               }
-              resolve4({
+              resolve5({
                 status,
                 statusText: STATUS_CODES[status],
                 headersList,
@@ -18284,8 +18284,8 @@ var require_util8 = __commonJS({
       return true;
     }
     function delay(ms2) {
-      return new Promise((resolve4) => {
-        setTimeout(resolve4, ms2).unref();
+      return new Promise((resolve5) => {
+        setTimeout(resolve5, ms2).unref();
       });
     }
     module2.exports = {
@@ -19305,11 +19305,11 @@ var import_os = require("os");
 var import_fs = require("fs");
 var __awaiter = function(thisArg, _arguments, P6, generator) {
   function adopt(value) {
-    return value instanceof P6 ? value : new P6(function(resolve4) {
-      resolve4(value);
+    return value instanceof P6 ? value : new P6(function(resolve5) {
+      resolve5(value);
     });
   }
-  return new (P6 || (P6 = Promise))(function(resolve4, reject) {
+  return new (P6 || (P6 = Promise))(function(resolve5, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -19325,7 +19325,7 @@ var __awaiter = function(thisArg, _arguments, P6, generator) {
       }
     }
     function step(result) {
-      result.done ? resolve4(result.value) : adopt(result.value).then(fulfilled, rejected);
+      result.done ? resolve5(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -19729,7 +19729,7 @@ var LlmApiError = class extends Error {
   }
 };
 function sleep(ms2) {
-  return new Promise((resolve4) => setTimeout(resolve4, ms2));
+  return new Promise((resolve5) => setTimeout(resolve5, ms2));
 }
 function backoffMs(attempt) {
   return Math.min(500 * 2 ** (attempt - 1), 8e3);
@@ -20353,6 +20353,12 @@ function truncateUnifiedDiffForLlm(diffText, maxChars) {
 `;
   return diffText.slice(0, maxChars) + marker;
 }
+function appendToSystemPrompt(base, extra) {
+  const trimmed = extra?.trim();
+  return trimmed ? `${base}
+
+${trimmed}` : base;
+}
 function markdownDiffTruncationNotice(originalChars, maxChars) {
   return `> **Truncated diff:** The unified diff was ${originalChars} characters; only the first ${maxChars} were sent to the model. The summary may not reflect the full change set. Narrow the ref range, adjust path filters, or raise \`maxDiffChars\` / \`LLM_MAX_DIFF_CHARS\`\u2014often together with switching to a model whose context window can fit a larger prompt.
 
@@ -20427,7 +20433,10 @@ async function generateSummaryWithUsage(input) {
     diffForLlm,
     diffSummary
   );
-  const systemPrompt = flags.systemPrompt ?? DEFAULT_GIT_DIFF_SYSTEM_PROMPT;
+  const systemPrompt = appendToSystemPrompt(
+    flags.systemPrompt ?? DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
+    flags.systemPromptAppend
+  );
   const summaryText = await callLlm(
     userContent,
     systemPrompt,
@@ -20443,6 +20452,10 @@ async function generateSummaryWithUsage(input) {
 async function generateSummaryMapReduce(diffText, fileNames, commits, flags, diffSummary, maxDiffChars, maxOutputTokens, maxRetries, llmModelProvider, usage) {
   const chunks = splitUnifiedDiffIntoFileChunks(diffText);
   const batches = groupDiffChunksByBudget(chunks, maxDiffChars);
+  const mapSystemPrompt = appendToSystemPrompt(
+    DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT,
+    flags.systemPromptAppend
+  );
   const batchSummaries = [];
   for (const [i7, batch] of batches.entries()) {
     const batchForLlm = truncateUnifiedDiffForLlm(batch, maxDiffChars);
@@ -20452,7 +20465,7 @@ ${batchForLlm}`;
     batchSummaries.push(
       await callLlm(
         mapUserContent,
-        DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT,
+        mapSystemPrompt,
         maxOutputTokens,
         maxRetries,
         llmModelProvider,
@@ -20461,7 +20474,10 @@ ${batchForLlm}`;
       )
     );
   }
-  const reduceSystemPrompt = flags.systemPrompt ?? DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT;
+  const reduceSystemPrompt = appendToSystemPrompt(
+    flags.systemPrompt ?? DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT,
+    flags.systemPromptAppend
+  );
   const reduceUserContent = buildReduceUserContent(
     flags,
     commits,
@@ -55114,6 +55130,7 @@ async function prepareSummaryInput(options) {
     maxRetries: options.maxRetries,
     mapReduce: options.mapReduce,
     systemPrompt: options.systemPrompt,
+    systemPromptAppend: options.systemPromptAppend,
     commitMessageIncludeRegexes: options.commitMessageIncludeRegexes,
     commitMessageExcludeRegexes: options.commitMessageExcludeRegexes
   };
@@ -55128,6 +55145,29 @@ async function prepareSummaryInput(options) {
 }
 async function summarizeGitDiff(options) {
   return generateSummaryWithUsage(await prepareSummaryInput(options));
+}
+
+// src/promptFiles.ts
+var import_node_fs3 = require("node:fs");
+var import_node_path4 = require("node:path");
+function readPromptFiles(paths, baseDir = process.cwd()) {
+  if (!paths || paths.length === 0) return void 0;
+  const parts = [];
+  for (const p7 of paths) {
+    const full = (0, import_node_path4.resolve)(baseDir, p7);
+    let text;
+    try {
+      text = (0, import_node_fs3.readFileSync)(full, "utf8");
+    } catch (err) {
+      const reason = err.message;
+      throw new Error(
+        `Cannot read prompt file ${JSON.stringify(p7)}: ${reason}`
+      );
+    }
+    const trimmed = text.trim();
+    if (trimmed) parts.push(trimmed);
+  }
+  return parts.length > 0 ? parts.join("\n\n") : void 0;
 }
 
 // src/action/index.ts
@@ -55163,6 +55203,7 @@ function buildOptions() {
     commitMessageExcludeRegexes: optionalMultiline("commit-exclude"),
     teamName: optionalString("team"),
     systemPrompt: optionalString("system-prompt"),
+    systemPromptAppend: readPromptFiles(optionalMultiline("prompt-file")),
     provider: optionalString("provider"),
     model: optionalString("model"),
     maxDiffChars: optionalInt("max-diff-chars"),

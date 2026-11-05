@@ -79,6 +79,19 @@ export function truncateUnifiedDiffForLlm(
   return diffText.slice(0, maxChars) + marker;
 }
 
+/**
+ * Append `extra` to `base` separated by a blank line. Returns `base` unchanged
+ * when `extra` is missing or whitespace-only.
+ */
+function appendToSystemPrompt(base: string, extra?: string): string {
+  const trimmed = extra?.trim();
+  return trimmed
+    ? `${base}
+
+${trimmed}`
+    : base;
+}
+
 function markdownDiffTruncationNotice(
   originalChars: number,
   maxChars: number,
@@ -181,7 +194,10 @@ export async function generateSummaryWithUsage(
     diffForLlm,
     diffSummary,
   );
-  const systemPrompt = flags.systemPrompt ?? DEFAULT_GIT_DIFF_SYSTEM_PROMPT;
+  const systemPrompt = appendToSystemPrompt(
+    flags.systemPrompt ?? DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
+    flags.systemPromptAppend,
+  );
 
   const summaryText = await callLlm(
     userContent,
@@ -215,6 +231,10 @@ async function generateSummaryMapReduce(
   const chunks = splitUnifiedDiffIntoFileChunks(diffText);
   const batches = groupDiffChunksByBudget(chunks, maxDiffChars);
 
+  const mapSystemPrompt = appendToSystemPrompt(
+    DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT,
+    flags.systemPromptAppend,
+  );
   const batchSummaries: string[] = [];
   for (const [i, batch] of batches.entries()) {
     const batchForLlm = truncateUnifiedDiffForLlm(batch, maxDiffChars);
@@ -222,7 +242,7 @@ async function generateSummaryMapReduce(
     batchSummaries.push(
       await callLlm(
         mapUserContent,
-        DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT,
+        mapSystemPrompt,
         maxOutputTokens,
         maxRetries,
         llmModelProvider,
@@ -232,8 +252,10 @@ async function generateSummaryMapReduce(
     );
   }
 
-  const reduceSystemPrompt =
-    flags.systemPrompt ?? DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT;
+  const reduceSystemPrompt = appendToSystemPrompt(
+    flags.systemPrompt ?? DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT,
+    flags.systemPromptAppend,
+  );
   const reduceUserContent = buildReduceUserContent(
     flags,
     commits,

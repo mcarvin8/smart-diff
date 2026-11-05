@@ -22,6 +22,13 @@ export type SummarizeFlags = {
   maxRetries?: number;
   /** When set, replaces {@link DEFAULT_GIT_DIFF_SYSTEM_PROMPT} for the chat completion. */
   systemPrompt?: string;
+  /**
+   * Extra instructions appended to every system prompt used for this summary:
+   * the single-call prompt (default or {@link SummarizeFlags.systemPrompt}), and
+   * both the map and reduce prompts under `mapReduce`. Use this to add
+   * domain-specific rules without replacing the built-in prompts.
+   */
+  systemPromptAppend?: string;
   commitMessageIncludeRegexes?: string[];
   commitMessageExcludeRegexes?: string[];
   /**

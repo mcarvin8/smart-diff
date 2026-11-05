@@ -62,6 +62,10 @@ npx @mcarvin/smart-diff <from> [to] --redact-secrets --exclude-default-noise
   `--context-lines 1 --ignore-whitespace` to cut tokens.
 - Pass `--provider <id>` or `--model <id>` only if the user asks for a
   specific provider or model.
+- To add domain rules (for example from an add-on skill), pass
+  `--prompt-file <path>`. It is appended to the built-in prompts, including
+  every map-reduce batch. Prefer it over `--system-prompt`, which replaces
+  the built-in prompt.
 
 ## Step 4: Report the result
 

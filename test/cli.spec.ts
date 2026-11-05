@@ -1,3 +1,7 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 type IndexModule = typeof import("../src/index");
 
 async function runCli(
@@ -124,6 +128,76 @@ describe("cli entrypoint", () => {
     expect(stderr).toContain("[usage]");
     expect(stderr).toContain('"inputTokens":10');
     expect(exitCode).toBeUndefined();
+  });
+
+  it("reads --prompt-file contents into systemPromptAppend", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "smart-diff-cli-"));
+    try {
+      const file = join(dir, "rules.md");
+      writeFileSync(file, "  Salesforce rules.  \n");
+      let summarizeGitDiffSpy: ReturnType<typeof vi.spyOn> | undefined;
+
+      const { exitCode } = await runCli(
+        ["origin/main", "--prompt-file", file],
+        (mod) => {
+          summarizeGitDiffSpy = vi
+            .spyOn(mod, "summarizeGitDiff")
+            .mockResolvedValue({
+              summary: "## Summary",
+              usage: {
+                requestCount: 1,
+                inputTokens: 0,
+                outputTokens: 0,
+                totalTokens: 0,
+                cachedInputTokens: 0,
+              },
+            });
+        },
+      );
+
+      expect(summarizeGitDiffSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ systemPromptAppend: "Salesforce rules." }),
+      );
+      expect(exitCode).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not set systemPromptAppend when no --prompt-file is given", async () => {
+    let summarizeGitDiffSpy: ReturnType<typeof vi.spyOn> | undefined;
+
+    await runCli(["origin/main"], (mod) => {
+      summarizeGitDiffSpy = vi
+        .spyOn(mod, "summarizeGitDiff")
+        .mockResolvedValue({
+          summary: "## Summary",
+          usage: {
+            requestCount: 1,
+            inputTokens: 0,
+            outputTokens: 0,
+            totalTokens: 0,
+            cachedInputTokens: 0,
+          },
+        });
+    });
+
+    const passed = summarizeGitDiffSpy!.mock.calls[0]![0] as Record<
+      string,
+      unknown
+    >;
+    expect("systemPromptAppend" in passed).toBe(false);
+  });
+
+  it("exits 1 with the path when a --prompt-file cannot be read", async () => {
+    const { stderr, exitCode } = await runCli([
+      "origin/main",
+      "--prompt-file",
+      "does-not-exist.md",
+    ]);
+
+    expect(stderr).toContain('Cannot read prompt file "does-not-exist.md"');
+    expect(exitCode).toBe(1);
   });
 
   it("prints a clean one-line error and exits 1 when summarization rejects", async () => {

@@ -48,34 +48,34 @@ smart-diff is "configured" when [`isLlmProviderConfigured()`](#lower-level-api) 
 
 `LLM_PROVIDER` explicitly selects a provider. When unset, the resolver auto-detects in this order: `LLM_BASE_URL`/`OPENAI_BASE_URL` → `openai-compatible`, `OPENAI_API_KEY`/`LLM_API_KEY` → `openai`, then `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` (or `GOOGLE_API_KEY`), `MISTRAL_API_KEY`, `COHERE_API_KEY`, `GROQ_API_KEY`, `XAI_API_KEY`, `DEEPSEEK_API_KEY`, `AWS_ACCESS_KEY_ID`/`AWS_PROFILE` → `bedrock`, and finally `OPENAI_DEFAULT_HEADERS`/`LLM_DEFAULT_HEADERS` → `openai`.
 
-| Provider (`LLM_PROVIDER`) | Endpoint | Credential env vars | Default model |
-|---|---|---|---|
-| `openai` | OpenAI Chat Completions | `OPENAI_API_KEY` or `LLM_API_KEY` | `gpt-4o-mini` |
-| `openai-compatible` | Chat Completions at `LLM_BASE_URL`/`OPENAI_BASE_URL` | `LLM_BASE_URL` or `OPENAI_BASE_URL` (required); `OPENAI_API_KEY`/`LLM_API_KEY` or custom headers | `gpt-4o-mini` |
-| `anthropic` | Anthropic Messages API | `ANTHROPIC_API_KEY` | `claude-haiku-4-5-20251001` |
-| `google` | Gemini Generative Language API | `GOOGLE_GENERATIVE_AI_API_KEY` or `GOOGLE_API_KEY` | `gemini-2.0-flash` |
-| `bedrock` | Bedrock Converse API (in-house SigV4 signing) | `AWS_ACCESS_KEY_ID`+`AWS_SECRET_ACCESS_KEY` (+ optional `AWS_SESSION_TOKEN`), or `AWS_PROFILE` pointing at a profile in `~/.aws/credentials`; region from `AWS_REGION`/`AWS_DEFAULT_REGION`/`~/.aws/config` (default `us-east-1`). SSO, instance-role, and container credentials are **not** supported — static credentials only. | `anthropic.claude-3-5-haiku-20241022-v1:0` |
-| `mistral` | Mistral Chat Completions API | `MISTRAL_API_KEY` | `mistral-small-latest` |
-| `cohere` | Cohere Chat API (v2) | `COHERE_API_KEY` | `command-r-08-2024` |
-| `groq` | Groq Chat Completions API | `GROQ_API_KEY` | `llama-3.1-8b-instant` |
-| `xai` | xAI Chat Completions API | `XAI_API_KEY` | `grok-2-latest` |
-| `deepseek` | DeepSeek Chat Completions API | `DEEPSEEK_API_KEY` | `deepseek-chat` |
+| Provider (`LLM_PROVIDER`) | Endpoint                                             | Credential env vars                                                                                                                                                                                                                                                                                                               | Default model                              |
+| ------------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `openai`                  | OpenAI Chat Completions                              | `OPENAI_API_KEY` or `LLM_API_KEY`                                                                                                                                                                                                                                                                                                 | `gpt-4o-mini`                              |
+| `openai-compatible`       | Chat Completions at `LLM_BASE_URL`/`OPENAI_BASE_URL` | `LLM_BASE_URL` or `OPENAI_BASE_URL` (required); `OPENAI_API_KEY`/`LLM_API_KEY` or custom headers                                                                                                                                                                                                                                  | `gpt-4o-mini`                              |
+| `anthropic`               | Anthropic Messages API                               | `ANTHROPIC_API_KEY`                                                                                                                                                                                                                                                                                                               | `claude-haiku-4-5-20251001`                |
+| `google`                  | Gemini Generative Language API                       | `GOOGLE_GENERATIVE_AI_API_KEY` or `GOOGLE_API_KEY`                                                                                                                                                                                                                                                                                | `gemini-2.0-flash`                         |
+| `bedrock`                 | Bedrock Converse API (in-house SigV4 signing)        | `AWS_ACCESS_KEY_ID`+`AWS_SECRET_ACCESS_KEY` (+ optional `AWS_SESSION_TOKEN`), or `AWS_PROFILE` pointing at a profile in `~/.aws/credentials`; region from `AWS_REGION`/`AWS_DEFAULT_REGION`/`~/.aws/config` (default `us-east-1`). SSO, instance-role, and container credentials are **not** supported — static credentials only. | `anthropic.claude-3-5-haiku-20241022-v1:0` |
+| `mistral`                 | Mistral Chat Completions API                         | `MISTRAL_API_KEY`                                                                                                                                                                                                                                                                                                                 | `mistral-small-latest`                     |
+| `cohere`                  | Cohere Chat API (v2)                                 | `COHERE_API_KEY`                                                                                                                                                                                                                                                                                                                  | `command-r-08-2024`                        |
+| `groq`                    | Groq Chat Completions API                            | `GROQ_API_KEY`                                                                                                                                                                                                                                                                                                                    | `llama-3.1-8b-instant`                     |
+| `xai`                     | xAI Chat Completions API                             | `XAI_API_KEY`                                                                                                                                                                                                                                                                                                                     | `grok-2-latest`                            |
+| `deepseek`                | DeepSeek Chat Completions API                        | `DEEPSEEK_API_KEY`                                                                                                                                                                                                                                                                                                                | `deepseek-chat`                            |
 
 > `LLM_*` wins over `OPENAI_*` where both exist.
 
 ### Common env vars
 
-| Variable | Purpose |
-|---|---|
-| `LLM_PROVIDER` | Explicit provider id from the table above. |
-| `LLM_MODEL` | Overrides the per-provider default model id. |
-| `OPENAI_BASE_URL` / `LLM_BASE_URL` | Base URL for an OpenAI-compatible gateway; presence alone auto-selects the `openai-compatible` provider. |
+| Variable                                         | Purpose                                                                                                                                                        |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `LLM_PROVIDER`                                   | Explicit provider id from the table above.                                                                                                                     |
+| `LLM_MODEL`                                      | Overrides the per-provider default model id.                                                                                                                   |
+| `OPENAI_BASE_URL` / `LLM_BASE_URL`               | Base URL for an OpenAI-compatible gateway; presence alone auto-selects the `openai-compatible` provider.                                                       |
 | `OPENAI_DEFAULT_HEADERS` / `LLM_DEFAULT_HEADERS` | JSON object of extra headers merged onto OpenAI / OpenAI-compatible requests (e.g. RBAC tokens, raw `Authorization`). `LLM_*` overrides `OPENAI_*` key-by-key. |
-| `LLM_PROVIDER_NAME` | Display name used when `openai-compatible` is active (defaults to `openai-compatible`). |
-| `OPENAI_MAX_DIFF_CHARS` / `LLM_MAX_DIFF_CHARS` | Max size of unified diff text sent to the model (default ~120k characters). |
-| `OPENAI_MAX_TOKENS` / `LLM_MAX_TOKENS` | Max completion tokens (default 4000). |
-| `LLM_TEMPERATURE` | Sampling temperature, clamped to 0–2 (default 0.2). Lower = more deterministic; higher = more varied prose. |
-| `LLM_MAX_RETRIES` | Retry count for transient LLM call failures — rate limits, 5xx, network errors (default 2). Set to 0 to disable retries. |
+| `LLM_PROVIDER_NAME`                              | Display name used when `openai-compatible` is active (defaults to `openai-compatible`).                                                                        |
+| `OPENAI_MAX_DIFF_CHARS` / `LLM_MAX_DIFF_CHARS`   | Max size of unified diff text sent to the model (default ~120k characters).                                                                                    |
+| `OPENAI_MAX_TOKENS` / `LLM_MAX_TOKENS`           | Max completion tokens (default 4000).                                                                                                                          |
+| `LLM_TEMPERATURE`                                | Sampling temperature, clamped to 0–2 (default 0.2). Lower = more deterministic; higher = more varied prose.                                                    |
+| `LLM_MAX_RETRIES`                                | Retry count for transient LLM call failures — rate limits, 5xx, network errors (default 2). Set to 0 to disable retries.                                       |
 
 ### Example: native OpenAI
 
@@ -113,21 +113,21 @@ Use smart-diff as a library, or as the `smart-diff` CLI binary that ships with t
 ### Use as a Library - `summarizeGitDiff`
 
 ```ts
-import { summarizeGitDiff } from '@mcarvin/smart-diff';
+import { summarizeGitDiff } from "@mcarvin/smart-diff";
 
 const { summary, usage } = await summarizeGitDiff({
-  from: 'origin/main',
-  to: 'HEAD',
-  cwd: '/path/to/repo', // optional; default process.cwd()
-  includeFolders: ['src'],
-  excludeFolders: ['node_modules', 'dist'],
-  commitMessageExcludeRegexes: ['^\\[bot\\]'],
-  commitMessageIncludeRegexes: ['^feat:'], // optional; OR across patterns
-  teamName: 'Platform',
-  systemPrompt: undefined,   // optional; overrides DEFAULT_GIT_DIFF_SYSTEM_PROMPT
-  provider: 'anthropic',     // optional; overrides LLM_PROVIDER env + auto-detection
-  model: 'claude-3-5-sonnet-latest', // optional
-  maxDiffChars: 120_000,     // optional; also see LLM_MAX_DIFF_CHARS
+  from: "origin/main",
+  to: "HEAD",
+  cwd: "/path/to/repo", // optional; default process.cwd()
+  includeFolders: ["src"],
+  excludeFolders: ["node_modules", "dist"],
+  commitMessageExcludeRegexes: ["^\\[bot\\]"],
+  commitMessageIncludeRegexes: ["^feat:"], // optional; OR across patterns
+  teamName: "Platform",
+  systemPrompt: undefined, // optional; overrides DEFAULT_GIT_DIFF_SYSTEM_PROMPT
+  provider: "anthropic", // optional; overrides LLM_PROVIDER env + auto-detection
+  model: "claude-3-5-sonnet-latest", // optional
+  maxDiffChars: 120_000, // optional; also see LLM_MAX_DIFF_CHARS
 });
 // summary: Markdown string
 // usage: LlmUsageReport aggregated across every LLM call — see Token usage reporting below
@@ -151,53 +151,53 @@ npx smart-diff --help
 
 #### Core
 
-| Option | CLI flag | Description |
-|--------|----------|-------------|
-| `from` / `to` | `<from>` `[to]` / `--from` / `--to` | Git refs for the range; `to` defaults to `HEAD`. |
-| `mergeBase` | `--merge-base`, `-b` | Resolve `from` as the merge base of `to` and `from`, in-process via tsgit — no local git binary needed. |
-| `cwd` / `git` | `--cwd <path>` | Working directory path, or inject your own `GitClient` instance (library only; see [Lower-level API](#lower-level-api)). |
-| `includeFolders` | `--include <path>` | Limit diff to these paths relative to repo root (omit for full repo minus excludes). |
-| `excludeFolders` | `--exclude <path>` | Excluded paths, applied client-side to the changed-path list (directory-prefix match), e.g. `node_modules`. |
-| `commitMessageIncludeRegexes` | `--commit-include <regex>` | If any pattern is non-empty, only commits whose **full message** matches at least one pattern are kept (after excludes). Case-insensitive. |
-| `commitMessageExcludeRegexes` | `--commit-exclude <regex>` | Drop commits whose message matches **any** of these patterns. |
-| `teamName` | `--team <name>` | Adds a `Team:` line to the user payload for the model. |
-| `systemPrompt` | `--system-prompt <text>` | Replaces the default system prompt. |
-| `provider` | `--provider <id>` | `LlmProviderId` — wins over `LLM_PROVIDER` env and auto-detection. |
-| `model` | `--model <id>` | Chat model id; overrides `LLM_MODEL` and the provider default. |
-| `llmModelProvider` | — (library only) | `() => Promise<ChatModel>` — bypass env-based resolution entirely; hand-wire your own `ChatModel` (required in tests or custom setups). |
+| Option                        | CLI flag                            | Description                                                                                                                                |
+| ----------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `from` / `to`                 | `<from>` `[to]` / `--from` / `--to` | Git refs for the range; `to` defaults to `HEAD`.                                                                                           |
+| `mergeBase`                   | `--merge-base`, `-b`                | Resolve `from` as the merge base of `to` and `from`, in-process via tsgit — no local git binary needed.                                    |
+| `cwd` / `git`                 | `--cwd <path>`                      | Working directory path, or inject your own `GitClient` instance (library only; see [Lower-level API](#lower-level-api)).                   |
+| `includeFolders`              | `--include <path>`                  | Limit diff to these paths relative to repo root (omit for full repo minus excludes).                                                       |
+| `excludeFolders`              | `--exclude <path>`                  | Excluded paths, applied client-side to the changed-path list (directory-prefix match), e.g. `node_modules`.                                |
+| `commitMessageIncludeRegexes` | `--commit-include <regex>`          | If any pattern is non-empty, only commits whose **full message** matches at least one pattern are kept (after excludes). Case-insensitive. |
+| `commitMessageExcludeRegexes` | `--commit-exclude <regex>`          | Drop commits whose message matches **any** of these patterns.                                                                              |
+| `teamName`                    | `--team <name>`                     | Adds a `Team:` line to the user payload for the model.                                                                                     |
+| `systemPrompt`                | `--system-prompt <text>`            | Replaces the default system prompt.                                                                                                        |
+| `provider`                    | `--provider <id>`                   | `LlmProviderId` — wins over `LLM_PROVIDER` env and auto-detection.                                                                         |
+| `model`                       | `--model <id>`                      | Chat model id; overrides `LLM_MODEL` and the provider default.                                                                             |
+| `llmModelProvider`            | — (library only)                    | `() => Promise<ChatModel>` — bypass env-based resolution entirely; hand-wire your own `ChatModel` (required in tests or custom setups).    |
 
 #### Token reduction — see [Handling large diffs](#handling-large-diffs)
 
-| Option | CLI flag | Description |
-|--------|----------|-------------|
-| `maxDiffChars` | `--max-diff-chars <n>` | Caps unified diff size for the request; see `LLM_MAX_DIFF_CHARS`. |
-| `mapReduce` | `--map-reduce` | Split an oversized diff into per-file batches instead of hard-truncating it. |
-| `contextLines` | `--context-lines <n>` | Number of context lines around each change (`git diff -U<n>`). Lower values (1 or 0) are the single biggest token saver on modification-heavy diffs. |
-| `ignoreWhitespace` | `--ignore-whitespace` | Passes `-w` / `--ignore-all-space` to `git diff` so pure-whitespace hunks don't consume tokens. Also applies to `--numstat` / `--name-status` so counts stay consistent. |
-| `stripDiffPreamble` | `--strip-diff-preamble` | Removes low-value lines from the unified diff (`diff --git`, `index`, mode changes, `similarity/rename/copy` metadata). `--- a/…`, `+++ b/…`, and `@@` hunk headers are kept. |
-| `maxHunkLines` | `--max-hunk-lines <n>` | Caps the body of each hunk; anything past the limit is replaced with a single elision marker. The `@@` header and `DiffSummary` totals are preserved. |
-| `excludeDefaultNoise` | `--exclude-default-noise` | Merges the built-in `DEFAULT_NOISE_EXCLUDES` list (lockfiles, `dist`, `build`, `out`, `coverage`, `node_modules`, `__snapshots__`) into `excludeFolders`. |
+| Option                | CLI flag                  | Description                                                                                                                                                                   |
+| --------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `maxDiffChars`        | `--max-diff-chars <n>`    | Caps unified diff size for the request; see `LLM_MAX_DIFF_CHARS`.                                                                                                             |
+| `mapReduce`           | `--map-reduce`            | Split an oversized diff into per-file batches instead of hard-truncating it.                                                                                                  |
+| `contextLines`        | `--context-lines <n>`     | Number of context lines around each change (`git diff -U<n>`). Lower values (1 or 0) are the single biggest token saver on modification-heavy diffs.                          |
+| `ignoreWhitespace`    | `--ignore-whitespace`     | Passes `-w` / `--ignore-all-space` to `git diff` so pure-whitespace hunks don't consume tokens. Also applies to `--numstat` / `--name-status` so counts stay consistent.      |
+| `stripDiffPreamble`   | `--strip-diff-preamble`   | Removes low-value lines from the unified diff (`diff --git`, `index`, mode changes, `similarity/rename/copy` metadata). `--- a/…`, `+++ b/…`, and `@@` hunk headers are kept. |
+| `maxHunkLines`        | `--max-hunk-lines <n>`    | Caps the body of each hunk; anything past the limit is replaced with a single elision marker. The `@@` header and `DiffSummary` totals are preserved.                         |
+| `excludeDefaultNoise` | `--exclude-default-noise` | Merges the built-in `DEFAULT_NOISE_EXCLUDES` list (lockfiles, `dist`, `build`, `out`, `coverage`, `node_modules`, `__snapshots__`) into `excludeFolders`.                     |
 
 #### Reliability
 
-| Option | CLI flag | Description |
-|--------|----------|-------------|
+| Option       | CLI flag            | Description                                                         |
+| ------------ | ------------------- | ------------------------------------------------------------------- |
 | `maxRetries` | `--max-retries <n>` | Retry count for transient LLM call failures; see `LLM_MAX_RETRIES`. |
 
 #### Security
 
-| Option | CLI flag | Description |
-|--------|----------|-------------|
-| `redactSecrets` | `--redact-secrets` | Masks likely secrets/credentials in the diff text before it's sent to the LLM — cloud provider keys, VCS/chat tokens, PEM private key blocks, JWTs, `Bearer` headers, basic-auth URL passwords, and generic `KEY=value` assignments. Uses `DEFAULT_SECRET_PATTERNS` unless `secretPatterns` overrides them. |
-| `secretPatterns` | — (library only) | Overrides the built-in secret-detection rules used when `redactSecrets` is true. |
+| Option           | CLI flag           | Description                                                                                                                                                                                                                                                                                                 |
+| ---------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `redactSecrets`  | `--redact-secrets` | Masks likely secrets/credentials in the diff text before it's sent to the LLM — cloud provider keys, VCS/chat tokens, PEM private key blocks, JWTs, `Bearer` headers, basic-auth URL passwords, and generic `KEY=value` assignments. Uses `DEFAULT_SECRET_PATTERNS` unless `secretPatterns` overrides them. |
+| `secretPatterns` | — (library only)   | Overrides the built-in secret-detection rules used when `redactSecrets` is true.                                                                                                                                                                                                                            |
 
 #### Other
 
-| Option | CLI flag | Description |
-|--------|----------|-------------|
-| — (`summarizeGitDiff` always returns `usage`) | `--usage` | Print the same `LlmUsageReport` as [Token usage reporting](#token-usage-reporting) to stderr, after the Markdown summary on stdout. |
-| — | `-h`, `--help` | Show CLI help. |
-| — | `-v`, `--version` | Print the installed version. |
+| Option                                        | CLI flag          | Description                                                                                                                         |
+| --------------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| — (`summarizeGitDiff` always returns `usage`) | `--usage`         | Print the same `LlmUsageReport` as [Token usage reporting](#token-usage-reporting) to stderr, after the Markdown summary on stdout. |
+| —                                             | `-h`, `--help`    | Show CLI help.                                                                                                                      |
+| —                                             | `-v`, `--version` | Print the installed version.                                                                                                        |
 
 ### Handling large diffs
 
@@ -207,16 +207,16 @@ For most repos, the cheapest wins are:
 
 ```ts
 await summarizeGitDiff({
-  from: 'origin/main',
-  contextLines: 1,          // -U1 cuts 30-60% of tokens on typical diffs
-  ignoreWhitespace: true,   // drop pure-whitespace hunks entirely
-  stripDiffPreamble: true,  // kill `index`/`mode`/`similarity` lines
-  maxHunkLines: 400,        // truncate monster hunks but keep the @@ header
-  excludeDefaultNoise: true // skip lockfiles, dist/, coverage/, node_modules/
+  from: "origin/main",
+  contextLines: 1, // -U1 cuts 30-60% of tokens on typical diffs
+  ignoreWhitespace: true, // drop pure-whitespace hunks entirely
+  stripDiffPreamble: true, // kill `index`/`mode`/`similarity` lines
+  maxHunkLines: 400, // truncate monster hunks but keep the @@ header
+  excludeDefaultNoise: true, // skip lockfiles, dist/, coverage/, node_modules/
 });
 ```
 
-These options only reshape the *unified diff text* — the structured `DiffSummary` still reports true file counts and line totals, so the model always sees the full change inventory.
+These options only reshape the _unified diff text_ — the structured `DiffSummary` still reports true file counts and line totals, so the model always sees the full change inventory.
 
 #### Map-reduce for oversized diffs
 
@@ -224,7 +224,7 @@ By default, a diff over `maxDiffChars` is hard-truncated — only the first N ch
 
 ```ts
 await summarizeGitDiff({
-  from: 'origin/main',
+  from: "origin/main",
   maxDiffChars: 20_000,
   mapReduce: true, // no-op when the diff already fits within maxDiffChars
 });
@@ -237,9 +237,9 @@ This costs one extra LLM call per batch plus one reduce call, so it's slower and
 `summarizeGitDiff` returns the Markdown summary plus token usage aggregated across every LLM call made to produce it — one call by default, or every map-reduce batch plus the reduce call when `mapReduce` is used:
 
 ```ts
-import { summarizeGitDiff } from '@mcarvin/smart-diff';
+import { summarizeGitDiff } from "@mcarvin/smart-diff";
 
-const { summary, usage } = await summarizeGitDiff({ from: 'origin/main' });
+const { summary, usage } = await summarizeGitDiff({ from: "origin/main" });
 // usage: { requestCount, inputTokens, outputTokens, totalTokens, cachedInputTokens }
 ```
 
@@ -250,22 +250,25 @@ This reports token counts only — no dollar cost estimate, since per-token pric
 If you want full control — for example, to hit an in-process mock, add your own middleware/logging, or talk to a provider smart-diff doesn't support directly — pass `llmModelProvider`. A `ChatModel` is just an object with a `generate` method:
 
 ```ts
-import { summarizeGitDiff, type ChatModel } from '@mcarvin/smart-diff';
+import { summarizeGitDiff, type ChatModel } from "@mcarvin/smart-diff";
 
 const myModel: ChatModel = {
   async generate({ system, prompt, temperature, maxOutputTokens }) {
-    const res = await fetch('https://my-llm-gateway.example.com/v1/chat', {
-      method: 'POST',
+    const res = await fetch("https://my-llm-gateway.example.com/v1/chat", {
+      method: "POST",
       headers: { authorization: `Bearer ${process.env.MY_GATEWAY_KEY}` },
       body: JSON.stringify({ system, prompt, temperature, maxOutputTokens }),
     });
     const data = await res.json();
-    return { text: data.text, usage: { inputTokens: data.inputTokens, outputTokens: data.outputTokens } };
+    return {
+      text: data.text,
+      usage: { inputTokens: data.inputTokens, outputTokens: data.outputTokens },
+    };
   },
 };
 
 const { summary } = await summarizeGitDiff({
-  from: 'origin/main',
+  from: "origin/main",
   llmModelProvider: async () => myModel,
 });
 ```
@@ -281,7 +284,7 @@ See [Examples](#examples) for `ChatModel` wrappers that add extra context to the
 
 The package also exports helpers for building a custom pipeline on top of the same git and LLM behavior:
 
-- **Git**: `createGitClient(cwd?, timeout?)` *(async — returns `Promise<GitClient>`, a live [`@scolladon/tsgit`](https://github.com/scolladon/tsgit) repository handle; call `git.dispose()` when done)*, `getRepoRoot`, `getCommits`, `getDiff`, `getDiffSummary`, `getChangedFiles`, `filterCommitsByMessageRegexes`, `buildPathFilterPredicate`, `matchesAnyPath`, `renderFileDiff`, `renderUnifiedDiff`, `buildFileSummary`, `mergeFileSummariesByPath`, `summarizeFiles`, `shapeUnifiedDiff`, `redactSecrets`, `DEFAULT_NOISE_EXCLUDES`, `DEFAULT_SECRET_PATTERNS` — `timeout` is in milliseconds; omit for no timeout
+- **Git**: `createGitClient(cwd?, timeout?)` _(async — returns `Promise<GitClient>`, a live [`@scolladon/tsgit`](https://github.com/scolladon/tsgit) repository handle; call `git.dispose()` when done)_, `getRepoRoot`, `getCommits`, `getDiff`, `getDiffSummary`, `getChangedFiles`, `filterCommitsByMessageRegexes`, `buildPathFilterPredicate`, `matchesAnyPath`, `renderFileDiff`, `renderUnifiedDiff`, `buildFileSummary`, `mergeFileSummariesByPath`, `summarizeFiles`, `shapeUnifiedDiff`, `redactSecrets`, `DEFAULT_NOISE_EXCLUDES`, `DEFAULT_SECRET_PATTERNS` — `timeout` is in milliseconds; omit for no timeout
 - **AI**: `generateSummary`, `generateSummaryWithUsage`, `resolveLlmMaxDiffChars`, `resolveLlmMaxRetries`, `truncateUnifiedDiffForLlm`, `splitUnifiedDiffIntoFileChunks`, `groupDiffChunksByBudget`
 - **Provider resolution**: `resolveLanguageModel`, `detectLlmProvider`, `isLlmProviderConfigured`, `defaultModelForProvider`, `resolveLlmBaseUrl`, `parseLlmDefaultHeadersFromEnv`
 - **Constants**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`
@@ -317,49 +320,49 @@ Provider credentials are read from the environment exactly as they are for the C
 
 ### Inputs
 
-| Input | Description | Default |
-| --- | --- | --- |
-| `from` | Start ref (older side of the range). **Required.** | |
-| `to` | End ref. | `HEAD` |
-| `merge-base` | Resolve `from` as the merge base of `to` and `from`. | `false` |
-| `working-directory` | Working directory of the git repository. | runner checkout dir |
-| `include` | Only include these paths (newline-separated). | |
-| `exclude` | Exclude these paths (newline-separated). | |
-| `commit-include` | Only keep commits matching these regexes (newline-separated, OR). | |
-| `commit-exclude` | Drop commits matching these regexes (newline-separated). | |
-| `team` | Team label added to the LLM prompt. | |
-| `system-prompt` | Overrides the default system prompt. | |
-| `provider` | LLM provider id. | auto-detected |
-| `model` | Model id override. | provider default |
-| `max-diff-chars` | Caps unified diff size sent to the model. | |
-| `max-retries` | Retry count for transient LLM call failures. | `2` |
-| `map-reduce` | Batch an oversized diff instead of hard-truncating it. | `false` |
-| `context-lines` | Context lines per hunk (git diff `-U<n>`). | `3` |
-| `ignore-whitespace` | Drop pure-whitespace hunks. | `false` |
-| `strip-diff-preamble` | Strip `diff --git`/index/mode noise lines. | `false` |
-| `max-hunk-lines` | Elide hunk bodies longer than this many lines. | |
-| `exclude-default-noise` | Skip lockfiles/dist/build/coverage/node_modules. | `false` |
-| `redact-secrets` | Mask likely secrets/credentials before sending the diff to the LLM. | `false` |
+| Input                   | Description                                                         | Default             |
+| ----------------------- | ------------------------------------------------------------------- | ------------------- |
+| `from`                  | Start ref (older side of the range). **Required.**                  |                     |
+| `to`                    | End ref.                                                            | `HEAD`              |
+| `merge-base`            | Resolve `from` as the merge base of `to` and `from`.                | `false`             |
+| `working-directory`     | Working directory of the git repository.                            | runner checkout dir |
+| `include`               | Only include these paths (newline-separated).                       |                     |
+| `exclude`               | Exclude these paths (newline-separated).                            |                     |
+| `commit-include`        | Only keep commits matching these regexes (newline-separated, OR).   |                     |
+| `commit-exclude`        | Drop commits matching these regexes (newline-separated).            |                     |
+| `team`                  | Team label added to the LLM prompt.                                 |                     |
+| `system-prompt`         | Overrides the default system prompt.                                |                     |
+| `provider`              | LLM provider id.                                                    | auto-detected       |
+| `model`                 | Model id override.                                                  | provider default    |
+| `max-diff-chars`        | Caps unified diff size sent to the model.                           |                     |
+| `max-retries`           | Retry count for transient LLM call failures.                        | `2`                 |
+| `map-reduce`            | Batch an oversized diff instead of hard-truncating it.              | `false`             |
+| `context-lines`         | Context lines per hunk (git diff `-U<n>`).                          | `3`                 |
+| `ignore-whitespace`     | Drop pure-whitespace hunks.                                         | `false`             |
+| `strip-diff-preamble`   | Strip `diff --git`/index/mode noise lines.                          | `false`             |
+| `max-hunk-lines`        | Elide hunk bodies longer than this many lines.                      |                     |
+| `exclude-default-noise` | Skip lockfiles/dist/build/coverage/node_modules.                    | `false`             |
+| `redact-secrets`        | Mask likely secrets/credentials before sending the diff to the LLM. | `false`             |
 
 ### Outputs
 
-| Output | Description |
-| --- | --- |
-| `summary` | Markdown summary of the diff. |
-| `request-count` | Number of LLM calls made to produce the summary. |
-| `input-tokens` | Sum of input (prompt) tokens across all calls. |
-| `output-tokens` | Sum of output (completion) tokens across all calls. |
-| `total-tokens` | Sum of total tokens across all calls, as reported by the provider. |
+| Output                | Description                                                                     |
+| --------------------- | ------------------------------------------------------------------------------- |
+| `summary`             | Markdown summary of the diff.                                                   |
+| `request-count`       | Number of LLM calls made to produce the summary.                                |
+| `input-tokens`        | Sum of input (prompt) tokens across all calls.                                  |
+| `output-tokens`       | Sum of output (completion) tokens across all calls.                             |
+| `total-tokens`        | Sum of total tokens across all calls, as reported by the provider.              |
 | `cached-input-tokens` | Sum of cached input tokens read across all calls (0 if unsupported/unreported). |
 
 ## Examples
 
 Optional examples in [`examples/`](examples/) wrap your configured provider with `llmModelProvider` to give the model extra context alongside the regular diff. Both keep your existing provider and send the added context to it, so expect more input tokens.
 
-| Example | Adds | Requires |
-|---------|------|----------|
-| [Documentation context](examples/parallel-docs/README.md) | Excerpts from a public documentation URL, fetched with Parallel Search MCP — useful for dependency migrations | `npm run build` in this repo, then `npm ci` in `examples/parallel-docs` |
-| [Structural diff context](examples/sem/README.md) | Entity-level changes from [Sem](https://github.com/Ataraxy-Labs/sem)'s structural diff for the same commit range | `sem` on `PATH` and `npm run build` in this repo |
+| Example                                                   | Adds                                                                                                             | Requires                                                                |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| [Documentation context](examples/parallel-docs/README.md) | Excerpts from a public documentation URL, fetched with Parallel Search MCP — useful for dependency migrations    | `npm run build` in this repo, then `npm ci` in `examples/parallel-docs` |
+| [Structural diff context](examples/sem/README.md)         | Entity-level changes from [Sem](https://github.com/Ataraxy-Labs/sem)'s structural diff for the same commit range | `sem` on `PATH` and `npm run build` in this repo                        |
 
 See each example's README for setup and usage.
 

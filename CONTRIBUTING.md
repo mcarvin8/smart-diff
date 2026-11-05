@@ -47,11 +47,11 @@ Then run `npm run lint:dependencies` and confirm it reports nothing, including c
 
 ## Hooks
 
-| Hook | Runs |
-|------|------|
+| Hook         | Runs                       |
+| ------------ | -------------------------- |
 | `pre-commit` | Biome check (staged files) |
-| `pre-push` | Build + full test suite |
-| `commit-msg` | commitlint |
+| `pre-push`   | Build + full test suite    |
+| `commit-msg` | commitlint                 |
 
 ## Commit Messages
 

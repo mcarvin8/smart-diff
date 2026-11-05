@@ -419,15 +419,18 @@ describe("gitDiffOps against a real tsgit repo", () => {
     it.each([
       ["a range", (base: string, tip: string) => `${base}..${tip}`],
       ["a negated revision", (base: string) => `^${base}`],
-    ])("throws when a ref is %s rather than a single revision", async (_label, toRev) => {
-      const base = await fx.commit("base", { "a.ts": "1\n" });
-      const tip = await fx.commit("tip", { "a.ts": "2\n" });
-      const rev = toRev(base, tip);
+    ])(
+      "throws when a ref is %s rather than a single revision",
+      async (_label, toRev) => {
+        const base = await fx.commit("base", { "a.ts": "1\n" });
+        const tip = await fx.commit("tip", { "a.ts": "2\n" });
+        const rev = toRev(base, tip);
 
-      await expect(getMergeBase(git, rev, base)).rejects.toThrow(
-        `'${rev}' does not name a single revision`,
-      );
-    });
+        await expect(getMergeBase(git, rev, base)).rejects.toThrow(
+          `'${rev}' does not name a single revision`,
+        );
+      },
+    );
 
     it("throws when a ref names a path rather than a revision", async () => {
       const base = await fx.commit("base", { "a.ts": "1\n" });

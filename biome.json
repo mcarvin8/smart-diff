@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.1/schema.json",
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": { "ignoreUnknown": false },
   "formatter": {
@@ -14,7 +14,10 @@
     "bracketSpacing": true,
     "expand": "auto",
     "useEditorconfig": true,
-    "includes": ["**", "!**/dist", "!**/coverage", "!**/node_modules"]
+    "includes": ["**", "!**/dist", "!**/coverage", "!**/node_modules", "!CHANGELOG.md", "!**/package-lock.json"]
+  },
+  "markdown": {
+    "formatter": { "enabled": true }
   },
   "linter": {
     "enabled": true,

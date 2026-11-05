@@ -16,7 +16,7 @@ inputs:
   merge-base:
     description: Resolve `from` as the merge base of `to` and `from` instead of using `from` directly.
     required: false
-    default: 'false'
+    default: "false"
   working-directory:
     description: Working directory of the git repository. Defaults to the runner's checkout directory.
     required: false
@@ -53,29 +53,29 @@ inputs:
   map-reduce:
     description: Batch an oversized diff (per-file map, then reduce) instead of hard-truncating it.
     required: false
-    default: 'false'
+    default: "false"
   context-lines:
     description: Context lines per hunk (git diff -U<n>).
     required: false
   ignore-whitespace:
     description: Drop pure-whitespace hunks.
     required: false
-    default: 'false'
+    default: "false"
   strip-diff-preamble:
     description: Strip diff --git/index/mode noise lines.
     required: false
-    default: 'false'
+    default: "false"
   max-hunk-lines:
     description: Elide hunk bodies longer than this many lines.
     required: false
   exclude-default-noise:
     description: Skip lockfiles/dist/build/coverage/node_modules.
     required: false
-    default: 'false'
+    default: "false"
   redact-secrets:
     description: Mask likely secrets/credentials before sending the diff to the LLM.
     required: false
-    default: 'false'
+    default: "false"
 
 outputs:
   summary:

@@ -13,9 +13,7 @@
   "engines": {
     "node": ">=22.22.1"
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "publishConfig": {
     "access": "public"
   },
@@ -41,7 +39,7 @@
   },
   "devDependencies": {
     "@actions/core": "3.0.1",
-    "@biomejs/biome": "2.5.1",
+    "@biomejs/biome": "2.6.5",
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.4",
     "@stryker-mutator/core": "10.1.1",

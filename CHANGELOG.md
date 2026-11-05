@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.5.0](https://github.com/mcarvin8/smart-diff/compare/v6.4.1...v6.5.0) (2026-11-05)
+
+
+### Features
+
+* add --prompt-file to append rules to every system prompt ([#92](https://github.com/mcarvin8/smart-diff/issues/92)) ([56b33ea](https://github.com/mcarvin8/smart-diff/commit/56b33ea7aef34aac7d24b6f1c41c0bd3a3119df6))
+
 ## [6.4.1](https://github.com/mcarvin8/smart-diff/compare/v6.4.0...v6.4.1) (2026-11-02)
 
 

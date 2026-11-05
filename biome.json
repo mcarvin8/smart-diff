@@ -14,7 +14,14 @@
     "bracketSpacing": true,
     "expand": "auto",
     "useEditorconfig": true,
-    "includes": ["**", "!**/dist", "!**/coverage", "!**/node_modules", "!CHANGELOG.md", "!**/package-lock.json"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/coverage",
+      "!**/node_modules",
+      "!CHANGELOG.md",
+      "!**/package-lock.json"
+    ]
   },
   "markdown": {
     "formatter": { "enabled": true }

@@ -26,6 +26,7 @@
     "lint:dependencies": "knip",
     "lint:engine": "ls-engines --no-current --no-dev --mode=virtual",
     "format": "biome format --write .",
+    "format:check": "biome format .",
     "prepack": "npm run build",
     "prepare": "husky",
     "test:mutation": "stryker run",

@@ -28,6 +28,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Check formatting
+        run: npm run format:check
+
       - name: Check dependency usage
         run: npm run lint:dependencies
 

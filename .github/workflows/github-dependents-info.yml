@@ -4,8 +4,6 @@ name: GitHub Dependents Info
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
   schedule:
     - cron: "0 0 * * 0"
 
@@ -47,6 +45,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN  }}
           branch: github-dependents-info-auto-update
+          branch-suffix: timestamp
           commit-message: "chore(github-dependents): updated markdown files"
           delete-branch: true
           title: "chore(github-dependents): updated markdown files"

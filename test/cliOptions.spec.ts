@@ -141,6 +141,25 @@ describe("parseCliArgs", () => {
     expect(parsed.options.model).toBe("claude-3-5-sonnet-latest");
   });
 
+  it("collects repeatable --prompt-file paths", () => {
+    const parsed = parseCliArgs([
+      "origin/main",
+      "--prompt-file",
+      "rules/a.md",
+      "--prompt-file",
+      "rules/b.md",
+    ]);
+    if (parsed.kind !== "run") throw new Error("expected run");
+    expect(parsed.promptFiles).toEqual(["rules/a.md", "rules/b.md"]);
+    expect(parsed.options.systemPromptAppend).toBeUndefined();
+  });
+
+  it("defaults promptFiles to an empty array", () => {
+    const parsed = parseCliArgs(["origin/main"]);
+    if (parsed.kind !== "run") throw new Error("expected run");
+    expect(parsed.promptFiles).toEqual([]);
+  });
+
   it("parses numeric flags", () => {
     const parsed = parseCliArgs([
       "origin/main",

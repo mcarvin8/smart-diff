@@ -38,6 +38,9 @@ inputs:
   system-prompt:
     description: Overrides the default LLM system prompt.
     required: false
+  prompt-file:
+    description: Newline-separated paths to files whose contents are appended to every LLM system prompt, including map-reduce batches. Relative paths resolve against the workspace.
+    required: false
   provider:
     description: LLM provider id (openai, anthropic, google, bedrock, mistral, cohere, groq, xai, deepseek, openai-compatible). Falls back to LLM_PROVIDER env var or auto-detection based on which provider credentials are present.
     required: false

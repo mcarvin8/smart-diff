@@ -241,6 +241,57 @@ describe("generateSummary", () => {
     expect(extractUserText(call)).toContain("Team: QA");
   });
 
+  it("appends systemPromptAppend to the default system prompt", async () => {
+    const { llmModelProvider, calls } = provideMock("ok");
+
+    await generateSummary({
+      diffText: "diff...",
+      fileNames: ["f.ts"],
+      commits,
+      flags: {
+        ...flagsBase,
+        systemPromptAppend: "  Flag permission changes.  ",
+      },
+      llmModelProvider,
+    });
+
+    expect(extractSystemText(calls()[0]!)).toBe(
+      `${DEFAULT_GIT_DIFF_SYSTEM_PROMPT}\n\nFlag permission changes.`,
+    );
+  });
+
+  it("appends systemPromptAppend to a custom systemPrompt", async () => {
+    const { llmModelProvider, calls } = provideMock("ok");
+
+    await generateSummary({
+      diffText: "diff...",
+      fileNames: ["f.ts"],
+      commits,
+      flags: {
+        ...flagsBase,
+        systemPrompt: "Custom.",
+        systemPromptAppend: "Extra rules.",
+      },
+      llmModelProvider,
+    });
+
+    expect(extractSystemText(calls()[0]!)).toBe("Custom.\n\nExtra rules.");
+  });
+
+  it("ignores a whitespace-only systemPromptAppend", async () => {
+    const { llmModelProvider, calls } = provideMock("ok");
+
+    await generateSummary({
+      diffText: "diff...",
+      fileNames: ["f.ts"],
+      commits,
+      flags: { ...flagsBase, systemPromptAppend: "  \n " },
+      llmModelProvider,
+    });
+
+    expect(extractSystemText(calls()[0]!)).toBe(DEFAULT_GIT_DIFF_SYSTEM_PROMPT);
+  });
+
   it("resolves from env when no injection is passed", async () => {
     vi.spyOn(llmProviders, "isLlmProviderConfigured").mockReturnValue(true);
     const { model, calls } = mockModel("  **Summary** from env  ");
@@ -910,6 +961,38 @@ describe("generateSummary map-reduce", () => {
       DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT,
     );
     expect(extractSystemText(reduceCall!)).toBe("Custom reduce prompt.");
+  });
+
+  it("appends systemPromptAppend to every map call and the reduce call", async () => {
+    const { llmModelProvider, calls } = provideSequentialMock([
+      "b1",
+      "b2",
+      "b3",
+      "FINAL",
+    ]);
+
+    await generateSummary({
+      diffText: threeFileDiff,
+      fileNames: ["a.ts", "b.ts", "c.ts"],
+      commits,
+      flags: {
+        ...flagsBase,
+        maxDiffChars: 10,
+        mapReduce: true,
+        systemPromptAppend: "Domain rules.",
+      },
+      llmModelProvider,
+    });
+
+    const [mapCall1, mapCall2, mapCall3, reduceCall] = calls();
+    for (const mapCall of [mapCall1, mapCall2, mapCall3]) {
+      expect(extractSystemText(mapCall!)).toBe(
+        `${DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT}\n\nDomain rules.`,
+      );
+    }
+    expect(extractSystemText(reduceCall!)).toBe(
+      `${DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT}\n\nDomain rules.`,
+    );
   });
 
   it("includes team, commits, and paths context in the reduce call", async () => {

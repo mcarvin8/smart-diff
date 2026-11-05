@@ -56,6 +56,11 @@ export type GitDiffAiSummaryOptions = {
   commitMessageExcludeRegexes?: string[];
   /** Overrides the package default LLM system prompt (see `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`). */
   systemPrompt?: string;
+  /**
+   * Extra instructions appended to every system prompt (single-call, map, and
+   * reduce). Adds domain rules without replacing the built-in prompts.
+   */
+  systemPromptAppend?: string;
   /** Shown in the LLM user prompt (Team line) when set. */
   teamName?: string;
   model?: string;
@@ -245,6 +250,7 @@ async function prepareSummaryInput(
     maxRetries: options.maxRetries,
     mapReduce: options.mapReduce,
     systemPrompt: options.systemPrompt,
+    systemPromptAppend: options.systemPromptAppend,
     commitMessageIncludeRegexes: options.commitMessageIncludeRegexes,
     commitMessageExcludeRegexes: options.commitMessageExcludeRegexes,
   };

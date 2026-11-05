@@ -19,6 +19,7 @@ summary is printed to stdout; errors go to stderr with exit code 1.
 | `--commit-exclude <regex>` | Drop commits whose message matches any pattern (repeatable).                                               |
 | `--team <name>`            | Adds a team label to the prompt.                                                                           |
 | `--system-prompt <text>`   | Replaces the default system prompt.                                                                        |
+| `--prompt-file <path>`     | Append the file's contents to every system prompt, including map-reduce batches (repeatable).              |
 | `--provider <id>`          | Provider id; overrides `LLM_PROVIDER` and auto-detection.                                                  |
 | `--model <id>`             | Model id; overrides `LLM_MODEL` and the provider default.                                                  |
 

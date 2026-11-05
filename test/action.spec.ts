@@ -1,3 +1,7 @@
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 type IndexModule = typeof import("../src/index");
 type CoreModule = typeof import("@actions/core");
 
@@ -130,6 +134,7 @@ describe("action entrypoint", () => {
       commitMessageExcludeRegexes: undefined,
       teamName: undefined,
       systemPrompt: undefined,
+      systemPromptAppend: undefined,
       provider: undefined,
       model: undefined,
       maxDiffChars: undefined,
@@ -142,6 +147,49 @@ describe("action entrypoint", () => {
       excludeDefaultNoise: false,
       redactSecrets: false,
     });
+  });
+
+  it("reads prompt-file inputs into systemPromptAppend", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "smart-diff-action-"));
+    try {
+      const a = join(dir, "a.md");
+      const b = join(dir, "b.md");
+      writeFileSync(a, "Rule A.\n");
+      writeFileSync(b, "Rule B.");
+      let summarizeGitDiffSpy: ReturnType<typeof vi.spyOn> | undefined;
+
+      await runAction({ from: "main", "prompt-file": `${a}\n${b}` }, (mod) => {
+        summarizeGitDiffSpy = vi
+          .spyOn(mod, "summarizeGitDiff")
+          .mockResolvedValue({
+            summary: "summary",
+            usage: {
+              requestCount: 1,
+              inputTokens: 0,
+              outputTokens: 0,
+              totalTokens: 0,
+              cachedInputTokens: 0,
+            },
+          });
+      });
+
+      expect(summarizeGitDiffSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ systemPromptAppend: "Rule A.\n\nRule B." }),
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("fails cleanly when a prompt-file input cannot be read", async () => {
+    const { core } = await runAction({
+      from: "main",
+      "prompt-file": "does-not-exist.md",
+    });
+
+    expect(core.setFailed).toHaveBeenCalledWith(
+      expect.stringContaining('Cannot read prompt file "does-not-exist.md"'),
+    );
   });
 
   it("fails cleanly when summarizeGitDiff rejects", async () => {

@@ -15,7 +15,6 @@
     "attributePosition": "auto",
     "bracketSameLine": false,
     "bracketSpacing": true,
-    "expand": "auto",
     "useEditorconfig": true,
     "includes": [
       "**",
@@ -253,10 +252,6 @@
   },
   "overrides": [
     { "includes": ["**/*.cjs"], "javascript": { "globals": ["exports"] } },
-    {
-      "includes": ["package.json"],
-      "json": { "formatter": { "expand": "always" } }
-    },
     {
       "includes": ["**/*.spec.ts", "**/*.test.ts"],
       "javascript": {

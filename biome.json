@@ -254,6 +254,10 @@
   "overrides": [
     { "includes": ["**/*.cjs"], "javascript": { "globals": ["exports"] } },
     {
+      "includes": ["package.json"],
+      "json": { "formatter": { "expand": "always" } }
+    },
+    {
       "includes": ["**/*.spec.ts", "**/*.test.ts"],
       "javascript": {
         "globals": [

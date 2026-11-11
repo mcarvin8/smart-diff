@@ -38,7 +38,9 @@ jobs:
         run: npm run lint:engine
 
       - name: Validate Claude Code plugin
-        run: npx -y @anthropic-ai/claude-code@2.1.316 plugin validate .
+        run: |
+          npx -y @anthropic-ai/claude-code@2.1.316 plugin validate .
+          npx -y @anthropic-ai/claude-code@2.1.316 plugin validate plugins/smart-diff
 
       - name: Check Action bundle is up to date
         run: |

@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "smart-diff",
-      "source": "./",
+      "source": "./plugins/smart-diff",
       "description": "Summarize git diffs, branches, and release ranges as Markdown, with or without an LLM API key."
     }
   ]

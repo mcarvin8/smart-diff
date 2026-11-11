@@ -59,6 +59,9 @@ async function runAction(
 
 describe("action entrypoint", () => {
   afterEach(() => {
+    // restoreAllMocks only restores spies; clear the vi.mock factory's vi.fn()
+    // call history too, or setOutput/setFailed calls leak between tests.
+    vi.clearAllMocks();
     vi.restoreAllMocks();
     for (const key of Object.keys(process.env)) {
       if (key.startsWith("INPUT_")) delete process.env[key];

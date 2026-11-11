@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.6.0](https://github.com/mcarvin8/smart-diff/compare/v6.5.0...v6.6.0) (2026-11-11)
+
+
+### Features
+
+* key-less Claude Code skill via --emit-context ([#94](https://github.com/mcarvin8/smart-diff/issues/94)) ([92f28d7](https://github.com/mcarvin8/smart-diff/commit/92f28d7e3c9b259d701b0a0d83b5208711bc1ba6))
+
 ## [6.5.0](https://github.com/mcarvin8/smart-diff/compare/v6.4.1...v6.5.0) (2026-11-05)
 
 

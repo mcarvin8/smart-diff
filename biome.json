@@ -3,7 +3,7 @@
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!skills/**/SKILL.md"]
+    "includes": ["**", "!plugins/**/SKILL.md"]
   },
   "formatter": {
     "enabled": true,
@@ -254,7 +254,7 @@
     { "includes": ["**/*.cjs"], "javascript": { "globals": ["exports"] } },
     {
       "includes": [
-        ".claude-plugin/plugin.json",
+        "plugins/smart-diff/.claude-plugin/plugin.json",
         ".release-please-manifest.json"
       ],
       "json": { "formatter": { "expand": "always" } }

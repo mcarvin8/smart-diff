@@ -22,7 +22,9 @@ Supports OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq
   - [Token usage reporting](#token-usage-reporting)
   - [Injecting your own `ChatModel`](#injecting-your-own-chatmodel)
   - [Diff shape: single range vs per-commit](#diff-shape-single-range-vs-per-commit)
+  - [Emitting the prompts without an LLM call](#emitting-the-prompts-without-an-llm-call)
   - [Lower-level API](#lower-level-api)
+- [Claude Code plugin (no API key)](#claude-code-plugin-no-api-key)
 - [GitHub Action](#github-action)
 - [Examples](#examples)
 - [Used By](#used-by)
@@ -195,11 +197,14 @@ npx smart-diff --help
 
 #### Other
 
-| Option                                        | CLI flag          | Description                                                                                                                         |
-| --------------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| — (`summarizeGitDiff` always returns `usage`) | `--usage`         | Print the same `LlmUsageReport` as [Token usage reporting](#token-usage-reporting) to stderr, after the Markdown summary on stdout. |
-| —                                             | `-h`, `--help`    | Show CLI help.                                                                                                                      |
-| —                                             | `-v`, `--version` | Print the installed version.                                                                                                        |
+| Option                                        | CLI flag          | Description                                                                                                                                 |
+| --------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| — (`summarizeGitDiff` always returns `usage`) | `--usage`         | Print the same `LlmUsageReport` as [Token usage reporting](#token-usage-reporting) to stderr, after the Markdown summary on stdout.         |
+| —                                             | `-h`, `--help`    | Show CLI help.                                                                                                                              |
+| —                                             | `-v`, `--version` | Print the installed version.                                                                                                                |
+| — (use `buildGitDiffSummaryContext`)          | `--emit-context`  | Skip the LLM call and print the prompts as JSON. See [Emitting the prompts without an LLM call](#emitting-the-prompts-without-an-llm-call). |
+| —                                             | `--out <path>`    | Write the summary (or `--emit-context` JSON) to this file instead of stdout.                                                                |
+| —                                             | `--out-dir <dir>` | With `--emit-context`: write each prompt to its own Markdown file in `<dir>` and print a JSON manifest of the paths.                        |
 
 ### Handling large diffs
 
@@ -282,16 +287,54 @@ See [Examples](#examples) for `ChatModel` wrappers that add extra context to the
 - **Single unified diff** for `from..to` when no commit-message filters apply and the filtered commit list matches the full log for that range.
 - **Concatenated per-commit patches** (each commit diffed against its first parent, or the empty tree for a root commit) when you use include/exclude regexes or when the filtered commit list differs in length from the full range (so the diff reflects only the commits that remain).
 
+### Emitting the prompts without an LLM call
+
+`--emit-context` (library: `buildGitDiffSummaryContext(options)`) runs everything except the LLM call. It reads the repo, resolves the merge base, applies path and commit filters, shapes and redacts the diff, and batches it under `--map-reduce`. Then it returns the exact prompts `summarizeGitDiff` would send. It needs no provider credentials, so a model you already drive can write the summary. The [Claude Code plugin](#claude-code-plugin-no-api-key) works this way.
+
+The result is a `SummaryContext`:
+
+- `mode: "single"`: `systemPrompt` and `userContent` for one call.
+- `mode: "map-reduce"`: `mapSystemPrompt` and one `mapUserContents` entry per batch. Run each batch, then pass `reduceUserContentPrefix` and the batch outputs to `buildReduceUserContent()` for the final call with `reduceSystemPrompt`.
+
+In both modes, prepend `notice` (a truncation or map-reduce notice, or `""`) to the final summary to match `summarizeGitDiff`'s output.
+
+```bash
+# JSON on stdout
+smart-diff main --merge-base --emit-context --redact-secrets
+# One Markdown file per prompt, plus a manifest of paths on stdout
+smart-diff main --merge-base --emit-context --map-reduce --out-dir ./ctx
+```
+
+`--provider`, `--model`, `--max-retries`, and `--usage` have no effect with `--emit-context`.
+
 ### Lower-level API
 
 The package also exports helpers for building a custom pipeline on top of the same git and LLM behavior:
 
 - **Git**: `createGitClient(cwd?, timeout?)` _(async — returns `Promise<GitClient>`, a live [`@scolladon/tsgit`](https://github.com/scolladon/tsgit) repository handle; call `git.dispose()` when done)_, `getRepoRoot`, `getCommits`, `getDiff`, `getDiffSummary`, `getChangedFiles`, `filterCommitsByMessageRegexes`, `buildPathFilterPredicate`, `matchesAnyPath`, `renderFileDiff`, `renderUnifiedDiff`, `buildFileSummary`, `mergeFileSummariesByPath`, `summarizeFiles`, `shapeUnifiedDiff`, `redactSecrets`, `DEFAULT_NOISE_EXCLUDES`, `DEFAULT_SECRET_PATTERNS` — `timeout` is in milliseconds; omit for no timeout
-- **AI**: `generateSummary`, `generateSummaryWithUsage`, `resolveLlmMaxDiffChars`, `resolveLlmMaxRetries`, `truncateUnifiedDiffForLlm`, `splitUnifiedDiffIntoFileChunks`, `groupDiffChunksByBudget`
+- **AI**: `generateSummary`, `generateSummaryWithUsage`, `buildGitDiffSummaryContext`, `buildSummaryContext`, `buildReduceUserContent`, `resolveLlmMaxDiffChars`, `resolveLlmMaxRetries`, `truncateUnifiedDiffForLlm`, `splitUnifiedDiffIntoFileChunks`, `groupDiffChunksByBudget`
 - **Provider resolution**: `resolveLanguageModel`, `detectLlmProvider`, `isLlmProviderConfigured`, `defaultModelForProvider`, `resolveLlmBaseUrl`, `parseLlmDefaultHeadersFromEnv`
 - **Constants**: `DEFAULT_GIT_DIFF_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT`, `DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT`, `LLM_GATEWAY_REQUIRED_MESSAGE`
-- **Types**: `LlmProviderId`, `LlmModelProvider`, `ChatModel`, `ChatCallOptions`, `ChatResult`, `ChatUsage`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `LlmUsageReport`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `PathFilterPredicate`, `RenderedFileDiff`, `SecretRedactionRule`
+- **Types**: `LlmProviderId`, `LlmModelProvider`, `ChatModel`, `ChatCallOptions`, `ChatResult`, `ChatUsage`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `SummaryContext`, `LlmUsageReport`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `PathFilterPredicate`, `RenderedFileDiff`, `SecretRedactionRule`
   - `DiffFileSummary.binary?: boolean` is `true` when either blob sniffs as binary; absent for text files
+
+## Claude Code plugin (no API key)
+
+This repo is also a Claude Code plugin with two skills:
+
+| Skill               | Who writes the summary                                                                                  | Needs an API key |
+| ------------------- | ------------------------------------------------------------------------------------------------------- | ---------------- |
+| `smart-diff-claude` | Claude, from smart-diff's own prompts via [`--emit-context`](#emitting-the-prompts-without-an-llm-call) | No               |
+| `smart-diff`        | Your configured provider, via the CLI                                                                   | Yes              |
+
+Install:
+
+```text
+/plugin marketplace add mcarvin8/smart-diff
+/plugin install smart-diff@smart-diff
+```
+
+Then ask Claude to "summarize my branch against main" or "draft release notes since v1.2.0". With `smart-diff-claude`, smart-diff still reads, filters, redacts, and batches the diff locally. Claude follows the same system prompts the CLI would send. For oversized diffs it summarizes each batch, in subagents when available, and then combines them. Tokens count against your Claude plan instead of a provider key. Requires Node.js 22.22.1+.
 
 ## GitHub Action
 

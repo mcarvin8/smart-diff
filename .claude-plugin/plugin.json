@@ -1,0 +1,12 @@
+{
+  "name": "smart-diff",
+  "description": "Summarize git diffs, branches, and release ranges as Markdown. Claude writes the summary from smart-diff's filtered, redacted, batched context (no API key), or smart-diff calls your own LLM provider.",
+  "icon": "./skills/smart-diff-logo.png",
+  "author": {
+    "name": "Matt Carvin"
+  },
+  "homepage": "https://github.com/mcarvin8/smart-diff",
+  "repository": "https://github.com/mcarvin8/smart-diff",
+  "license": "MIT",
+  "keywords": ["git", "diff", "summary", "code-review", "release-notes"]
+}

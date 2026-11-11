@@ -18,6 +18,13 @@ With `smart-diff-claude`, the CLI stops before any model call and writes its
 prompts to a temporary folder. Claude follows them to write the summary,
 handing large diffs to subagents batch by batch, then deletes the folder.
 
+## Install
+
+```text
+/plugin marketplace add mcarvin8/smart-diff
+/plugin install smart-diff@smart-diff
+```
+
 ## Requirements
 
 - Node.js 22.22.1 or newer

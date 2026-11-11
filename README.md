@@ -11,6 +11,7 @@ Generate AI-powered natural-language summaries of git diffs for code review in a
 
 Supports OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, or any OpenAI-compatible gateway.
 
+- [Ways to use it](#ways-to-use-it)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Provider configuration](#provider-configuration)
@@ -30,10 +31,27 @@ Supports OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq
 - [Used By](#used-by)
 - [License](#license)
 
+## Ways to use it
+
+| Use it as                                                               | Best for                                                      | API key                               |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------- |
+| [Claude Code plugin](#claude-code-plugin-no-api-key)                    | Asking Claude to summarize your branch or draft release notes | Not needed; Claude writes the summary |
+| [CLI](#use-as-a-cli) or [library](#use-as-a-library---summarizegitdiff) | Scripts, tooling, and your own pipelines                      | Your own provider                     |
+| [GitHub Action](#github-action)                                         | A summary on every pull request in CI                         | Your own provider                     |
+
+To try the plugin in Claude Code:
+
+```text
+/plugin marketplace add mcarvin8/smart-diff
+/plugin install smart-diff@smart-diff
+```
+
+Then ask Claude to "summarize my branch against main".
+
 ## Requirements
 
 - **Node.js** 22.22.1+
-- An LLM provider credential (see [Provider configuration](#provider-configuration))
+- For the CLI, library, and GitHub Action: an LLM provider credential (see [Provider configuration](#provider-configuration)). Not needed for the [Claude Code plugin](#claude-code-plugin-no-api-key) or [`--emit-context`](#emitting-the-prompts-without-an-llm-call).
 - No git binary required, on any platform — smart-diff reads the git repository directly via [`@scolladon/tsgit`](https://github.com/scolladon/tsgit), a pure-TypeScript git implementation with zero native dependencies
 
 ## Installation

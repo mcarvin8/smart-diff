@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.6.2](https://github.com/mcarvin8/smart-diff/compare/v6.6.1...v6.6.2) (2026-11-11)
+
+
+### Bug Fixes
+
+* drop the SVG logo from the plugin folder ([#101](https://github.com/mcarvin8/smart-diff/issues/101)) ([0850692](https://github.com/mcarvin8/smart-diff/commit/085069293b25831774379a6123ff0dff84324d04))
+
 ## [6.6.1](https://github.com/mcarvin8/smart-diff/compare/v6.6.0...v6.6.1) (2026-11-11)
 
 

@@ -40,7 +40,7 @@ jobs:
       - name: Check plugin file types allowed by the Claude plugin directory
         run: |
           bad=$(find plugins -type f ! -iname '*.md' ! -iname '*.txt' ! -iname '*.json' ! -iname '*.yaml' ! -iname '*.yml' ! -iname '*.png' ! -iname '*.jpg' ! -iname '*.jpeg' ! -iname '*.gif' ! -iname '*.webp' ! -iname '*.ico')
-          shebang=$(grep -rlI '^#!' plugins || true)
+          shebang=$(find plugins -type f -exec sh -c 'head -c 2 "$1" | grep -q "^#!" && echo "$1"' _ {} \;)
           if [ -n "$bad$shebang" ]; then
             echo "Files the plugin directory refuses (allowed: Markdown, text, JSON, YAML, PNG/JPEG/GIF/WebP/ICO; no #! scripts):"
             echo "$bad"

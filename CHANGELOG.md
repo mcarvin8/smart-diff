@@ -1,5 +1,13 @@
 # Changelog
 
+## [6.6.1](https://github.com/mcarvin8/smart-diff/compare/v6.6.0...v6.6.1) (2026-11-11)
+
+
+### Bug Fixes
+
+* move the Claude Code plugin into plugins/smart-diff ([#97](https://github.com/mcarvin8/smart-diff/issues/97)) ([40b7e0e](https://github.com/mcarvin8/smart-diff/commit/40b7e0ef6d03342ae3fc1d79ce18237471e14409))
+* skip default noise paths at any depth ([#99](https://github.com/mcarvin8/smart-diff/issues/99)) ([5c31bcf](https://github.com/mcarvin8/smart-diff/commit/5c31bcf1635837c6b60e8b7b0c71dc3ed7f66022))
+
 ## [6.6.0](https://github.com/mcarvin8/smart-diff/compare/v6.5.0...v6.6.0) (2026-11-11)
 
 

@@ -1,0 +1,14 @@
+{
+  "name": "smart-diff",
+  "description": "smart-diff: AI summaries of git diffs for code review and release notes.",
+  "owner": {
+    "name": "Matt Carvin"
+  },
+  "plugins": [
+    {
+      "name": "smart-diff",
+      "source": "./",
+      "description": "Summarize git diffs, branches, and release ranges as Markdown, with or without an LLM API key."
+    }
+  ]
+}

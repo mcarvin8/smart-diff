@@ -15,6 +15,12 @@ export type ParsedCli =
       reportUsage: boolean;
       /** Paths from `--prompt-file`; read by the entrypoint into `systemPromptAppend`. */
       promptFiles: string[];
+      /** `--emit-context`: print the prompts as JSON instead of calling an LLM. */
+      emitContext: boolean;
+      /** `--out <path>`: write the output to this file instead of stdout. */
+      outFile?: string;
+      /** `--out-dir <dir>`: with `--emit-context`, write each prompt to its own file. */
+      outDir?: string;
     };
 
 export const HELP_TEXT = `smart-diff <from> [to] [options]
@@ -56,6 +62,17 @@ Reliability:
 
 Security:
   --redact-secrets          Mask likely secrets/credentials before sending to the LLM
+
+Output:
+  --emit-context            Skip the LLM call; print the prompts (system prompt(s),
+                            user content, notice) as JSON for another model to run.
+                            Needs no provider credentials. Use it to let an agent
+                            such as Claude Code write the summary itself.
+  --out <path>              Write the summary (or --emit-context JSON) to this file
+                            instead of stdout
+  --out-dir <dir>           With --emit-context: write each prompt to its own
+                            Markdown file in <dir> and print a JSON manifest of
+                            the paths instead of the prompts themselves
 
 Other:
   --usage                   Print aggregated token usage to stderr after the summary
@@ -108,6 +125,9 @@ export function parseCliArgs(argv: string[]): ParsedCli {
       "exclude-default-noise": { type: "boolean" },
       "redact-secrets": { type: "boolean" },
       usage: { type: "boolean" },
+      "emit-context": { type: "boolean" },
+      out: { type: "string" },
+      "out-dir": { type: "string" },
       help: { type: "boolean", short: "h" },
       version: { type: "boolean", short: "v" },
     },
@@ -123,6 +143,9 @@ export function parseCliArgs(argv: string[]): ParsedCli {
     );
   }
   const to = values.to ?? positionals[1];
+  if (values["out-dir"] !== undefined && !values["emit-context"]) {
+    throw new CliUsageError("--out-dir requires --emit-context.");
+  }
 
   const options: GitDiffAiSummaryOptions = {
     from,
@@ -153,5 +176,8 @@ export function parseCliArgs(argv: string[]): ParsedCli {
     options,
     reportUsage: values.usage ?? false,
     promptFiles: values["prompt-file"] ?? [],
+    emitContext: values["emit-context"] ?? false,
+    outFile: values.out,
+    outDir: values["out-dir"],
   };
 }

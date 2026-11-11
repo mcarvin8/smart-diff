@@ -37,6 +37,9 @@ jobs:
       - name: Check Node.js engine versions
         run: npm run lint:engine
 
+      - name: Validate Claude Code plugin
+        run: npx -y @anthropic-ai/claude-code@2.1.316 plugin validate .
+
       - name: Check Action bundle is up to date
         run: |
           npm run build:action

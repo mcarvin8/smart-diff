@@ -20400,44 +20400,62 @@ function addUsage(report, usage) {
   report.totalTokens += usage?.totalTokens ?? 0;
   report.cachedInputTokens += usage?.cachedInputTokens ?? 0;
 }
+function buildSummaryContext(input) {
+  const { diffText, fileNames, commits, flags, diffSummary } = input;
+  const maxDiffChars = resolveLlmMaxDiffChars(flags.maxDiffChars);
+  const diffTruncated = diffText.length > maxDiffChars;
+  if (flags.mapReduce && diffTruncated) {
+    const chunks = splitUnifiedDiffIntoFileChunks(diffText);
+    const batches = groupDiffChunksByBudget(chunks, maxDiffChars);
+    return {
+      mode: "map-reduce",
+      notice: markdownMapReduceNotice(batches.length),
+      mapSystemPrompt: appendToSystemPrompt(
+        DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT,
+        flags.systemPromptAppend
+      ),
+      mapUserContents: batches.map(
+        (batch, i7) => `=== Diff batch ${i7 + 1} of ${batches.length} ===
+
+${truncateUnifiedDiffForLlm(batch, maxDiffChars)}`
+      ),
+      reduceSystemPrompt: appendToSystemPrompt(
+        flags.systemPrompt ?? DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT,
+        flags.systemPromptAppend
+      ),
+      reduceUserContentPrefix: buildContextHeader(flags, commits, fileNames, diffSummary) + REDUCE_BATCHES_HEADING
+    };
+  }
+  return {
+    mode: "single",
+    notice: diffTruncated ? markdownDiffTruncationNotice(diffText.length, maxDiffChars) : "",
+    systemPrompt: appendToSystemPrompt(
+      flags.systemPrompt ?? DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
+      flags.systemPromptAppend
+    ),
+    userContent: buildUserContent(
+      flags,
+      commits,
+      fileNames,
+      truncateUnifiedDiffForLlm(diffText, maxDiffChars),
+      diffSummary
+    )
+  };
+}
+function buildReduceUserContent(reduceUserContentPrefix, batchSummaries) {
+  return reduceUserContentPrefix + batchSummaries.map((s6, i7) => `--- Batch ${i7 + 1} of ${batchSummaries.length} ---
+${s6}`).join("\n\n");
+}
 async function generateSummaryWithUsage(input) {
-  const { diffText, fileNames, commits, flags, llmModelProvider, diffSummary } = input;
+  const { flags, llmModelProvider } = input;
   if (!llmModelProvider && !isLlmProviderConfigured()) {
     throw new Error(LLM_GATEWAY_REQUIRED_MESSAGE);
   }
-  const maxDiffChars = resolveLlmMaxDiffChars(flags.maxDiffChars);
-  const diffTruncated = diffText.length > maxDiffChars;
+  const context = buildSummaryContext(input);
   const maxOutputTokens = resolveMaxOutputTokens();
   const maxRetries = resolveLlmMaxRetries(flags.maxRetries);
   const usage = emptyUsageReport();
-  if (flags.mapReduce && diffTruncated) {
-    const summary3 = await generateSummaryMapReduce(
-      diffText,
-      fileNames,
-      commits,
-      flags,
-      diffSummary,
-      maxDiffChars,
-      maxOutputTokens,
-      maxRetries,
-      llmModelProvider,
-      usage
-    );
-    return { summary: summary3, usage };
-  }
-  const diffForLlm = truncateUnifiedDiffForLlm(diffText, maxDiffChars);
-  const userContent = buildUserContent(
-    flags,
-    commits,
-    fileNames,
-    diffForLlm,
-    diffSummary
-  );
-  const systemPrompt = appendToSystemPrompt(
-    flags.systemPrompt ?? DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
-    flags.systemPromptAppend
-  );
-  const summaryText = await callLlm(
+  const call = (userContent, systemPrompt) => callLlm(
     userContent,
     systemPrompt,
     maxOutputTokens,
@@ -20446,56 +20464,21 @@ async function generateSummaryWithUsage(input) {
     flags,
     usage
   );
-  const summary2 = diffTruncated ? markdownDiffTruncationNotice(diffText.length, maxDiffChars) + summaryText : summaryText;
-  return { summary: summary2, usage };
-}
-async function generateSummaryMapReduce(diffText, fileNames, commits, flags, diffSummary, maxDiffChars, maxOutputTokens, maxRetries, llmModelProvider, usage) {
-  const chunks = splitUnifiedDiffIntoFileChunks(diffText);
-  const batches = groupDiffChunksByBudget(chunks, maxDiffChars);
-  const mapSystemPrompt = appendToSystemPrompt(
-    DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT,
-    flags.systemPromptAppend
-  );
-  const batchSummaries = [];
-  for (const [i7, batch] of batches.entries()) {
-    const batchForLlm = truncateUnifiedDiffForLlm(batch, maxDiffChars);
-    const mapUserContent = `=== Diff batch ${i7 + 1} of ${batches.length} ===
-
-${batchForLlm}`;
-    batchSummaries.push(
-      await callLlm(
-        mapUserContent,
-        mapSystemPrompt,
-        maxOutputTokens,
-        maxRetries,
-        llmModelProvider,
-        flags,
-        usage
-      )
+  if (context.mode === "map-reduce") {
+    const batchSummaries = [];
+    for (const mapUserContent of context.mapUserContents) {
+      batchSummaries.push(await call(mapUserContent, context.mapSystemPrompt));
+    }
+    const finalSummary = await call(
+      buildReduceUserContent(context.reduceUserContentPrefix, batchSummaries),
+      context.reduceSystemPrompt
     );
+    return { summary: context.notice + finalSummary, usage };
   }
-  const reduceSystemPrompt = appendToSystemPrompt(
-    flags.systemPrompt ?? DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT,
-    flags.systemPromptAppend
-  );
-  const reduceUserContent = buildReduceUserContent(
-    flags,
-    commits,
-    fileNames,
-    diffSummary,
-    batchSummaries
-  );
-  const finalSummary = await callLlm(
-    reduceUserContent,
-    reduceSystemPrompt,
-    maxOutputTokens,
-    maxRetries,
-    llmModelProvider,
-    flags,
-    usage
-  );
-  return markdownMapReduceNotice(batches.length) + finalSummary;
+  const summaryText = await call(context.userContent, context.systemPrompt);
+  return { summary: context.notice + summaryText, usage };
 }
+var REDUCE_BATCHES_HEADING = "=== Per-batch summaries (synthesize into one cohesive report; do not just concatenate) ===\n";
 function formatRegexFilterLines(flags) {
   const includes = (flags.commitMessageIncludeRegexes ?? []).map((s6) => s6.trim()).filter(Boolean);
   const excludes = (flags.commitMessageExcludeRegexes ?? []).map((s6) => s6.trim()).filter(Boolean);
@@ -20539,11 +20522,6 @@ ${pathsBlock}
 }
 function buildUserContent(flags, commits, fileNames, diffText, diffSummary) {
   return buildContextHeader(flags, commits, fileNames, diffSummary) + "=== Git context (unified diff(s); patches may be truncated with an explicit marker) ===\n" + diffText;
-}
-function buildReduceUserContent(flags, commits, fileNames, diffSummary, batchSummaries) {
-  const batchesBlock = batchSummaries.map((s6, i7) => `--- Batch ${i7 + 1} of ${batchSummaries.length} ---
-${s6}`).join("\n\n");
-  return buildContextHeader(flags, commits, fileNames, diffSummary) + "=== Per-batch summaries (synthesize into one cohesive report; do not just concatenate) ===\n" + batchesBlock;
 }
 async function callLlm(userContent, systemPrompt, maxOutputTokens, maxRetries, llmModelProvider, flags, usage) {
   const model = llmModelProvider ? await llmModelProvider() : await resolveLanguageModel({

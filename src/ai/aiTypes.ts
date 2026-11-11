@@ -76,3 +76,36 @@ export type LlmUsageReport = {
   /** Sum of cached input tokens read across all calls (0 if unsupported/unreported). */
   cachedInputTokens: number;
 };
+
+/**
+ * Everything needed to summarize a diff with any model, produced without an LLM
+ * call by `buildSummaryContext`. Prepend `notice` (possibly empty) to the final
+ * summary to match what `generateSummary` returns.
+ */
+export type SummaryContext =
+  | {
+      /** The diff fits in one request (or was truncated with an explicit marker). */
+      mode: "single";
+      /** Markdown to prepend to the summary: a truncation notice, or `""`. */
+      notice: string;
+      systemPrompt: string;
+      userContent: string;
+    }
+  | {
+      /** The diff was split into per-file batches: summarize each, then combine. */
+      mode: "map-reduce";
+      /** Markdown to prepend to the final summary. */
+      notice: string;
+      /** System prompt for each map (per-batch) call. */
+      mapSystemPrompt: string;
+      /** One user message per batch. */
+      mapUserContents: string[];
+      /** System prompt for the final reduce call. */
+      reduceSystemPrompt: string;
+      /**
+       * Reduce-phase user content up to the batch summaries; pass it and the map
+       * outputs to `buildReduceUserContent` (or append
+       * `--- Batch i of n ---\n<summary>` blocks joined by blank lines).
+       */
+      reduceUserContentPrefix: string;
+    };

@@ -29,9 +29,11 @@ For a small diff with no such needs, reading `git diff` yourself is fine.
    `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`,
    `LLM_BASE_URL`, `AWS_ACCESS_KEY_ID` / `AWS_PROFILE`.
    The full list is in `references/options.md`.
-4. If no credential is set, stop and tell the user which variables they can
-   set. Never ask the user to paste a key into the chat, and never write a key
-   to a file.
+4. If no credential is set, switch to the `smart-diff-claude` skill if it is
+   available. It runs the same pipeline with `--emit-context` and you write
+   the summary, so no key is needed. Otherwise, stop and tell the user which
+   variables they can set. Never ask the user to paste a key into the chat,
+   and never write a key to a file.
 
 ## Step 2: Pick the range
 

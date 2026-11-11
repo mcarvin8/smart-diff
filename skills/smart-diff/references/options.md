@@ -45,6 +45,14 @@ summary is printed to stdout; errors go to stderr with exit code 1.
 | `-h`, `--help`      | Show help.                                                    |
 | `-v`, `--version`   | Print the version.                                            |
 
+### Output
+
+| Flag              | Description                                                                                                                                            |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--emit-context`  | Skip the LLM call and print the prompts (system prompt(s), user content, notice) as JSON. No provider credentials needed.                              |
+| `--out <path>`    | Write the summary, or the `--emit-context` JSON, to this file instead of stdout.                                                                       |
+| `--out-dir <dir>` | With `--emit-context`: write each prompt to its own Markdown file in `<dir>` and print a JSON manifest of the paths instead of the prompts themselves. |
+
 ## Providers
 
 Set `LLM_PROVIDER` to choose one explicitly. Otherwise the first match wins:

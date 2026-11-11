@@ -50,9 +50,10 @@ export type DiffShapingOptions = {
 
 /**
  * Common high-token-cost files/folders that rarely help an LLM summarize a change.
- * Entries are repo-root relative paths suitable for `excludeFolders` / git
- * `:(exclude)` pathspecs. Opt in via `excludeDefaultNoise: true` on
- * `summarizeGitDiff`, or merge this list into your own `excludeFolders`.
+ * Entries are bare file/folder names matched at any depth (see
+ * `DiffPathFilter.excludeNames`), so nested lockfiles and `dist`/`__snapshots__`
+ * folders in monorepos are skipped too. Opt in via `excludeDefaultNoise: true` on
+ * `summarizeGitDiff`, or pass this list as `excludeNames` in a `DiffPathFilter`.
  */
 export const DEFAULT_NOISE_EXCLUDES: readonly string[] = [
   "package-lock.json",

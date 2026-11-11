@@ -172,15 +172,15 @@ npx smart-diff --help
 
 #### Token reduction — see [Handling large diffs](#handling-large-diffs)
 
-| Option                | CLI flag                  | Description                                                                                                                                                                   |
-| --------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `maxDiffChars`        | `--max-diff-chars <n>`    | Caps unified diff size for the request; see `LLM_MAX_DIFF_CHARS`.                                                                                                             |
-| `mapReduce`           | `--map-reduce`            | Split an oversized diff into per-file batches instead of hard-truncating it.                                                                                                  |
-| `contextLines`        | `--context-lines <n>`     | Number of context lines around each change (`git diff -U<n>`). Lower values (1 or 0) are the single biggest token saver on modification-heavy diffs.                          |
-| `ignoreWhitespace`    | `--ignore-whitespace`     | Passes `-w` / `--ignore-all-space` to `git diff` so pure-whitespace hunks don't consume tokens. Also applies to `--numstat` / `--name-status` so counts stay consistent.      |
-| `stripDiffPreamble`   | `--strip-diff-preamble`   | Removes low-value lines from the unified diff (`diff --git`, `index`, mode changes, `similarity/rename/copy` metadata). `--- a/…`, `+++ b/…`, and `@@` hunk headers are kept. |
-| `maxHunkLines`        | `--max-hunk-lines <n>`    | Caps the body of each hunk; anything past the limit is replaced with a single elision marker. The `@@` header and `DiffSummary` totals are preserved.                         |
-| `excludeDefaultNoise` | `--exclude-default-noise` | Merges the built-in `DEFAULT_NOISE_EXCLUDES` list (lockfiles, `dist`, `build`, `out`, `coverage`, `node_modules`, `__snapshots__`) into `excludeFolders`.                     |
+| Option                | CLI flag                  | Description                                                                                                                                                                                                                                                     |
+| --------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `maxDiffChars`        | `--max-diff-chars <n>`    | Caps unified diff size for the request; see `LLM_MAX_DIFF_CHARS`.                                                                                                                                                                                               |
+| `mapReduce`           | `--map-reduce`            | Split an oversized diff into per-file batches instead of hard-truncating it.                                                                                                                                                                                    |
+| `contextLines`        | `--context-lines <n>`     | Number of context lines around each change (`git diff -U<n>`). Lower values (1 or 0) are the single biggest token saver on modification-heavy diffs.                                                                                                            |
+| `ignoreWhitespace`    | `--ignore-whitespace`     | Passes `-w` / `--ignore-all-space` to `git diff` so pure-whitespace hunks don't consume tokens. Also applies to `--numstat` / `--name-status` so counts stay consistent.                                                                                        |
+| `stripDiffPreamble`   | `--strip-diff-preamble`   | Removes low-value lines from the unified diff (`diff --git`, `index`, mode changes, `similarity/rename/copy` metadata). `--- a/…`, `+++ b/…`, and `@@` hunk headers are kept.                                                                                   |
+| `maxHunkLines`        | `--max-hunk-lines <n>`    | Caps the body of each hunk; anything past the limit is replaced with a single elision marker. The `@@` header and `DiffSummary` totals are preserved.                                                                                                           |
+| `excludeDefaultNoise` | `--exclude-default-noise` | Skips the built-in `DEFAULT_NOISE_EXCLUDES` names (lockfiles, `dist`, `build`, `out`, `coverage`, `node_modules`, `__snapshots__`) at any depth, so nested lockfiles and build folders in monorepos are skipped too. `excludeFolders` stays repo-root relative. |
 
 #### Reliability
 
@@ -387,7 +387,7 @@ Provider credentials are read from the environment exactly as they are for the C
 | `ignore-whitespace`     | Drop pure-whitespace hunks.                                         | `false`             |
 | `strip-diff-preamble`   | Strip `diff --git`/index/mode noise lines.                          | `false`             |
 | `max-hunk-lines`        | Elide hunk bodies longer than this many lines.                      |                     |
-| `exclude-default-noise` | Skip lockfiles/dist/build/coverage/node_modules.                    | `false`             |
+| `exclude-default-noise` | Skip lockfiles/dist/build/coverage/node_modules at any depth.       | `false`             |
 | `redact-secrets`        | Mask likely secrets/credentials before sending the diff to the LLM. | `false`             |
 
 ### Outputs

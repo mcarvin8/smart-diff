@@ -72,7 +72,7 @@ inputs:
     description: Elide hunk bodies longer than this many lines.
     required: false
   exclude-default-noise:
-    description: Skip lockfiles/dist/build/coverage/node_modules.
+    description: Skip lockfiles/dist/build/coverage/node_modules at any depth.
     required: false
     default: "false"
   redact-secrets:

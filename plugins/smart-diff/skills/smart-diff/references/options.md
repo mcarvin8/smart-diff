@@ -25,15 +25,15 @@ summary is printed to stdout; errors go to stderr with exit code 1.
 
 ### Token reduction
 
-| Flag                      | Description                                                                    |
-| ------------------------- | ------------------------------------------------------------------------------ |
-| `--max-diff-chars <n>`    | Cap on diff characters sent to the model (default about 120k).                 |
-| `--map-reduce`            | Summarize an oversized diff in per-file batches instead of truncating it.      |
-| `--context-lines <n>`     | Context lines per hunk (`git diff -U<n>`). 0 or 1 saves the most tokens.       |
-| `--ignore-whitespace`     | Drop whitespace-only changes.                                                  |
-| `--strip-diff-preamble`   | Remove `diff --git`, `index`, and mode lines.                                  |
-| `--max-hunk-lines <n>`    | Elide hunk bodies longer than this many lines.                                 |
-| `--exclude-default-noise` | Skip lockfiles, `dist`, `build`, `out`, `coverage`, `node_modules`, snapshots. |
+| Flag                      | Description                                                                                  |
+| ------------------------- | -------------------------------------------------------------------------------------------- |
+| `--max-diff-chars <n>`    | Cap on diff characters sent to the model (default about 120k).                               |
+| `--map-reduce`            | Summarize an oversized diff in per-file batches instead of truncating it.                    |
+| `--context-lines <n>`     | Context lines per hunk (`git diff -U<n>`). 0 or 1 saves the most tokens.                     |
+| `--ignore-whitespace`     | Drop whitespace-only changes.                                                                |
+| `--strip-diff-preamble`   | Remove `diff --git`, `index`, and mode lines.                                                |
+| `--max-hunk-lines <n>`    | Elide hunk bodies longer than this many lines.                                               |
+| `--exclude-default-noise` | Skip lockfiles, `dist`, `build`, `out`, `coverage`, `node_modules`, snapshots, at any depth. |
 
 ### Reliability, security, other
 

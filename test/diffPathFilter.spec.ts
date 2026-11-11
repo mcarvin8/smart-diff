@@ -23,6 +23,40 @@ describe("buildPathFilterPredicate", () => {
     expect(predicate("src/index.ts")).toBe(true);
   });
 
+  it("excludes excludeNames at any depth, as files or folders", () => {
+    const predicate = buildPathFilterPredicate(repoRoot, {
+      excludeNames: ["package-lock.json", "dist", "__snapshots__"],
+    });
+    expect(predicate("package-lock.json")).toBe(false);
+    expect(predicate("examples/app/package-lock.json")).toBe(false);
+    expect(predicate("dist/bundle.js")).toBe(false);
+    expect(predicate("packages/lib/dist/index.js")).toBe(false);
+    expect(predicate("src/__snapshots__/a.test.ts.snap")).toBe(false);
+    expect(predicate("src/index.ts")).toBe(true);
+  });
+
+  it("matches excludeNames against whole segments only", () => {
+    const predicate = buildPathFilterPredicate(repoRoot, {
+      excludeNames: ["dist", " build ", "", "a/b"],
+    });
+    expect(predicate("src/distribution.ts")).toBe(true);
+    expect(predicate("src/dist.ts")).toBe(true);
+    expect(predicate("build/out.js")).toBe(false);
+    expect(predicate("a/b/c.ts")).toBe(true);
+  });
+
+  it("combines excludeNames with root-relative excludeFolders and includes", () => {
+    const predicate = buildPathFilterPredicate(repoRoot, {
+      includeFolders: ["src"],
+      excludeFolders: ["src/generated"],
+      excludeNames: ["dist"],
+    });
+    expect(predicate("src/app.ts")).toBe(true);
+    expect(predicate("src/generated/x.ts")).toBe(false);
+    expect(predicate("src/dist/x.js")).toBe(false);
+    expect(predicate("lib/app.ts")).toBe(false);
+  });
+
   it("restricts to include folders and their subpaths only", () => {
     const predicate = buildPathFilterPredicate(repoRoot, {
       includeFolders: ["src", "packages/lib"],

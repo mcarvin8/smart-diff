@@ -32,6 +32,22 @@ handing large diffs to subagents batch by batch, then deletes the folder.
 - For the `smart-diff` skill only: a provider credential in an environment
   variable, such as `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
 
+## Data handling
+
+Both skills read the current git repository: changed file paths, diffs, and
+commit hashes and messages. Commit author names and emails are never read. With
+secret redaction on (both skills always turn it on), likely credentials in the
+diff are masked first.
+
+| Skill               | Where the diff goes                                                                                                                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `smart-diff-claude` | Nowhere outside Claude. The CLI writes the prompts to a temporary folder on your machine, Claude reads them, and the skill deletes the folder afterwards.                                              |
+| `smart-diff`        | Sent to the LLM provider you configure through environment variables: OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, or an OpenAI-compatible gateway you set. |
+
+smart-diff runs no service of its own and keeps nothing. For the `smart-diff`
+skill, your provider's own terms decide how long it keeps requests. Both skills
+download the `@mcarvin/smart-diff` package from the npm registry through `npx`.
+
 ## Try it
 
 - "Summarize my branch against main"

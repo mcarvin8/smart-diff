@@ -237,3 +237,48 @@ describe("HELP_TEXT", () => {
     expect(HELP_TEXT).toContain("--usage");
   });
 });
+
+describe("parseCliArgs output flags", () => {
+  it("defaults emitContext to false and outFile to undefined", () => {
+    const parsed = parseCliArgs(["origin/main"]);
+    if (parsed.kind !== "run") throw new Error("expected run");
+    expect(parsed.emitContext).toBe(false);
+    expect(parsed.outFile).toBeUndefined();
+  });
+
+  it("parses --emit-context and --out", () => {
+    const parsed = parseCliArgs([
+      "origin/main",
+      "--emit-context",
+      "--out",
+      "ctx.json",
+    ]);
+    if (parsed.kind !== "run") throw new Error("expected run");
+    expect(parsed.emitContext).toBe(true);
+    expect(parsed.outFile).toBe("ctx.json");
+  });
+
+  it("documents the output flags in HELP_TEXT", () => {
+    expect(HELP_TEXT).toContain("--emit-context");
+    expect(HELP_TEXT).toContain("--out <path>");
+  });
+});
+
+describe("parseCliArgs --out-dir", () => {
+  it("parses --out-dir with --emit-context", () => {
+    const parsed = parseCliArgs([
+      "origin/main",
+      "--emit-context",
+      "--out-dir",
+      "ctx",
+    ]);
+    if (parsed.kind !== "run") throw new Error("expected run");
+    expect(parsed.outDir).toBe("ctx");
+  });
+
+  it("rejects --out-dir without --emit-context", () => {
+    expect(() => parseCliArgs(["origin/main", "--out-dir", "ctx"])).toThrow(
+      new CliUsageError("--out-dir requires --emit-context."),
+    );
+  });
+});

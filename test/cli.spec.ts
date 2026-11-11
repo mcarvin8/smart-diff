@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -207,5 +207,103 @@ describe("cli entrypoint", () => {
 
     expect(stderr).toBe("Error: boom\n");
     expect(exitCode).toBe(1);
+  });
+});
+
+describe("cli --emit-context / --out", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const context = {
+    mode: "single" as const,
+    notice: "",
+    systemPrompt: "SYS",
+    userContent: "USER",
+  };
+
+  it("emits schemaVersion 1 JSON to stdout", async () => {
+    let summarizeSpy: ReturnType<typeof vi.spyOn> | undefined;
+    const { stdout, exitCode } = await runCli(
+      ["origin/main", "--emit-context"],
+      (mod) => {
+        summarizeSpy = vi.spyOn(mod, "summarizeGitDiff");
+        vi.spyOn(mod, "buildGitDiffSummaryContext").mockResolvedValue(context);
+      },
+    );
+
+    expect(JSON.parse(stdout)).toEqual({ schemaVersion: 1, ...context });
+    expect(summarizeSpy).not.toHaveBeenCalled();
+    expect(exitCode).toBeUndefined();
+  });
+
+  it("writes output to --out instead of stdout", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "smart-diff-cli-"));
+    try {
+      const out = join(dir, "ctx.json");
+      const { stdout, stderr, exitCode } = await runCli(
+        ["origin/main", "--emit-context", "--out", out],
+        (mod) => {
+          vi.spyOn(mod, "buildGitDiffSummaryContext").mockResolvedValue(
+            context,
+          );
+        },
+      );
+
+      expect(stdout).toBe("");
+      expect(stderr).toBe(`Wrote ${out}\n`);
+      expect(JSON.parse(readFileSync(out, "utf8"))).toEqual({
+        schemaVersion: 1,
+        ...context,
+      });
+      expect(exitCode).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("writes prompt files and prints a manifest with --out-dir", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "smart-diff-cli-"));
+    try {
+      const { stdout, exitCode } = await runCli(
+        ["origin/main", "--emit-context", "--out-dir", dir],
+        (mod) => {
+          vi.spyOn(mod, "buildGitDiffSummaryContext").mockResolvedValue(
+            context,
+          );
+        },
+      );
+
+      const manifest = JSON.parse(stdout);
+      expect(manifest.mode).toBe("single");
+      expect(readFileSync(manifest.files.userContent, "utf8")).toBe("USER");
+      expect(exitCode).toBeUndefined();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("writes the summary to --out when not emitting context", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "smart-diff-cli-"));
+    try {
+      const out = join(dir, "summary.md");
+      const { stdout } = await runCli(["origin/main", "--out", out], (mod) => {
+        vi.spyOn(mod, "summarizeGitDiff").mockResolvedValue({
+          summary: "## Summary",
+          usage: {
+            requestCount: 1,
+            inputTokens: 0,
+            outputTokens: 0,
+            totalTokens: 0,
+            cachedInputTokens: 0,
+          },
+        });
+      });
+
+      expect(stdout).toBe("");
+      expect(readFileSync(out, "utf8")).toBe("## Summary\n");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

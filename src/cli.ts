@@ -1,9 +1,10 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { CliUsageError, HELP_TEXT, parseCliArgs } from "./cliOptions.js";
-import { summarizeGitDiff } from "./index.js";
+import { writeSummaryContextFiles } from "./contextFiles.js";
+import { buildGitDiffSummaryContext, summarizeGitDiff } from "./index.js";
 import { readPromptFiles } from "./promptFiles.js";
 
 function readPackageVersion(): string {
@@ -30,8 +31,27 @@ async function main(): Promise<void> {
   const options = systemPromptAppend
     ? { ...parsed.options, systemPromptAppend }
     : parsed.options;
+
+  const emit = (text: string): void => {
+    if (parsed.outFile) {
+      writeFileSync(parsed.outFile, `${text}\n`, "utf8");
+      process.stderr.write(`Wrote ${parsed.outFile}\n`);
+    } else {
+      process.stdout.write(`${text}\n`);
+    }
+  };
+
+  if (parsed.emitContext) {
+    const context = await buildGitDiffSummaryContext(options);
+    const payload = parsed.outDir
+      ? writeSummaryContextFiles(context, parsed.outDir)
+      : { schemaVersion: 1, ...context };
+    emit(JSON.stringify(payload, null, 2));
+    return;
+  }
+
   const { summary, usage } = await summarizeGitDiff(options);
-  process.stdout.write(`${summary}\n`);
+  emit(summary);
   if (parsed.reportUsage) {
     process.stderr.write(`\n[usage] ${JSON.stringify(usage)}\n`);
   }

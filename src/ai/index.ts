@@ -5,6 +5,8 @@ export {
   LLM_GATEWAY_REQUIRED_MESSAGE,
 } from "./aiConstants.js";
 export {
+  buildReduceUserContent,
+  buildSummaryContext,
   generateSummary,
   generateSummaryWithUsage,
   resolveLlmMaxDiffChars,
@@ -16,6 +18,7 @@ export type {
   LlmModelProvider,
   LlmUsageReport,
   SummarizeFlags,
+  SummaryContext,
 } from "./aiTypes.js";
 export {
   groupDiffChunksByBudget,

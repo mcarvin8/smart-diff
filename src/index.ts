@@ -1,10 +1,12 @@
 import {
+  buildSummaryContext,
   type GenerateSummaryInput,
   generateSummaryWithUsage,
   type LlmModelProvider,
   type LlmProviderId,
   type LlmUsageReport,
   type SummarizeFlags,
+  type SummaryContext,
 } from "./ai/index.js";
 import {
   type CommitInfo,
@@ -278,6 +280,20 @@ export async function summarizeGitDiff(
   return generateSummaryWithUsage(await prepareSummaryInput(options));
 }
 
+/**
+ * Same git reading, filtering, shaping, and redaction as {@link summarizeGitDiff},
+ * but stops before the LLM call and returns the prompts that would be sent (see
+ * {@link SummaryContext}). Needs no provider credentials — use it to let a model
+ * you already drive (for example Claude in a Claude Code skill) write the summary.
+ * Provider-only options (`provider`, `model`, `maxRetries`, `llmModelProvider`)
+ * are ignored.
+ */
+export async function buildGitDiffSummaryContext(
+  options: GitDiffAiSummaryOptions,
+): Promise<SummaryContext> {
+  return buildSummaryContext(await prepareSummaryInput(options));
+}
+
 export type {
   ChatCallOptions,
   ChatModel,
@@ -289,8 +305,11 @@ export type {
   LlmUsageReport,
   ResolveLanguageModelOptions,
   SummarizeFlags,
+  SummaryContext,
 } from "./ai/index.js";
 export {
+  buildReduceUserContent,
+  buildSummaryContext,
   DEFAULT_GIT_DIFF_SYSTEM_PROMPT,
   DEFAULT_MAP_REDUCE_MAP_SYSTEM_PROMPT,
   DEFAULT_MAP_REDUCE_REDUCE_SYSTEM_PROMPT,

@@ -1,5 +1,6 @@
 import type { ChatModel } from "../src/ai/llmClient";
 import * as gitDiff from "../src/git/index";
+import { DEFAULT_NOISE_EXCLUDES } from "../src/git/index";
 import { summarizeGitDiff } from "../src/index";
 import { extractUserText, makeMockModel } from "./helpers/mockLlm";
 import { createFixtureRepo, type FixtureRepo } from "./helpers/tsgitFixture";
@@ -91,7 +92,7 @@ describe("summarizeGitDiff", () => {
     );
   });
 
-  it("merges excludeDefaultNoise into excludeFolders and deduplicates user entries", async () => {
+  it("passes default noise as excludeNames and keeps user excludeFolders root-relative", async () => {
     const c1 = await fx.commit("root", { "a.ts": "1\n" });
     const c2 = await fx.commit("edit", { "a.ts": "2\n" });
     const getDiffSpy = vi.spyOn(gitDiff, "getDiff");
@@ -100,16 +101,34 @@ describe("summarizeGitDiff", () => {
       from: c1,
       to: c2,
       git: fx.repo,
-      excludeFolders: ["node_modules", "custom-out"],
+      excludeFolders: ["custom-out"],
       excludeDefaultNoise: true,
       llmModelProvider: mockLlmProvider("ok"),
     });
 
-    const query = getDiffSpy.mock.calls[0]?.[1];
-    const excludes = query?.pathFilter?.excludeFolders ?? [];
-    expect(excludes).toContain("package-lock.json");
-    expect(excludes).toContain("custom-out");
-    expect(excludes.filter((e) => e === "node_modules")).toHaveLength(1);
+    const pathFilter = getDiffSpy.mock.calls[0]?.[1]?.pathFilter;
+    expect(pathFilter?.excludeFolders).toEqual(["custom-out"]);
+    expect(pathFilter?.excludeNames).toBe(DEFAULT_NOISE_EXCLUDES);
+  });
+
+  it("sets only excludeNames when excludeDefaultNoise is the only filter", async () => {
+    const c1 = await fx.commit("root", { "a.ts": "1\n" });
+    const c2 = await fx.commit("edit", { "a.ts": "2\n" });
+    const getDiffSpy = vi.spyOn(gitDiff, "getDiff");
+
+    await summarizeGitDiff({
+      from: c1,
+      to: c2,
+      git: fx.repo,
+      excludeDefaultNoise: true,
+      llmModelProvider: mockLlmProvider("ok"),
+    });
+
+    expect(getDiffSpy.mock.calls[0]?.[1]?.pathFilter).toEqual({
+      includeFolders: undefined,
+      excludeFolders: undefined,
+      excludeNames: DEFAULT_NOISE_EXCLUDES,
+    });
   });
 
   it("leaves path filter untouched when excludeDefaultNoise is not set", async () => {
@@ -149,6 +168,7 @@ describe("summarizeGitDiff", () => {
 
     const userText = extractUserText(calls()[0]!);
     expect(userText).not.toContain("package-lock.json");
+    expect(userText).not.toContain("dist/index.js");
     expect(userText).toContain("src/app.ts");
   });
 });

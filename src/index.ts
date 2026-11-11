@@ -104,8 +104,10 @@ export type GitDiffAiSummaryOptions = {
    */
   maxHunkLines?: number;
   /**
-   * Merge the built-in high-noise path list ({@link DEFAULT_NOISE_EXCLUDES}) into
-   * `excludeFolders` — lockfiles, `dist`, `build`, `node_modules`, `coverage`, etc.
+   * Skip the built-in high-noise names ({@link DEFAULT_NOISE_EXCLUDES}) at any
+   * depth — lockfiles, `dist`, `build`, `node_modules`, `coverage`, etc. — so
+   * `examples/app/package-lock.json` or `packages/lib/dist/` are excluded too.
+   * `excludeFolders` entries stay repo-root relative.
    */
   excludeDefaultNoise?: boolean;
   /**
@@ -142,24 +144,6 @@ function buildShapingFromOptions(
     shaping.secretPatterns = options.secretPatterns;
   }
   return Object.keys(shaping).length > 0 ? shaping : undefined;
-}
-
-function buildEffectiveExcludeFolders(
-  options: GitDiffAiSummaryOptions,
-): string[] | undefined {
-  const userExcludes = options.excludeFolders ?? [];
-  if (!options.excludeDefaultNoise) {
-    return userExcludes.length > 0 ? userExcludes : undefined;
-  }
-  const seen = new Set<string>();
-  const merged: string[] = [];
-  for (const p of [...DEFAULT_NOISE_EXCLUDES, ...userExcludes]) {
-    const key = p.trim();
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    merged.push(p);
-  }
-  return merged;
 }
 
 function hasNonEmptyTrimmed(arr?: string[]): boolean {
@@ -204,13 +188,16 @@ async function prepareSummaryInput(
   const to = options.to ?? "HEAD";
   const from = await resolveFromRef(git, options, to);
 
-  const effectiveExcludeFolders = buildEffectiveExcludeFolders(options);
   const pathFilter: DiffPathFilter | undefined =
     hasNonEmptyTrimmed(options.includeFolders) ||
-    hasNonEmptyTrimmed(effectiveExcludeFolders)
+    hasNonEmptyTrimmed(options.excludeFolders) ||
+    options.excludeDefaultNoise
       ? {
           includeFolders: options.includeFolders,
-          excludeFolders: effectiveExcludeFolders,
+          excludeFolders: options.excludeFolders,
+          ...(options.excludeDefaultNoise
+            ? { excludeNames: DEFAULT_NOISE_EXCLUDES }
+            : {}),
         }
       : undefined;
 

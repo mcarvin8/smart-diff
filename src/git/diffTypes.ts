@@ -38,6 +38,13 @@ export type DiffPathFilter = {
   includeFolders?: string[];
   /** Paths under the repo root excluded from the diff (git `:(exclude)` pathspecs). */
   excludeFolders?: string[];
+  /**
+   * File or folder names excluded wherever they appear in the tree, like a bare
+   * `dist/` or `package-lock.json` line in `.gitignore`: a path is excluded when
+   * any of its `/`-separated segments equals one of these names. Exact matches
+   * only (no globs); entries containing `/` never match.
+   */
+  excludeNames?: readonly string[];
 };
 
 /** Arguments shared by `getDiff`, `getDiffSummary`, and `getChangedFiles`. */

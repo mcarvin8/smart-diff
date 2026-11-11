@@ -56,8 +56,18 @@ export function buildPathFilterPredicate(
     assertPathUnderRepo(repoRoot, exc);
   }
 
+  const excludeNames = new Set(
+    (pathFilter?.excludeNames ?? []).map((n) => n.trim()).filter(Boolean),
+  );
+
   return (path: string): boolean => {
     if (excludes.some((exc) => isUnderOrEqual(path, exc))) return false;
+    if (
+      excludeNames.size > 0 &&
+      path.split("/").some((segment) => excludeNames.has(segment))
+    ) {
+      return false;
+    }
     if (includes.length === 0) return true;
     return includes.some((inc) => isUnderOrEqual(path, inc));
   };

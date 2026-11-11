@@ -55,7 +55,8 @@ Token reduction (see README "Handling large diffs"):
   --ignore-whitespace       Drop pure-whitespace hunks
   --strip-diff-preamble     Strip diff --git/index/mode noise lines
   --max-hunk-lines <n>      Elide hunk bodies longer than this many lines
-  --exclude-default-noise   Skip lockfiles/dist/build/coverage/node_modules
+  --exclude-default-noise   Skip lockfiles/dist/build/coverage/node_modules at
+                            any depth (nested ones in monorepos too)
 
 Reliability:
   --max-retries <n>         Retry count for transient LLM call failures (default 2)

@@ -20605,8 +20605,14 @@ function buildPathFilterPredicate(repoRoot, pathFilter) {
   for (const exc of excludes) {
     assertPathUnderRepo(repoRoot, exc);
   }
+  const excludeNames = new Set(
+    (pathFilter?.excludeNames ?? []).map((n7) => n7.trim()).filter(Boolean)
+  );
   return (path) => {
     if (excludes.some((exc) => isUnderOrEqual(path, exc))) return false;
+    if (excludeNames.size > 0 && path.split("/").some((segment) => excludeNames.has(segment))) {
+      return false;
+    }
     if (includes.length === 0) return true;
     return includes.some((inc) => isUnderOrEqual(path, inc));
   };
@@ -55031,21 +55037,6 @@ function buildShapingFromOptions(options) {
   }
   return Object.keys(shaping).length > 0 ? shaping : void 0;
 }
-function buildEffectiveExcludeFolders(options) {
-  const userExcludes = options.excludeFolders ?? [];
-  if (!options.excludeDefaultNoise) {
-    return userExcludes.length > 0 ? userExcludes : void 0;
-  }
-  const seen = /* @__PURE__ */ new Set();
-  const merged = [];
-  for (const p7 of [...DEFAULT_NOISE_EXCLUDES, ...userExcludes]) {
-    const key = p7.trim();
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
-    merged.push(p7);
-  }
-  return merged;
-}
 function hasNonEmptyTrimmed(arr) {
   return (arr ?? []).some((s6) => s6.trim().length > 0);
 }
@@ -55068,10 +55059,10 @@ async function prepareSummaryInput(options) {
   const git = options.git ?? await createGitClient(options.cwd);
   const to2 = options.to ?? "HEAD";
   const from = await resolveFromRef(git, options, to2);
-  const effectiveExcludeFolders = buildEffectiveExcludeFolders(options);
-  const pathFilter = hasNonEmptyTrimmed(options.includeFolders) || hasNonEmptyTrimmed(effectiveExcludeFolders) ? {
+  const pathFilter = hasNonEmptyTrimmed(options.includeFolders) || hasNonEmptyTrimmed(options.excludeFolders) || options.excludeDefaultNoise ? {
     includeFolders: options.includeFolders,
-    excludeFolders: effectiveExcludeFolders
+    excludeFolders: options.excludeFolders,
+    ...options.excludeDefaultNoise ? { excludeNames: DEFAULT_NOISE_EXCLUDES } : {}
   } : void 0;
   const allCommits = await getCommits(git, from, to2);
   const filteredCommits = filterCommitsByMessageRegexes(

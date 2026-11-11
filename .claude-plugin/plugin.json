@@ -9,5 +9,11 @@
   "homepage": "https://github.com/mcarvin8/smart-diff",
   "repository": "https://github.com/mcarvin8/smart-diff",
   "license": "MIT",
-  "keywords": ["git", "diff", "summary", "code-review", "release-notes"]
+  "keywords": [
+    "git",
+    "diff",
+    "summary",
+    "code-review",
+    "release-notes"
+  ]
 }

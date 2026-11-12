@@ -25,6 +25,24 @@ handing large diffs to subagents batch by batch, then deletes the folder.
 /plugin install smart-diff@smart-diff
 ```
 
+### Other coding agents
+
+The skills are standard Agent Skills, so other agents can use them too:
+
+```sh
+# GitHub Copilot CLI (reads the same marketplace files)
+copilot plugin marketplace add mcarvin8/smart-diff
+copilot plugin install smart-diff@smart-diff
+
+# Any agent, with the skills CLI
+npx skills add mcarvin8/smart-diff
+
+# Any agent, with the GitHub CLI
+gh skill install mcarvin8/smart-diff --agent github-copilot
+```
+
+With `smart-diff-claude`, whichever agent runs the skill writes the summary.
+
 ## Requirements
 
 - Node.js 22.22.1 or newer

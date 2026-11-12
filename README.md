@@ -340,12 +340,10 @@ The package also exports helpers for building a custom pipeline on top of the sa
 
 smart-diff ships two [Agent Skills](https://agentskills.io) that work in Claude Code, GitHub Copilot, and other coding agents that support skills:
 
-| Skill               | Who writes the summary                                                                                             | Needs an API key |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------- |
-| `smart-diff-claude` | Your coding agent, from smart-diff's own prompts via [`--emit-context`](#emitting-the-prompts-without-an-llm-call) | No               |
-| `smart-diff`        | Your configured provider, via the CLI                                                                              | Yes              |
-
-`smart-diff-claude` keeps its original name, but any agent that can run shell commands and read files can use it.
+| Skill                 | Who writes the summary                                                                                             | Needs an API key |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------- |
+| `smart-diff-agent`    | Your coding agent, from smart-diff's own prompts via [`--emit-context`](#emitting-the-prompts-without-an-llm-call) | No               |
+| `smart-diff-provider` | Your configured provider, via the CLI                                                                              | Yes              |
 
 Install:
 
@@ -365,7 +363,7 @@ npx skills add mcarvin8/smart-diff
 gh skill install mcarvin8/smart-diff --agent github-copilot
 ```
 
-Then ask your agent to "summarize my branch against main" or "draft release notes since v1.2.0". With `smart-diff-claude`, smart-diff still reads, filters, redacts, and batches the diff locally, and the agent follows the same system prompts the CLI would send. For oversized diffs it summarizes each batch, in subagents when the agent supports them, and then combines them. Tokens count against your agent's plan instead of a provider key. Requires Node.js 22.22.1+.
+Then ask your agent to "summarize my branch against main" or "draft release notes since v1.2.0". With `smart-diff-agent`, smart-diff still reads, filters, redacts, and batches the diff locally, and the agent follows the same system prompts the CLI would send. For oversized diffs it summarizes each batch, in subagents when the agent supports them, and then combines them. Tokens count against your agent's plan instead of a provider key. Requires Node.js 22.22.1+.
 
 ## GitHub Action
 

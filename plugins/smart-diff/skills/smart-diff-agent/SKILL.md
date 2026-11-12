@@ -1,5 +1,5 @@
 ---
-name: smart-diff-claude
+name: smart-diff-agent
 description: Use when the user asks to "summarize this diff", "summarize my branch", "write a PR description from my changes", "what changed between these refs", "what changed since the last release", or "draft release notes from git history", and no LLM provider API key is set (or the user wants the coding agent itself to write the summary). Uses the smart-diff CLI (@mcarvin/smart-diff) with --emit-context to read, filter, shape, and redact the git range locally, then the agent (Claude, Copilot, or any agent that can run shell commands) writes the summary from smart-diff's own prompts. No API key needed. Requires Node.js 22.22.1+.
 license: MIT
 ---
@@ -13,7 +13,7 @@ path and commit filters, cuts token noise, masks secrets, and splits oversized
 diffs into batches), then writes out the exact prompts it would have sent.
 You, the coding agent, act as the model and write the summary from those prompts.
 
-Use the `smart-diff` skill instead when the user wants a specific provider or
+Use the `smart-diff-provider` skill instead when the user wants a specific provider or
 model, or a command that runs in CI. That path needs an API key.
 
 ## Step 1: Check prerequisites
@@ -111,4 +111,4 @@ The diff was split into per-file batches (`files.mapUserContents`, in order).
 
 ## Reference
 
-`../smart-diff/references/options.md` lists every CLI flag.
+`../smart-diff-provider/references/options.md` lists every CLI flag.

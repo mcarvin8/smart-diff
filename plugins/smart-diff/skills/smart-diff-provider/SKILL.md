@@ -1,5 +1,5 @@
 ---
-name: smart-diff
+name: smart-diff-provider
 description: Use when the user asks to "summarize this diff", "summarize my branch changes", "write a PR description from the diff", "what changed between these refs", or "draft release notes from git history". Runs the smart-diff CLI (@mcarvin/smart-diff) to produce a Markdown summary of a git range using the user's own LLM provider, with built-in handling for large diffs (map-reduce, token reduction), commit-message filtering, and secret redaction. Requires Node.js 22.22.1+ and an LLM provider credential in environment variables. Works in any agent that can run shell commands.
 license: MIT
 ---
@@ -30,7 +30,7 @@ For a small diff with no such needs, reading `git diff` yourself is fine.
    `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`,
    `LLM_BASE_URL`, `AWS_ACCESS_KEY_ID` / `AWS_PROFILE`.
    The full list is in `references/options.md`.
-4. If no credential is set, switch to the `smart-diff-claude` skill if it is
+4. If no credential is set, switch to the `smart-diff-agent` skill if it is
    available. It runs the same pipeline with `--emit-context` and you write
    the summary, so no key is needed. Otherwise, stop and tell the user which
    variables they can set. Never ask the user to paste a key into the chat,

@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.7.0](https://github.com/mcarvin8/smart-diff/compare/v6.6.2...v6.7.0) (2026-11-12)
+
+
+### Features
+
+* let other coding agents install the smart-diff skills ([#104](https://github.com/mcarvin8/smart-diff/issues/104)) ([4b55644](https://github.com/mcarvin8/smart-diff/commit/4b5564455838b08ead78f010d842a0d6147dab0a))
+
 ## [6.6.2](https://github.com/mcarvin8/smart-diff/compare/v6.6.1...v6.6.2) (2026-11-11)
 
 

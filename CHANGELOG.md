@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.8.0](https://github.com/mcarvin8/smart-diff/compare/v6.7.0...v6.8.0) (2026-11-12)
+
+
+### Features
+
+* rename skills to smart-diff-agent and smart-diff-provider ([#107](https://github.com/mcarvin8/smart-diff/issues/107)) ([a90e56a](https://github.com/mcarvin8/smart-diff/commit/a90e56a0f1c53b0b0b0c29229091840158375575))
+
 ## [6.7.0](https://github.com/mcarvin8/smart-diff/compare/v6.6.2...v6.7.0) (2026-11-12)
 
 

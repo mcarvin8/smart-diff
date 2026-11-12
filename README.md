@@ -25,7 +25,7 @@ Supports OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq
   - [Diff shape: single range vs per-commit](#diff-shape-single-range-vs-per-commit)
   - [Emitting the prompts without an LLM call](#emitting-the-prompts-without-an-llm-call)
   - [Lower-level API](#lower-level-api)
-- [Claude Code plugin (no API key)](#claude-code-plugin-no-api-key)
+- [AI coding agent skills (no API key)](#ai-coding-agent-skills-no-api-key)
 - [GitHub Action](#github-action)
 - [Examples](#examples)
 - [Used By](#used-by)
@@ -33,25 +33,25 @@ Supports OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq
 
 ## Ways to use it
 
-| Use it as                                                               | Best for                                                      | API key                               |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------- |
-| [Claude Code plugin](#claude-code-plugin-no-api-key)                    | Asking Claude to summarize your branch or draft release notes | Not needed; Claude writes the summary |
-| [CLI](#use-as-a-cli) or [library](#use-as-a-library---summarizegitdiff) | Scripts, tooling, and your own pipelines                      | Your own provider                     |
-| [GitHub Action](#github-action)                                         | A summary on every pull request in CI                         | Your own provider                     |
+| Use it as                                                               | Best for                                                                                             | API key                                   |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| [AI coding agent skills](#ai-coding-agent-skills-no-api-key)            | Asking Claude Code, Copilot, or another coding agent to summarize your branch or draft release notes | Not needed; your agent writes the summary |
+| [CLI](#use-as-a-cli) or [library](#use-as-a-library---summarizegitdiff) | Scripts, tooling, and your own pipelines                                                             | Your own provider                         |
+| [GitHub Action](#github-action)                                         | A summary on every pull request in CI                                                                | Your own provider                         |
 
-To try the plugin in Claude Code:
+To try the skills in Claude Code:
 
 ```text
 /plugin marketplace add mcarvin8/smart-diff
 /plugin install smart-diff@smart-diff
 ```
 
-Then ask Claude to "summarize my branch against main".
+Then ask your agent to "summarize my branch against main". For GitHub Copilot and other agents, see [AI coding agent skills](#ai-coding-agent-skills-no-api-key).
 
 ## Requirements
 
 - **Node.js** 22.22.1+
-- For the CLI, library, and GitHub Action: an LLM provider credential (see [Provider configuration](#provider-configuration)). Not needed for the [Claude Code plugin](#claude-code-plugin-no-api-key) or [`--emit-context`](#emitting-the-prompts-without-an-llm-call).
+- For the CLI, library, and GitHub Action: an LLM provider credential (see [Provider configuration](#provider-configuration)). Not needed for the [agent skills](#ai-coding-agent-skills-no-api-key) or [`--emit-context`](#emitting-the-prompts-without-an-llm-call).
 - No git binary required, on any platform — smart-diff reads the git repository directly via [`@scolladon/tsgit`](https://github.com/scolladon/tsgit), a pure-TypeScript git implementation with zero native dependencies
 
 ## Installation
@@ -307,7 +307,7 @@ See [Examples](#examples) for `ChatModel` wrappers that add extra context to the
 
 ### Emitting the prompts without an LLM call
 
-`--emit-context` (library: `buildGitDiffSummaryContext(options)`) runs everything except the LLM call. It reads the repo, resolves the merge base, applies path and commit filters, shapes and redacts the diff, and batches it under `--map-reduce`. Then it returns the exact prompts `summarizeGitDiff` would send. It needs no provider credentials, so a model you already drive can write the summary. The [Claude Code plugin](#claude-code-plugin-no-api-key) works this way.
+`--emit-context` (library: `buildGitDiffSummaryContext(options)`) runs everything except the LLM call. It reads the repo, resolves the merge base, applies path and commit filters, shapes and redacts the diff, and batches it under `--map-reduce`. Then it returns the exact prompts `summarizeGitDiff` would send. It needs no provider credentials, so a model you already drive can write the summary. The [agent skills](#ai-coding-agent-skills-no-api-key) work this way.
 
 The result is a `SummaryContext`:
 
@@ -336,27 +336,24 @@ The package also exports helpers for building a custom pipeline on top of the sa
 - **Types**: `LlmProviderId`, `LlmModelProvider`, `ChatModel`, `ChatCallOptions`, `ChatResult`, `ChatUsage`, `ResolveLanguageModelOptions`, `GenerateSummaryInput`, `SummarizeFlags`, `SummaryContext`, `LlmUsageReport`, `DiffFileSummary`, `DiffSummary`, `CommitInfo`, `GitClient`, `GitDiffRangeQuery`, `DiffPathFilter`, `DiffShapingOptions`, `PathFilterPredicate`, `RenderedFileDiff`, `SecretRedactionRule`
   - `DiffFileSummary.binary?: boolean` is `true` when either blob sniffs as binary; absent for text files
 
-## Claude Code plugin (no API key)
+## AI coding agent skills (no API key)
 
-This repo is also a Claude Code plugin with two skills:
+smart-diff ships two [Agent Skills](https://agentskills.io) that work in Claude Code, GitHub Copilot, and other coding agents that support skills:
 
-| Skill               | Who writes the summary                                                                                  | Needs an API key |
-| ------------------- | ------------------------------------------------------------------------------------------------------- | ---------------- |
-| `smart-diff-claude` | Claude, from smart-diff's own prompts via [`--emit-context`](#emitting-the-prompts-without-an-llm-call) | No               |
-| `smart-diff`        | Your configured provider, via the CLI                                                                   | Yes              |
+| Skill               | Who writes the summary                                                                                             | Needs an API key |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------- |
+| `smart-diff-claude` | Your coding agent, from smart-diff's own prompts via [`--emit-context`](#emitting-the-prompts-without-an-llm-call) | No               |
+| `smart-diff`        | Your configured provider, via the CLI                                                                              | Yes              |
+
+`smart-diff-claude` keeps its original name, but any agent that can run shell commands and read files can use it.
 
 Install:
 
-```text
+```sh
+# Claude Code (type these inside a Claude Code session)
 /plugin marketplace add mcarvin8/smart-diff
 /plugin install smart-diff@smart-diff
-```
 
-Then ask Claude to "summarize my branch against main" or "draft release notes since v1.2.0". With `smart-diff-claude`, smart-diff still reads, filters, redacts, and batches the diff locally. Claude follows the same system prompts the CLI would send. For oversized diffs it summarizes each batch, in subagents when available, and then combines them. Tokens count against your Claude plan instead of a provider key. Requires Node.js 22.22.1+.
-
-The skills are standard Agent Skills, so other coding agents can use them too. With `smart-diff-claude`, whichever agent runs the skill writes the summary.
-
-```sh
 # GitHub Copilot CLI (reads the same marketplace files)
 copilot plugin marketplace add mcarvin8/smart-diff
 copilot plugin install smart-diff@smart-diff
@@ -367,6 +364,8 @@ npx skills add mcarvin8/smart-diff
 # Any agent, with the GitHub CLI
 gh skill install mcarvin8/smart-diff --agent github-copilot
 ```
+
+Then ask your agent to "summarize my branch against main" or "draft release notes since v1.2.0". With `smart-diff-claude`, smart-diff still reads, filters, redacts, and batches the diff locally, and the agent follows the same system prompts the CLI would send. For oversized diffs it summarizes each batch, in subagents when the agent supports them, and then combines them. Tokens count against your agent's plan instead of a provider key. Requires Node.js 22.22.1+.
 
 ## GitHub Action
 

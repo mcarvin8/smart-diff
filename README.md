@@ -336,6 +336,20 @@ Install:
 
 Then ask Claude to "summarize my branch against main" or "draft release notes since v1.2.0". With `smart-diff-claude`, smart-diff still reads, filters, redacts, and batches the diff locally. Claude follows the same system prompts the CLI would send. For oversized diffs it summarizes each batch, in subagents when available, and then combines them. Tokens count against your Claude plan instead of a provider key. Requires Node.js 22.22.1+.
 
+The skills are standard Agent Skills, so other coding agents can use them too. With `smart-diff-claude`, whichever agent runs the skill writes the summary.
+
+```sh
+# GitHub Copilot CLI (reads the same marketplace files)
+copilot plugin marketplace add mcarvin8/smart-diff
+copilot plugin install smart-diff@smart-diff
+
+# Any agent, with the skills CLI (skills.sh.json points it at plugins/smart-diff/skills)
+npx skills add mcarvin8/smart-diff
+
+# Any agent, with the GitHub CLI
+gh skill install mcarvin8/smart-diff --agent github-copilot
+```
+
 ## GitHub Action
 
 smart-diff is also published as a GitHub Action (marketplace name `smart-diff-ai`) — no git binary or Node install needed on the runner, since it runs on `node24` from a pre-bundled executable.

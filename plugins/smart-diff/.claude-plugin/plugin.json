@@ -14,6 +14,8 @@
     "diff",
     "summary",
     "code-review",
-    "release-notes"
+    "release-notes",
+    "salesforce",
+    "sfdx"
   ]
 }

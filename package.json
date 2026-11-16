@@ -92,7 +92,9 @@
     "openai-compatible",
     "pull-request",
     "summary",
-    "xai"
+    "xai",
+    "salesforce",
+    "sfdx"
   ],
   "allowScripts": {
     "esbuild@0.28.2": true

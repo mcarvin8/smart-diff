@@ -338,12 +338,13 @@ The package also exports helpers for building a custom pipeline on top of the sa
 
 ## AI coding agent skills (no API key)
 
-smart-diff ships two [Agent Skills](https://agentskills.io) that work in Claude Code, GitHub Copilot, and other coding agents that support skills:
+smart-diff ships three [Agent Skills](https://agentskills.io) that work in Claude Code, GitHub Copilot, and other coding agents that support skills:
 
-| Skill                 | Who writes the summary                                                                                             | Needs an API key |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------- |
-| `smart-diff-agent`    | Your coding agent, from smart-diff's own prompts via [`--emit-context`](#emitting-the-prompts-without-an-llm-call) | No               |
-| `smart-diff-provider` | Your configured provider, via the CLI                                                                              | Yes              |
+| Skill                   | Who writes the summary                                                                                             | Needs an API key |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------- |
+| `smart-diff-agent`      | Your coding agent, from smart-diff's own prompts via [`--emit-context`](#emitting-the-prompts-without-an-llm-call) | No               |
+| `smart-diff-provider`   | Your configured provider, via the CLI                                                                              | Yes              |
+| `smart-diff-salesforce` | Your coding agent by default, or your configured provider if you ask                                               | No (optional)    |
 
 Install:
 
@@ -364,6 +365,8 @@ gh skill install mcarvin8/smart-diff --agent github-copilot
 ```
 
 Then ask your agent to "summarize my branch against main" or "draft release notes since v1.2.0". With `smart-diff-agent`, smart-diff still reads, filters, redacts, and batches the diff locally, and the agent follows the same system prompts the CLI would send. For oversized diffs it summarizes each batch, in subagents when the agent supports them, and then combines them. Tokens count against your agent's plan instead of a provider key. Requires Node.js 22.22.1+.
+
+In a Salesforce DX project (one with an `sfdx-project.json`), `smart-diff-salesforce` limits the diff to the `packageDirectories` (plus any `manifest/` folder with `package.xml` or `destructiveChanges*.xml`) and appends a Salesforce release prompt with `--prompt-file`. The summary is grouped by metadata type and calls out destructive changes, security and access changes, deployment risks, and testing focus. For a CLI plugin with the same goal, see [sf-git-ai-meta-insights](https://github.com/mcarvin8/sf-git-ai-meta-insights).
 
 ## GitHub Action
 

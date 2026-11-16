@@ -16,6 +16,10 @@ You, the coding agent, act as the model and write the summary from those prompts
 Use the `smart-diff-provider` skill instead when the user wants a specific provider or
 model, or a command that runs in CI. That path needs an API key.
 
+If the repository has an `sfdx-project.json` (a Salesforce DX project), use the
+`smart-diff-salesforce` skill instead, if it is available. It limits the diff to
+the package directories and frames the summary as a Salesforce release.
+
 ## Step 1: Check prerequisites
 
 1. Confirm the working directory is inside a git repository.

@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.9.0](https://github.com/mcarvin8/smart-diff/compare/v6.8.0...v6.9.0) (2026-11-16)
+
+
+### Features
+
+* add smart-diff-salesforce skill for Salesforce DX releases ([#109](https://github.com/mcarvin8/smart-diff/issues/109)) ([bb8d7b7](https://github.com/mcarvin8/smart-diff/commit/bb8d7b72ddf74e4e641aaa7b9c7f0b577d031c1e))
+
 ## [6.8.0](https://github.com/mcarvin8/smart-diff/compare/v6.7.0...v6.8.0) (2026-11-12)
 
 

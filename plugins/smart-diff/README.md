@@ -64,11 +64,11 @@ commit hashes and messages. Commit author names and emails are never read. With
 secret redaction on (every skill always turns it on), likely credentials in the
 diff are masked first.
 
-| Skill                   | Where the diff goes                                                                                                                                                                                                          |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `smart-diff-agent`      | Nowhere outside your coding agent. The CLI writes the prompts to a temporary folder on your machine, your agent reads them, and the skill deletes the folder afterwards.                                                     |
-| `smart-diff-provider`   | Sent to the LLM provider you configure through environment variables: OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, or an OpenAI-compatible gateway you set.                       |
-| `smart-diff-salesforce` | Same as `smart-diff-agent` by default, or `smart-diff-provider` if you ask for provider mode. It also reads `sfdx-project.json` with a small bundled Node script (`scripts/package-dirs.mjs`), which only reads local files. |
+| Skill                   | Where the diff goes                                                                                                                                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `smart-diff-agent`      | Nowhere outside your coding agent. The CLI writes the prompts to a temporary folder on your machine, your agent reads them, and the skill deletes the folder afterwards.                               |
+| `smart-diff-provider`   | Sent to the LLM provider you configure through environment variables: OpenAI, Anthropic, Google Gemini, Amazon Bedrock, Mistral, Cohere, Groq, xAI, DeepSeek, or an OpenAI-compatible gateway you set. |
+| `smart-diff-salesforce` | Same as `smart-diff-agent` by default, or `smart-diff-provider` if you ask for provider mode. It also reads `sfdx-project.json` to find the package directories.                                       |
 
 smart-diff runs no service of its own and keeps nothing. For the `smart-diff-provider`
 skill (and `smart-diff-salesforce` in provider mode), your provider's own terms

@@ -33,30 +33,36 @@ of the whole repository.
 
 ## Step 2: Get the package directories
 
-Run the script that ships with this skill (it works in any shell):
+Read `sfdx-project.json` (it is JSON) and build the list of `--include`
+paths from its `packageDirectories` array. Each entry has a `path`, and may
+have a `package` name and a `default` flag.
 
-```bash
-node <this skill's folder>/scripts/package-dirs.mjs [path/to/sfdx-project.json]
-```
+For each `path`:
 
-It prints JSON with:
+1. Use forward slashes, and drop a leading `./` and any trailing `/`.
+2. `--include` is relative to the repository root. If `sfdx-project.json` is
+   in a subfolder, prefix the path with that subfolder (for example
+   `force-app` in `sfdx/` becomes `sfdx/force-app`).
+3. Skip a path that resolves outside the repository (for example
+   `../shared`), and mention it to the user.
+4. If the user names one package (by `package` name or path), keep only
+   that one.
 
-- `includes`: pass each entry as one `--include <path>` flag. These are
-  already relative to the repository root, including when `sfdx-project.json`
-  is in a subfolder.
-- `packageDirectories`: each directory's `include` path, `package` name, and
-  `default` flag. If the user names one package (by name or path), use only
-  that directory's `include` path, plus any `manifestDirs`.
-- `manifestDirs`: folders outside the package directories that hold
-  `package.xml` or `destructiveChanges*.xml` (usually `manifest/`). They are
-  already in `includes`, so destructive changes show up in the summary.
-- `skipped`: package paths outside the repository. Mention them to the user.
+Then look at the folders next to `sfdx-project.json` that are not package
+directories. Add any folder that holds `package.xml` or
+`destructiveChanges*.xml` (usually `manifest/`) as another `--include`, so
+destructive changes show up in the summary.
 
-If `wholeRepo` is `true`, a package directory is the repository root. Pass no
-`--include` flags, and tell the user the summary covers the whole repository.
-Otherwise, if `includes` is empty, tell the user and ask whether to summarize
-the whole repository instead. If the script exits with an error, show its
-message.
+Special cases:
+
+- If a package directory is the project root (`path` is `.` or `./`) and
+  `sfdx-project.json` is at the repository root, pass no `--include` flags
+  at all. smart-diff ignores `--include .`, and mixing it with other
+  includes would drop the root package. Tell the user the summary covers the
+  whole repository.
+- If `packageDirectories` is empty or missing, tell the user and ask whether
+  to summarize the whole repository instead.
+- If `sfdx-project.json` is not valid JSON, show the parse error and stop.
 
 ## Step 3: Pick the range
 

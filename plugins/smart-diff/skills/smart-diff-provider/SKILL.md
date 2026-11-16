@@ -21,6 +21,10 @@ summary to stdout.
 
 For a small diff with no such needs, reading `git diff` yourself is fine.
 
+If the repository has an `sfdx-project.json` (a Salesforce DX project), use the
+`smart-diff-salesforce` skill instead, if it is available. It limits the diff to
+the package directories and frames the summary as a Salesforce release.
+
 ## Step 1: Check prerequisites
 
 1. Confirm the working directory is inside a git repository.
